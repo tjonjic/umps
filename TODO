@@ -1,0 +1,17 @@
+umps
+====
+
+* MP support (meta todo item!!)
+
+
+qmps
+====
+
+* Figure out why sigc::trackable fails randomly when not inherited
+  directly.
+
+* User error handling: boring perhaps, but much needed.
+
+* Test with Qt 4.7
+
+* DND support btw suspect and trace views
