@@ -1,0 +1,30 @@
+TOOLCHAIN_DIR = /usr/local/bin
+TOOLCHAIN_PRG_PREFIX = mipsel-linux-
+
+CC = $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PRG_PREFIX)gcc
+LD = $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PRG_PREFIX)ld
+
+UMPS_DIR_PREFIX = /usr/local
+UMPS_DATA_DIR = $(UMPS_DIR_PREFIX)/share/umps2
+UMPS_LIB_DIR = $(UMPS_DIR_PREFIX)/lib/umps2
+UMPS_INCLUDE_DIR = $(UMPS_DIR_PREFIX)/include/umps2
+
+CFLAGS = -I$(UMPS_INCLUDE_DIR) -O0 -Wall
+LDFLAGS = -T $(UMPS_DATA_DIR)/elf32ltsmip.h.umpscore.x
+
+kernel_objects :=			\
+	terminal.o			\
+	hanoi.o				\
+	$(UMPS_LIB_DIR)/crtso.o		\
+	$(UMPS_LIB_DIR)/libumps.o
+
+all : kernel.core.umps
+
+kernel.core.umps : kernel
+	umps-elf2umps -k $<
+
+kernel : $(kernel_objects)
+	$(LD) -o $@ $(kernel_objects) $(LDFLAGS)
+
+clean :
+	-rm -f *.o kernel kernel.*.umps

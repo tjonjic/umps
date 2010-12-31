@@ -1,0 +1,38 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+  <qresource>
+    <file>icons/config_create-22.png</file>
+    <file>icons/config_open-22.png</file>
+
+    <file>icons/machine-16.png</file>
+    <file>icons/processor-16.png</file>
+    <file>icons/memory-16.png</file>
+    <file>icons/device-16.png</file>
+
+    <file>icons/machine_start-22.png</file>
+    <file>icons/machine_halt-22.png</file>
+    <file>icons/machine_settings-22.png</file>
+
+    <file>icons/debug_continue-22.png</file>
+    <file>icons/debug_step-22.png</file>
+    <file>icons/debug_stop-22.png</file>
+
+    <file>icons/disk-16.png</file>
+    <file>icons/disk-32.png</file>
+    <file>icons/tape-16.png</file>
+    <file>icons/tape-32.png</file>
+    <file>icons/network-16.png</file>
+    <file>icons/network-32.png</file>
+    <file>icons/printer-16.png</file>
+    <file>icons/printer-32.png</file>
+    <file>icons/terminal-16.png</file>
+    <file>icons/terminal-32.png</file>
+
+    <file>icons/expander_up-16.png</file>
+    <file>icons/expander_down-16.png</file>
+
+    <file>icons/pc_marker-16.png</file>
+    <file>icons/breakpoint_enabled_marker-16.png</file>
+    <file>icons/breakpoint_disabled_marker-16.png</file>
+  </qresource>
+</RCC>

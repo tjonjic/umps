@@ -1,0 +1,32 @@
+##############################################################################
+ Overview.
+##############################################################################
+
+Welcome to uMPS!
+
+uMPS is a complete virtual machine simulator based around the MIPS R2/3000
+microprocessor.  
+
+##############################################################################
+ Installation & Prerequisites
+##############################################################################
+
+Prerequisties:
+
+ - A working GCC-based MIPS toolchain
+
+   Development for uMPS is done using a cross toolchain, that is GNU
+   binutils+GCC configured for a MIPS target. Most likely they are
+   going to be configured for a `mips[el]-linux' or (less likely?)
+   `mips[el]-unknown-elf' target.
+
+ - Qt 4.6.x or later
+
+ - libelf
+
+ - Boost 1.34+
+
+ - libsigc++ 2.0
+
+Detailed configuration/installation instructions can be found in the
+file ./INSTALL.
