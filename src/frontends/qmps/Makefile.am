@@ -105,7 +105,9 @@ umps2_SOURCES = \
 	ui_utils.h			\
 	ui_utils.cc			\
 	flat_push_button.h		\
-	flat_push_button.cc		\
+	flat_push_button.cc
+
+nodist_umps2_SOURCES = \
 	qmps.qrc.cc			\
 	$(umps2_moc_sources)
 
