@@ -30,6 +30,7 @@
 
 #include <QtDebug>
 
+#include "umps/error.h"
 #include "qmps/application.h"
 
 unsigned int DebugSession::cyclesPerIteration[kNumSpeedLevels] = {
@@ -176,7 +177,15 @@ void DebugSession::onStartMachine()
     assert(status == MS_HALTED);
 
     MachineConfig* config = Appl()->getConfig();
-    machine.reset(new Machine(config, &breakpoints, &suspects, &tracepoints));
+    try {
+        machine.reset(new Machine(config, &breakpoints, &suspects, &tracepoints));
+    } catch (RuntimeError& e) {
+        QMessageBox::critical(
+            0,
+            QString("%1: Error").arg(Appl()->applicationName()),
+            QString("<b>Could not create machine:</b> %1").arg(e.what()));
+        return;
+    }
     machine->setStopMask(stopMask);
 
     symbolTable.reset(new SymbolTable(64, config->getROM(ROM_TYPE_STAB).c_str()));

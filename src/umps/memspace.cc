@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <boost/format.hpp>
+
 #include <umps/const.h>
 #include "umps/blockdev_params.h"
 
@@ -47,34 +49,33 @@ HIDDEN Word * emptyFrameSignal(const char * fName, Word * sizep);
 // fills it with core file contents if needed
 RamSpace::RamSpace(Word siz, const char * fName)
 {
-    FILE * cFile = NULL;
+    FILE* cFile = NULL;
     Word tag;
     unsigned int i;
 
     size = siz;
     memPtr = new Word [siz];
 
-    if (fName != NULL && !SAMESTRING(fName, EMPTYSTR))
-    {
+    if (fName != NULL && !SAMESTRING(fName, EMPTYSTR)) {
         // tries to load core file from disk
         if ((cFile = fopen(fName, "r")) == NULL ||
             fread((void *) &tag, WORDLEN, 1, cFile) != 1 ||
             tag != COREFILEID)
         {
-            ShowAlertQuit("Unable to load core file", fName, "cannot continue: exiting now...");
-            for (i = 0; i < size; i++)
-                memPtr[i] = NOP;
-        } else {	
-            fread((void *) memPtr, WORDLEN, size, cFile);
-            if (!feof(cFile)) {
-                // core too large: it did not fit in memory
-                ShowAlert("Core file did not fit in memory: too large",
-                          "Increase setup RAM size and reset the system", EMPTYSTR);
-            }
+            if (cFile != NULL)
+                fclose(cFile);
+            throw RuntimeError(boost::str(boost::format("Invalid or missing core file `%s'") %fName));
         }
-        if (cFile != NULL)
-            fclose(cFile);
+
+        fread((void *) memPtr, WORDLEN, size, cFile);
+        if (!feof(cFile)) {
+            // core too large: it did not fit in memory
+            ShowAlert("Core file did not fit in memory: too large",
+                      "Increase setup RAM size and reset the system", EMPTYSTR);
+        }
     }
+    if (cFile != NULL)
+        fclose(cFile);
 }
 
 // This method deletes the contents of a RamSpace object
