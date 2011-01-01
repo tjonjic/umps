@@ -96,10 +96,6 @@ TraceBrowser::TraceBrowser(QWidget* parent)
     connect(dbgSession, SIGNAL(MachineStarted()), this, SLOT(onMachineStarted()));
     connect(dbgSession, SIGNAL(MachineAboutToBeHalted()), this, SLOT(onMachineAboutToBeHalted()));
     connect(dbgSession, SIGNAL(DebugIterationCompleted()), this, SLOT(refreshView()));
-
-    dbgSession->getTracepoints()->SignalStoppointInserted.connect(
-        sigc::mem_fun(this, &TraceBrowser::onTracepointAdded)
-    );
 }
 
 TraceBrowser::~TraceBrowser() {}
@@ -119,6 +115,9 @@ void TraceBrowser::onMachineStarted()
             SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
             this,
             SLOT(onSelectionChanged(const QItemSelection&)));
+
+    connect(tplModel.get(), SIGNAL(rowsInserted(const QModelIndex&, int, int)),
+            this, SLOT(onTracepointAdded()));
 
     if (tplModel->rowCount() > 0)
         tplView->setCurrentIndex(tplModel->index(0, 0));

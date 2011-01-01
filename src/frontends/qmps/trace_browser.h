@@ -53,6 +53,7 @@ private Q_SLOTS:
     void onMachineStarted();
     void onMachineAboutToBeHalted();
 
+    void onTracepointAdded();
     void onSelectionChanged(const QItemSelection&);
     void onDelegateTypeChanged(int index);
     void refreshView();
@@ -75,7 +76,6 @@ private:
     };
 
     Stoppoint* selectedTracepoint() const;
-    void onTracepointAdded();
 
     static QWidget* createHexView(Word start, Word end, bool nativeOrder);
 
