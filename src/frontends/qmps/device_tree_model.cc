@@ -60,6 +60,9 @@ DeviceTreeModel::DeviceTreeModel(Machine* m)
             dev->SignalStatusChanged.connect(
                 sigc::bind<Device*>(sigc::mem_fun(this, &DeviceTreeModel::onDeviceStatusChanged), dev)
             );
+            dev->SignalConditionChanged.connect(
+                sigc::bind<Device*>(sigc::mem_fun(this, &DeviceTreeModel::onDeviceConditionChanged), dev)
+            );
         }
     }
 
@@ -128,6 +131,7 @@ int DeviceTreeModel::rowCount(const QModelIndex& parent) const
 
 int DeviceTreeModel::columnCount(const QModelIndex& parent) const
 {
+    UNUSED_ARG(parent);
     return N_COLUMNS;
 }
 
@@ -181,14 +185,14 @@ QVariant DeviceTreeModel::data(const QModelIndex& index, int role) const
         case COLUMN_DEVICE_NUMBER:
             return device->getNumber();
 
-        case COLUMN_COMPLETION_TOD:
-            return device->getDevCTStr();
-
         case COLUMN_DEVICE_CONDITION:
             return device->getDevNotWorking();
 
         case COLUMN_DEVICE_STATUS:
             return device->getDevSStr();
+
+        case COLUMN_COMPLETION_TOD:
+            return device->getDevCTStr();
         }
     }
 
@@ -201,9 +205,50 @@ Qt::ItemFlags DeviceTreeModel::flags(const QModelIndex& index) const
     if (!index.isValid())
         return 0;
 
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    // FIXME: Should the items here really be disabled?
+#if 0
+    Device* device = static_cast<Device*>(index.internalPointer());
+    if (device && index.column() == COLUMN_DEVICE_CONDITION && device->Type() == NULLDEV)
+        return Qt::ItemIsSelectable;
+    else
+#endif
+        return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+bool DeviceTreeModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    Device* device = static_cast<Device*>(index.internalPointer());
+    if (device &&
+        index.column() == COLUMN_DEVICE_CONDITION &&
+        role == Qt::EditRole &&
+        value.canConvert<bool>())
+    {
+        device->setCondition(!value.toBool());
+        return true;
+    }
+
+    return false;
 }
 
 void DeviceTreeModel::onDeviceStatusChanged(const char* status, Device* device)
 {
+    UNUSED_ARG(status);
+
+    QModelIndex idx1 = createIndex(device->getNumber(),
+                                   COLUMN_DEVICE_STATUS,
+                                   device);
+    QModelIndex idx2 = createIndex(device->getNumber(),
+                                   COLUMN_COMPLETION_TOD,
+                                   device);
+    Q_EMIT dataChanged(idx1, idx2);
+}
+
+void DeviceTreeModel::onDeviceConditionChanged(bool operational, Device* device)
+{
+    UNUSED_ARG(operational);
+
+    QModelIndex idx = createIndex(device->getNumber(),
+                                  COLUMN_DEVICE_CONDITION,
+                                  device);
+    Q_EMIT dataChanged(idx, idx);
 }

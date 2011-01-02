@@ -91,7 +91,7 @@ TerminalStatusWidget::TerminalStatusWidget(TerminalDevice* t, QWidget* parent)
     layout->setColumnStretch(0, 1);
 
     hwFailureCheckBox = new QCheckBox("Hardware Failure");
-    hwFailureCheckBox->setChecked(terminal->getCondition());
+    hwFailureCheckBox->setChecked(terminal->getDevNotWorking());
     connect(hwFailureCheckBox, SIGNAL(clicked(bool)),
             this, SLOT(onHardwareFailureButtonClicked(bool)));
     layout->addWidget(hwFailureCheckBox, 0, 0);
@@ -159,12 +159,12 @@ void TerminalStatusWidget::updateStatus()
 
 void TerminalStatusWidget::onConditionChanged(bool isWorking)
 {
-    hwFailureCheckBox->setChecked(isWorking);
+    hwFailureCheckBox->setChecked(!isWorking);
 }
 
 void TerminalStatusWidget::onHardwareFailureButtonClicked(bool checked)
 {
-    terminal->setCondition(checked);
+    terminal->setCondition(!checked);
 }
 
 void TerminalStatusWidget::onExpanderButtonClicked()

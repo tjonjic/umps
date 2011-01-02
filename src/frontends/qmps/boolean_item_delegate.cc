@@ -92,8 +92,7 @@ bool BooleanItemDelegate::editorEvent(QEvent* event,
         return false;
     }
 
-    bool checked = index.model()->data(index, Qt::DisplayRole).toBool();
-    return model->setData(index, !checked, Qt::EditRole);
+    return model->setData(index, !index.data().toBool(), Qt::EditRole);
 }
 
 QRect BooleanItemDelegate::buttonGeometry(const QRect& viewItemRect)

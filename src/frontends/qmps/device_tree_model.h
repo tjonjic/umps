@@ -55,11 +55,13 @@ public:
 
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     QVariant data(const QModelIndex& index, int role) const;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
 
     Qt::ItemFlags flags(const QModelIndex& index) const;
 
 private:
     void onDeviceStatusChanged(const char* status, Device* device);
+    void onDeviceConditionChanged(bool operational, Device* device);
 
     Machine* const machine;
 
