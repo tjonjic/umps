@@ -27,11 +27,14 @@
 class QAbstractItemModel;
 
 class DeviceTreeView : public QTreeView {
-Q_OBJECT
+    Q_OBJECT
 
 public:
     DeviceTreeView(QWidget* parent = 0);
-    void setModel(QAbstractItemModel* model);
+    virtual void setModel(QAbstractItemModel* model);
+
+private Q_SLOTS:
+    void sectionResized(int logicalIndex, int oldSize, int newSize);
 };
 
 #endif // QMPS_DEVICE_TREE_VIEW_H

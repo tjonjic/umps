@@ -37,6 +37,14 @@ class DeviceTreeModel : public QAbstractItemModel,
     Q_OBJECT
 
 public:
+    enum {
+        COLUMN_DEVICE_NUMBER = 0,
+        COLUMN_DEVICE_CONDITION,
+        COLUMN_DEVICE_STATUS,
+        COLUMN_COMPLETION_TOD,
+        N_COLUMNS
+    };
+
     DeviceTreeModel(Machine* machine);
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const;
@@ -51,14 +59,6 @@ public:
     Qt::ItemFlags flags(const QModelIndex& index) const;
 
 private:
-    enum {
-        COLUMN_DEVICE_NUMBER = 0,
-        COLUMN_DEVICE_CONDITION,
-        COLUMN_DEVICE_STATUS,
-        COLUMN_COMPLETION_TOD,
-        N_COLUMNS
-    };
-
     void onDeviceStatusChanged(const char* status, Device* device);
 
     Machine* const machine;

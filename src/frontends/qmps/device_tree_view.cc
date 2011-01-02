@@ -21,30 +21,57 @@
 
 #include "qmps/device_tree_view.h"
 
-#include <QApplication>
 #include <QHeaderView>
 
+#include "qmps/application.h"
 #include "qmps/boolean_item_delegate.h"
+#include "qmps/device_tree_model.h"
 
 DeviceTreeView::DeviceTreeView(QWidget* parent)
     : QTreeView(parent)
 {
     BooleanItemDelegate* delegate = new BooleanItemDelegate;
-    setItemDelegateForColumn(1, delegate);
+    setItemDelegateForColumn(DeviceTreeModel::COLUMN_DEVICE_CONDITION, delegate);
+    setAlternatingRowColors(true);
+
+    connect(header(), SIGNAL(sectionResized(int, int, int)),
+            this, SLOT(sectionResized(int, int, int)));
 }
 
 void DeviceTreeView::setModel(QAbstractItemModel* model)
 {
     QTreeView::setModel(model);
 
-    if (model != NULL) {
-        QModelIndex root = rootIndex();
-        int rows = model->rowCount(root);
-        for (int i = 0; i < rows; i++)
-            setFirstColumnSpanned(i, root, true);
-        //header()->resizeSection(1, 200);
-        resizeColumnToContents(0);
-        resizeColumnToContents(1);
-        resizeColumnToContents(3);
+    if (model == NULL)
+        return;
+
+    QModelIndex root = rootIndex();
+    int rows = model->rowCount(root);
+    for (int i = 0; i < rows; i++)
+        setFirstColumnSpanned(i, root, true);
+
+    bool resizeCols = true;
+    for (unsigned int i = 0; i < DeviceTreeModel::N_COLUMNS; ++i) {
+        QVariant v = Appl()->settings.value(QString("DeviceTreeView/Section%1Size").arg(i));
+        if (v.canConvert<int>() && v.toInt()) {
+            header()->resizeSection(i, v.toInt());
+            resizeCols = false;
+        }
     }
+
+    if (resizeCols) {
+        resizeColumnToContents(DeviceTreeModel::COLUMN_DEVICE_NUMBER);
+        resizeColumnToContents(DeviceTreeModel::COLUMN_DEVICE_CONDITION);
+        resizeColumnToContents(DeviceTreeModel::COLUMN_COMPLETION_TOD);
+    }
+
+    // Why oh why is this not the default for tree views?
+    header()->setMovable(false);
+}
+
+void DeviceTreeView::sectionResized(int logicalIndex, int oldSize, int newSize)
+{
+    UNUSED_ARG(oldSize);
+    Appl()->settings.setValue(QString("DeviceTreeView/Section%1Size").arg(logicalIndex),
+                              newSize);
 }

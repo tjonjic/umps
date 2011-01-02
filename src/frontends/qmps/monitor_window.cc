@@ -473,7 +473,6 @@ QWidget* MonitorWindow::createMemoryTab()
 QWidget* MonitorWindow::createDeviceTab()
 {
     deviceTreeView = new DeviceTreeView(this);
-    deviceTreeView->setAlternatingRowColors(true);
     return deviceTreeView;
 }
 
