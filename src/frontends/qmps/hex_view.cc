@@ -197,7 +197,6 @@ void HexView::highlightWord()
     selection.cursor = cursor;
     selection.format.setBackground(palette().highlight());
     selection.format.setForeground(palette().highlightedText());
-    selection.format.setUnderlineStyle(QTextCharFormat::SingleUnderline);
 
     extraSelections.append(selection);
     setExtraSelections(extraSelections);
@@ -244,7 +243,7 @@ void HexView::paintMargin(QPaintEvent* event)
     int y0 = (int) blockBoundingGeometry(block).translated(contentOffset()).y();
     int y1 = y0 + (int) blockBoundingRect(block).height();
 
-    Word addr = start + block.blockNumber() * WS;
+    Word addr = start + block.blockNumber() * kWordsPerRow * WS;
 
     while (y0 <= er.bottom()) {
         if (er.top() <= y1) {
@@ -257,7 +256,7 @@ void HexView::paintMargin(QPaintEvent* event)
             break;
         y0 = y1;
         y1 += blockBoundingRect(block).height();
-        addr += WS;
+        addr += WS * kWordsPerRow;
     }
 }
 
