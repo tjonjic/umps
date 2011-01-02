@@ -685,6 +685,7 @@ void MonitorWindow::onMachineStarted()
     }
 
     const MachineConfig* config = Appl()->getConfig();
+
     for (unsigned int i = 0; i < config->getNumProcessors(); i++)
         showCpuWindowActions[i]->setEnabled(true);
 
@@ -708,6 +709,12 @@ void MonitorWindow::onMachineAboutToBeHalted()
     tabWidget->setTabEnabled(TAB_INDEX_CPU, false);
     tabWidget->setTabEnabled(TAB_INDEX_MEMORY, false);
     tabWidget->setTabEnabled(TAB_INDEX_DEVICES, false);
+
+    for (unsigned int i = 0; i < N_DEV_PER_IL; ++i)
+        showTerminalActions[i]->setEnabled(false);
+
+    for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; ++i)
+        showCpuWindowActions[i]->setEnabled(false);
 
     editConfigAction->setEnabled(true);
 }
