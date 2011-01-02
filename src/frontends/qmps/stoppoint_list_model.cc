@@ -55,14 +55,17 @@ int BaseStoppointListModel::rowCount(const QModelIndex& parent) const
         return 0;
 }
 
-void BaseStoppointListModel::Add(const AddressRange& range, AccessMode mode)
+bool BaseStoppointListModel::Add(const AddressRange& range, AccessMode mode)
 {
+    if (!stoppoints->CanInsert(range))
+        return false;
+
     beginInsertRows(QModelIndex(), stoppoints->Size(), stoppoints->Size());
     stoppoints->Add(range, mode);
-    Stoppoint* sp = stoppoints->Get(stoppoints->Size() - 1);
-    formattedRangeCache.push_back(formatAddressRange(sp->getRange()));
+    formattedRangeCache.push_back(formatAddressRange(range));
     StoppointAdded();
     endInsertRows();
+    return true;
 }
 
 void BaseStoppointListModel::Remove(int index)

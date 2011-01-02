@@ -46,7 +46,7 @@ public:
 
     // We have to proxy these operations because of annoying
     // QAbstractItemModel API obligations.
-    void Add(const AddressRange& range, AccessMode mode);
+    bool Add(const AddressRange& range, AccessMode mode);
     void Remove(int index);
     void Remove(Stoppoint* sp);
 

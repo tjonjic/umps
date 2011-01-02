@@ -31,6 +31,7 @@
 #include "qmps/stoppoint_list_model.h"
 #include "qmps/hex_view.h"
 
+class QAction;
 class QListView;
 class DebugSession;
 class QItemSelection;
@@ -44,16 +45,17 @@ class TraceBrowser : public QWidget {
     Q_OBJECT
 
 public:
-    TraceBrowser(QWidget* parent = 0);
+    TraceBrowser(QAction* insertAction, QAction* removeAction, QWidget* parent = 0);
     ~TraceBrowser();
 
-    void AddTracepoint(Word start, Word end);
+    bool AddTracepoint(Word start, Word end);
 
 private Q_SLOTS:
     void onMachineStarted();
     void onMachineAboutToBeHalted();
 
     void onTracepointAdded();
+    void removeTracepoint();
     void onSelectionChanged(const QItemSelection&);
     void onDelegateTypeChanged(int index);
     void refreshView();

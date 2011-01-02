@@ -464,7 +464,7 @@ QWidget* MonitorWindow::createMemoryTab()
 
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(suspectListView);
-    traceBrowser = new TraceBrowser;
+    traceBrowser = new TraceBrowser(addTraceAction, removeTraceAction);
     splitter->addWidget(traceBrowser);
 
     return splitter;
@@ -738,9 +738,8 @@ void MonitorWindow::onAddBreakpoint()
 void MonitorWindow::onRemoveBreakpoint()
 {
     QModelIndexList idx = breakpointListView->selectionModel()->selectedRows();
-    if (idx.isEmpty())
-        return;
-    breakpointListModel->Remove(idx.first().row());
+    if (!idx.isEmpty())
+        breakpointListModel->Remove(idx.first().row());
 }
 
 void MonitorWindow::onAddSuspect()
@@ -748,25 +747,32 @@ void MonitorWindow::onAddSuspect()
     AddSuspectDialog dialog;
     if (dialog.exec() == QDialog::Accepted) {
         AddressRange r(dialog.getASID(), dialog.getStartAddress(), dialog.getEndAddress());
-        suspectListModel->Add(r, AM_WRITE);
+        if (!suspectListModel->Add(r, AM_WRITE)) {
+            QMessageBox::warning(this, "Warning",
+                                 "<b>Could not insert suspect range:</b> "
+                                 "it overlaps with an already inserted range");
+        }
     }
 }
 
 void MonitorWindow::onRemoveSuspect()
 {
     QModelIndexList idx = suspectListView->selectionModel()->selectedRows();
-    if (idx.isEmpty())
-        return;
-    suspectListModel->Remove(idx.first().row());
+    if (!idx.isEmpty())
+        suspectListModel->Remove(idx.first().row());
 }
 
 void MonitorWindow::onAddTracepoint()
 {
     AddTracepointDialog dialog;
-    if (dialog.exec() == QDialog::Accepted) {
-        traceBrowser->AddTracepoint(dialog.getStartAddress(), dialog.getEndAddress());
-    }
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    if (!traceBrowser->AddTracepoint(dialog.getStartAddress(), dialog.getEndAddress()))
+        QMessageBox::warning(this, "Warning",
+                             "<b>Could not insert traced range:</b> "
+                             "it overlaps with an already inserted range");
 }
+
 
 StatusDisplay::StatusDisplay(QWidget* parent)
     : QWidget(parent)

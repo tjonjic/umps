@@ -133,6 +133,7 @@ public:
 
     Stoppoint* Find(Word asid, Word addr);
 
+    bool CanInsert(const AddressRange& range) const;
     bool Add(const AddressRange& range, AccessMode mode);
     void Remove(size_t index);
 

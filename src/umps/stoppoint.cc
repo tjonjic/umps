@@ -44,13 +44,19 @@ Stoppoint* StoppointSet::Find(Word asid, Word addr)
     return (it != addressMap.end()) ? it->second : NULL;
 }
 
+bool StoppointSet::CanInsert(const AddressRange& range) const
+{
+    foreach (Stoppoint::Ptr p, points)
+        if (p->getRange().Overlaps(range))
+            return false;
+    return true;
+}
+
 bool StoppointSet::Add(const AddressRange& range, AccessMode mode)
 {
     // Check for collisions
-    foreach (Stoppoint::Ptr p, points) {
-        if (p->getRange().Overlaps(range))
-            return false;
-    }
+    if (!CanInsert(range))
+        return false;
 
     // No overlap: safe to add
     Stoppoint* p = new Stoppoint(nextId++, range, mode);

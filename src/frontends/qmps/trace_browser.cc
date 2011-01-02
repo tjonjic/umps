@@ -24,6 +24,7 @@
 #include <cctype>
 #include <boost/bind.hpp>
 
+#include <QAction>
 #include <QtEndian>
 #include <QGridLayout>
 #include <QSplitter>
@@ -41,7 +42,8 @@
 #include "qmps/hex_view.h"
 #include "qmps/trace_browser_priv.h"
 
-TraceBrowser::TraceBrowser(QWidget* parent)
+TraceBrowser::TraceBrowser(QAction* insertTraceAct, QAction* removeTraceAct,
+                           QWidget* parent)
     : QWidget(parent),
       dbgSession(Appl()->getDebugSession())
 {
@@ -75,6 +77,10 @@ TraceBrowser::TraceBrowser(QWidget* parent)
     delegateTypeCombo->setEnabled(false);
 
     tplView = new QListView;
+    tplView->setContextMenuPolicy(Qt::ActionsContextMenu);
+    tplView->addAction(insertTraceAct);
+    tplView->addAction(removeTraceAct);
+    connect(removeTraceAct, SIGNAL(triggered()), this, SLOT(removeTracepoint()));
 
     splitter = new QSplitter;
     splitter->addWidget(tplView);
@@ -100,10 +106,10 @@ TraceBrowser::TraceBrowser(QWidget* parent)
 
 TraceBrowser::~TraceBrowser() {}
 
-void TraceBrowser::AddTracepoint(Word start, Word end)
+bool TraceBrowser::AddTracepoint(Word start, Word end)
 {
-    assert(tplModel);
-    tplModel->Add(AddressRange(MachineConfig::MAX_ASID, start, end), AM_WRITE);
+    assert(tplModel.get());
+    return tplModel->Add(AddressRange(MachineConfig::MAX_ASID, start, end), AM_WRITE);
 }
 
 void TraceBrowser::onMachineStarted()
@@ -196,6 +202,13 @@ void TraceBrowser::onTracepointAdded()
         tplView->setCurrentIndex(tplModel->index(0, 0));
 }
 
+void TraceBrowser::removeTracepoint()
+{
+    QModelIndexList idx = tplView->selectionModel()->selectedRows();
+    if (!idx.isEmpty())
+        tplModel->Remove(idx.first().row());
+}
+
 QWidget* TraceBrowser::createHexView(Word start, Word end, bool nativeOrder)
 {
     HexView* hexView = new HexView(start, end);
@@ -209,7 +222,6 @@ TracepointListModel::TracepointListModel(StoppointSet* spSet, QObject* parent)
       dirtySet(spSet->Size(), false)
 {
     //onHitConnection = spSet->SignalHit.connect(sigc::mem_fun(*this, &TracepointListModel::onHit));
-    //
     RegisterSigc(spSet->SignalHit.connect(sigc::mem_fun(*this, &TracepointListModel::onHit)));
 }
 
@@ -217,6 +229,9 @@ QVariant TracepointListModel::headerData(int section,
                                          Qt::Orientation orientation,
                                          int role) const
 {
+    UNUSED_ARG(section);
+    UNUSED_ARG(orientation);
+    UNUSED_ARG(role);
     return QVariant();
 }
 
@@ -224,7 +239,7 @@ QVariant TracepointListModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
-    if (index.column() > 0 || index.row() >= stoppoints->Size())
+    if (index.column() > 0 || (size_t) index.row() >= stoppoints->Size())
         return QVariant();
 
     if (role == Qt::DisplayRole) {
