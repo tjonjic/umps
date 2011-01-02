@@ -21,16 +21,16 @@
 
 #include "qmps/add_tracepoint_dialog.h"
 
-#include <QtDebug>
-
 #include <QGridLayout>
 #include <QLabel>
+#include <QFrame>
 #include <QDialogButtonBox>
 #include <QTreeView>
 #include <QFontMetrics>
 #include <QItemSelectionModel>
 #include <QPushButton>
 
+#include "umps/machine_config.h"
 #include "umps/symbol_table.h"
 #include "qmps/application.h"
 #include "qmps/address_line_edit.h"
@@ -44,45 +44,66 @@ AddTracepointDialog::AddTracepointDialog(QWidget* parent)
     layout->setColumnStretch(1, 1);
     layout->setColumnStretch(4, 1);
 
-    layout->addWidget(new QLabel("Start:"), 0, 0);
+    int gridRow = 0;
+
+    layout->addWidget(new QLabel("Start:"), gridRow, 0);
     startAddressEdit = new AddressLineEdit;
     startAddressEdit->setMinimumWidth(startAddressEdit->fontMetrics().width("0xdead.beef__"));
-    layout->addWidget(startAddressEdit, 0, 1);
+    layout->addWidget(startAddressEdit, gridRow, 1);
+    connect(startAddressEdit, SIGNAL(textChanged(const QString&)), this, SLOT(validate()));
 
     layout->setColumnMinimumWidth(2, 12);
 
-    layout->addWidget(new QLabel("End:"), 0, 3);
+    layout->addWidget(new QLabel("End:"), gridRow, 3);
     endAddressEdit = new AddressLineEdit;
     endAddressEdit->setMinimumWidth(endAddressEdit->fontMetrics().width("0xdead.beef__"));
-    layout->addWidget(endAddressEdit, 0, 4);
+    layout->addWidget(endAddressEdit, gridRow, 4);
+    connect(endAddressEdit, SIGNAL(textChanged(const QString&)), this, SLOT(validate()));
 
-    QAbstractTableModel* stabModel = new SymbolTableModel(this);
-    proxyModel = new SortFilterSymbolTableModel(Symbol::TYPE_OBJECT, this);
-    proxyModel->setSourceModel(stabModel);
+    gridRow++;
 
-    QTreeView* symbolTableView = new QTreeView;
-    symbolTableView->setSortingEnabled(true);
-    symbolTableView->sortByColumn(SymbolTableModel::COLUMN_SYMBOL, Qt::AscendingOrder);
-    symbolTableView->setAlternatingRowColors(true);
-    symbolTableView->setModel(proxyModel);
-    symbolTableView->resizeColumnToContents(SymbolTableModel::COLUMN_SYMBOL);
+    if (Appl()->getConfig()->getSymbolTableASID() == MachineConfig::MAX_ASID) {
+        QAbstractTableModel* stabModel = new SymbolTableModel(this);
+        proxyModel = new SortFilterSymbolTableModel(Symbol::TYPE_OBJECT, this);
+        proxyModel->setSourceModel(stabModel);
 
-    connect(symbolTableView->selectionModel(),
-            SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
-            this,
-            SLOT(onSelectionChanged(const QItemSelection&)));
+        QTreeView* symbolTableView = new QTreeView;
+        symbolTableView->setSortingEnabled(true);
+        symbolTableView->sortByColumn(SymbolTableModel::COLUMN_SYMBOL, Qt::AscendingOrder);
+        symbolTableView->setAlternatingRowColors(true);
+        symbolTableView->setModel(proxyModel);
+        symbolTableView->resizeColumnToContents(SymbolTableModel::COLUMN_SYMBOL);
 
-    layout->addWidget(symbolTableView, 1, 0, 1, 5);
+        connect(symbolTableView->selectionModel(),
+                SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)),
+                this,
+                SLOT(onSelectionChanged(const QItemSelection&)));
+
+        layout->addWidget(symbolTableView, gridRow++, 0, 1, 5);
+
+        // Some sensible initial size since we're showing a symbol table
+        resize(kInitialWidth, kInitialHeight);
+    }
+
+    layout->addWidget(inputErrorLabel = new QLabel, gridRow++, 0, 1, 5);
+    QPalette pError = inputErrorLabel->palette();
+    pError.setColor(inputErrorLabel->foregroundRole(), Qt::red);
+    inputErrorLabel->setPalette(pError);
+
+    QFrame* separator = new QFrame;
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    layout->addWidget(separator, gridRow++, 0, 1, 5);
 
     QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                        QDialogButtonBox::Cancel);
+    okButton = buttonBox->button(QDialogButtonBox::Ok);
 
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(buttonBox, SIGNAL(rejected()), this, SLOT(reject()));
-    layout->addWidget(buttonBox, 2, 0, 1, 5);
+    layout->addWidget(buttonBox, gridRow, 0, 1, 5);
 
     setWindowTitle("Add Traced Region");
-    resize(kInitialWidth, kInitialHeight);
 }
 
 Word AddTracepointDialog::getStartAddress() const
@@ -93,6 +114,27 @@ Word AddTracepointDialog::getStartAddress() const
 Word AddTracepointDialog::getEndAddress() const
 {
     return endAddressEdit->getAddress();
+}
+
+void AddTracepointDialog::validate()
+{
+    Word s = startAddressEdit->getAddress();
+    Word e = endAddressEdit->getAddress();
+
+    if (s > e) {
+        okButton->setEnabled(false);
+        inputErrorLabel->setText("Start address must not be higher than end address");
+        return;
+    }
+    if (((e - s) >> 2) + 1 > kMaxTracedRangeSize) {
+        okButton->setEnabled(false);
+        inputErrorLabel->setText(QString("Range size must not exceed %1 bytes")
+                                 .arg(kMaxTracedRangeSize * WS));
+        return;
+    }
+
+    okButton->setEnabled(true);
+    inputErrorLabel->setText("");
 }
 
 void AddTracepointDialog::onSelectionChanged(const QItemSelection& selected)

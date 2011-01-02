@@ -30,11 +30,15 @@ class AddressLineEdit;
 class SymbolTable;
 class SortFilterSymbolTableModel;
 class QItemSelection;
+class QLabel;
+class QPushButton;
 
 class AddTracepointDialog : public QDialog {
     Q_OBJECT
 
 public:
+    static const Word kMaxTracedRangeSize = 1025;
+
     AddTracepointDialog(QWidget* parent = 0);
 
     Word getStartAddress() const;
@@ -50,7 +54,11 @@ private:
     const SymbolTable* const stab;
     SortFilterSymbolTableModel* proxyModel;
 
+    QLabel* inputErrorLabel;
+    QPushButton* okButton;
+
 private Q_SLOTS:
+    void validate();
     void onSelectionChanged(const QItemSelection& selected);
 };
 
