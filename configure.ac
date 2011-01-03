@@ -57,6 +57,8 @@ AC_CHECK_LIB([elf], [elf_version], [],
 
 BOOST_REQUIRE([1.34])
 
+AT_WITH_QT([], [+no_keywords])
+
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h libelf.h stdint.h stdlib.h string.h strings.h sys/ioctl.h sys/socket.h unistd.h])
@@ -132,17 +134,17 @@ ARUMPS=${CROSSBIN}$ARUMPS}
 LDUMPS=${CROSSBIN}${LDUMPS}
 
 # We have to setup example's Makefiles
-for i in `find ./*example* -name Makefile.mod`
-do
-	rm -rf `dirname $i`/Makefile
-	sed 	-e s%LD_AOUT_FLAGS%${LDAOUTSCRIPT}%g \
-		-e s%LD_CORE_FLAGS%${LDCORESCRIPT}%g \
-		-e s%GCC-UMPS%${GCCUMPS}%g \
-		-e s%LD-UMPS%${LDUMPS}%g \
-		-e s%AS-UMPS%${ASUMPS}%g \
-		-e s%PACKAGENAME%${PACKAGE_NAME}%g \
-		$i >> `dirname $i`/Makefile
-done
+dnl for i in `find ./*example* -name Makefile.mod`
+dnl do
+dnl 	rm -rf `dirname $i`/Makefile
+dnl 	sed 	-e s%LD_AOUT_FLAGS%${LDAOUTSCRIPT}%g \
+dnl 		-e s%LD_CORE_FLAGS%${LDCORESCRIPT}%g \
+dnl 		-e s%GCC-UMPS%${GCCUMPS}%g \
+dnl 		-e s%LD-UMPS%${LDUMPS}%g \
+dnl 		-e s%AS-UMPS%${ASUMPS}%g \
+dnl 		-e s%PACKAGENAME%${PACKAGE_NAME}%g \
+dnl 		$i >> `dirname $i`/Makefile
+dnl done
 	
 # Setting variable for @@ substitution in Makefile.am
 XGCC=${GCCUMPS}
@@ -156,8 +158,6 @@ AC_SUBST(LDCOREFLAGS)
 AC_SUBST(LDAOUTFLAGS)
 AC_SUBST(LDCORESCRIPT)
 AC_SUBST(LDAOUTSCRIPT)
-
-AT_WITH_QT([], [+no_keywords])
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
