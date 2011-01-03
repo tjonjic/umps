@@ -127,6 +127,14 @@ MonitorWindow::MonitorWindow()
 
 void MonitorWindow::closeEvent(QCloseEvent* event)
 {
+    for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; i++)
+        if (cpuWindows[i])
+            cpuWindows[i]->close();
+
+    for (unsigned int i = 0; i < N_DEV_PER_IL; i++)
+        if (terminalWindows[i])
+            terminalWindows[i]->close();
+
     Appl()->settings.setValue("MonitorWindow/ShowStopMask", viewStopMaskAction->isChecked());
     event->accept();
 }
@@ -700,11 +708,11 @@ void MonitorWindow::onMachineAboutToBeHalted()
 {
     for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; i++)
         if (cpuWindows[i])
-            delete cpuWindows[i].data();
+            cpuWindows[i]->close();
 
     for (unsigned int i = 0; i < N_DEV_PER_IL; i++)
         if (terminalWindows[i])
-            delete terminalWindows[i].data();
+            terminalWindows[i]->close();
 
     tabWidget->setTabEnabled(TAB_INDEX_CPU, false);
     tabWidget->setTabEnabled(TAB_INDEX_MEMORY, false);
