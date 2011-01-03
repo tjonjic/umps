@@ -128,3 +128,6 @@ umps2_LDADD = \
 	$(SIGCPP_LIBS)
 
 BUILT_SOURCES = $(umps2_moc_sources) qmps.qrc.cc
+
+EXTRA_DIST = qmps.qrc icons
+
