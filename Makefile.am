@@ -5,4 +5,4 @@ ACLOCAL_AMFLAGS = -I m4
 AM_CFLAGS = -Wall
 AM_CXXFLAGS = -Wall
 
-EXTRA_DIST = TODO examples
+EXTRA_DIST = NEWS TODO examples
