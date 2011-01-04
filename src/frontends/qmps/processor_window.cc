@@ -57,7 +57,6 @@ ProcessorWindow::ProcessorWindow(Processor* p,
     setWindowTitle(QString("uMPS: Processor %1").arg(cpu->getId()));
 
     createDockableWidgets();
-
     createMenu();
     createToolBar();
 
@@ -88,12 +87,19 @@ ProcessorWindow::ProcessorWindow(Processor* p,
 
     updateStatusInfo();
 
-    QString key = QString("CpuWindow%1/geometry").arg((quint32) cpu->getId());
+    QString key;
+
+    key = QString("CpuWindow%1/geometry").arg((quint32) cpu->getId());
     QVariant savedGeometry = Appl()->settings.value(key);
     if (savedGeometry.isValid())
         restoreGeometry(savedGeometry.toByteArray());
     else
         resize(kDefaultWidth, kDefaultHeight);
+
+    key = QString("CpuWindow%1/state").arg((quint32) cpu->getId());
+    QVariant savedState = Appl()->settings.value(key);
+    if (savedState.isValid())
+        restoreState(savedState.toByteArray());
 
     connect(dbgSession->getCpuStatusMap(), SIGNAL(Changed()),
             this, SLOT(updateStatusInfo()));
@@ -101,8 +107,10 @@ ProcessorWindow::ProcessorWindow(Processor* p,
 
 void ProcessorWindow::closeEvent(QCloseEvent* event)
 {
-    QString key = QString("CpuWindow%1/geometry").arg((quint32) cpu->getId());
-    Appl()->settings.setValue(key, saveGeometry());
+    Appl()->settings.setValue(QString("CpuWindow%1/geometry").arg((quint32) cpu->getId()),
+                              saveGeometry());
+    Appl()->settings.setValue(QString("CpuWindow%1/state").arg((quint32) cpu->getId()),
+                              saveState());
     event->accept();
 }
 
@@ -122,7 +130,8 @@ void ProcessorWindow::createMenu()
 
 void ProcessorWindow::createToolBar()
 {
-    QToolBar* toolBar = addToolBar("Toolbar");
+    QToolBar* toolBar = addToolBar("ToolBar");
+    toolBar->setObjectName("ToolBar");
     toolBar->addAction(dbgSession->debugContinueAction);
     toolBar->addAction(dbgSession->debugStepAction);
     toolBar->addAction(dbgSession->debugStopAction);
@@ -162,6 +171,7 @@ QLayout* ProcessorWindow::createInstrPanel()
 void ProcessorWindow::createDockableWidgets()
 {
     regView = new RegisterSetWidget(cpu);
+    regView->setObjectName("RegisterSetWidget");
     addDockWidget(Qt::BottomDockWidgetArea, regView);
 }
 
