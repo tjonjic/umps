@@ -23,7 +23,6 @@
 #define QMPS_HEX_VIEW_H
 
 #include <QPlainTextEdit>
-#include <QPoint>
 
 #include "umps/arch.h"
 #include "umps/stoppoint.h"
@@ -62,7 +61,7 @@ protected:
 
 private Q_SLOTS:
     void updateMargin(const QRect& rect, int dy);
-    void highlightWord();
+    void onCursorPositionChanged();
 
 private:
     enum {
@@ -77,22 +76,32 @@ private:
     static const unsigned int kCharsPerRow = kWordsPerRow * kCharsPerWord;
     static const unsigned int kHorizontalSpacing = 1;
 
-    static Word extractByte(Word hostWord, unsigned int i);
+    static const unsigned int kInvalidLocationChar = 0x2592;
 
-    unsigned int currentWord() const;
-    unsigned int currentByte() const;
-    unsigned int currentNibble() const;
+    unsigned int currentWord(const QTextCursor& cursor = QTextCursor()) const;
+    unsigned int currentByte(const QTextCursor& cursor = QTextCursor()) const;
+    unsigned int currentNibble(const QTextCursor& cursor = QTextCursor()) const;
+
+    unsigned char byteValue(unsigned int word, unsigned int byte) const;
+    Word dataAtCursor() const;
 
     void moveCursor(QTextCursor::MoveOperation operation, int n = 1);
+    void setPoint(unsigned int word,
+                  unsigned int byte = 0,
+                  unsigned int nibble = 0);
 
     void paintMargin(QPaintEvent* event);
+    void highlightWord();
 
     friend class HexViewMargin;
 
-    Word start, end;
-    QPoint cursorPos;
+    const Word start;
+    const Word end;
+    const Word length;
 
     bool revByteOrder;
+
+    const QString invalidByteRepr;
 
     HexViewMargin* margin;
 };

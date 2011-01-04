@@ -69,6 +69,7 @@ public:
     unsigned int getActiveBreakpoint(unsigned int cpuId) const;
 
     bool ReadMemory(Word physAddr, Word* data);
+    bool WriteMemory(Word paddr, Word data);
 
     void busAccessHandler(Word pAddr, Word access, Processor* cpu);
 

@@ -20,10 +20,13 @@
  */
 
 #include "qmps/hex_view.h"
-#include <QtDebug>
+
+#include <algorithm>
 
 #include <QTextBlock>
 #include <QPainter>
+#include <QScrollBar>
+#include <QMessageBox>
 
 #include "umps/types.h"
 #include "umps/arch.h"
@@ -38,6 +41,10 @@ HexView::HexView(Word start, Word end, QWidget* parent)
     : QPlainTextEdit(parent),
       start(start),
       end(end),
+      length(((end - start) >> 2) + 1),
+      invalidByteRepr(QString("%1%2")
+                      .arg(QChar(kInvalidLocationChar))
+                      .arg(QChar(kInvalidLocationChar))),
       margin(new HexViewMargin(this))
 {
     QFont font = Appl()->getMonospaceFont();
@@ -55,12 +62,10 @@ HexView::HexView(Word start, Word end, QWidget* parent)
     viewport()->setCursor(Qt::ArrowCursor);
 
     Refresh();
-    QTextCursor cursor = textCursor();
-    cursor.setPosition(4);
-    setTextCursor(cursor);
-
-    connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(highlightWord()));
+    moveCursor(QTextCursor::Start);
     highlightWord();
+
+    connect(this, SIGNAL(cursorPositionChanged()), this, SLOT(onCursorPositionChanged()));
 }
 
 void HexView::setReversedByteOrder(bool setting)
@@ -73,34 +78,48 @@ void HexView::setReversedByteOrder(bool setting)
 
 void HexView::Refresh()
 {
+    int savedPosition = textCursor().position();
+    int hScrollValue = horizontalScrollBar()->value();
+    int vScrollValue = verticalScrollBar()->value();
+
+    Machine* m = debugSession->getMachine();
+
     QString buf;
-
-    bool first = true;
-
-    Machine* m = Appl()->getDebugSession()->getMachine();
+    buf.reserve(length * kCharsPerWord);
 
     for (Word addr = start; addr <= end; addr += WS) {
         unsigned int wi = (addr - start) >> 2;
-        if (!first && (wi % kWordsPerRow == 0))
+        if (wi && !(wi % kWordsPerRow))
             buf += '\n';
-        first = false;
 
-        Word value;
-        m->ReadMemory(addr, &value);
-
-        for (unsigned int bi = 0; bi < WS; bi++) {
-            if (bi > 0 || wi % kWordsPerRow != 0)
-                buf += ' ';
-            unsigned int byteVal;
-            if (revByteOrder)
-                byteVal = ((unsigned char *) &value)[WS - bi - 1];
-            else
-                byteVal = ((unsigned char *) &value)[bi];
-            buf += QString("%1").arg(byteVal, 2, 16, QLatin1Char('0'));
+        Word data;
+        if (m->ReadMemory(addr, &data)) {
+            for (unsigned int bi = 0; bi < WS; bi++) {
+                if (bi > 0 || wi % kWordsPerRow)
+                    buf += ' ';
+                buf += invalidByteRepr;
+            }
+        } else {
+            for (unsigned int bi = 0; bi < WS; bi++) {
+                if (bi > 0 || wi % kWordsPerRow)
+                    buf += ' ';
+                unsigned int byteVal;
+                if (revByteOrder)
+                    byteVal = ((unsigned char *) &data)[WS - bi - 1];
+                else
+                    byteVal = ((unsigned char *) &data)[bi];
+                buf += QString("%1").arg(byteVal, 2, 16, QLatin1Char('0'));
+            }
         }
     }
 
     setPlainText(buf);
+
+    QTextCursor cursor = textCursor();
+    cursor.setPosition(savedPosition);
+    setTextCursor(cursor);
+    horizontalScrollBar()->setValue(hScrollValue);
+    verticalScrollBar()->setValue(vScrollValue);
 }
 
 void HexView::resizeEvent(QResizeEvent* event)
@@ -124,50 +143,79 @@ void HexView::insertFromMimeData(const QMimeData* source)
 
 void HexView::keyPressEvent(QKeyEvent* event)
 {
-    unsigned int colType = currentNibble();
-
-    // Ugly defensive hack, yes.
-    if (colType == COL_SPACING) {
-        moveCursor(QTextCursor::Start);
-        return;
-    }
-
     switch (event->key()) {
     case Qt::Key_Left:
-        if (colType == COL_LO_NIBBLE)
-            moveCursor(QTextCursor::Left);
-        else if (currentByte() != 0)
-            moveCursor(QTextCursor::Left, 1 + kHorizontalSpacing);
+        if (event->modifiers() & Qt::ControlModifier) {
+            setPoint(currentWord() - 1, currentByte(), currentNibble());
+        } else {
+            if (currentNibble() == COL_LO_NIBBLE)
+                moveCursor(QTextCursor::Left);
+            else
+                moveCursor(QTextCursor::Left, 1 + kHorizontalSpacing);
+        }
         break;
 
     case Qt::Key_Right:
-        if (colType == COL_HI_NIBBLE)
-            moveCursor(QTextCursor::Right);
-        else if (currentByte() != kWordsPerRow * WS - 1)
-            moveCursor(QTextCursor::Right, 1 + kHorizontalSpacing);
+        if (event->modifiers() & Qt::ControlModifier) {
+            setPoint(currentWord() + 1, currentByte(), currentNibble());
+        } else {
+            if (currentNibble() == COL_HI_NIBBLE)
+                moveCursor(QTextCursor::Right);
+            else
+                moveCursor(QTextCursor::Right, 1 + kHorizontalSpacing);
+        }
         break;
 
     case Qt::Key_Up:
-        moveCursor(QTextCursor::Up);
-        break;
-
     case Qt::Key_Down:
-        moveCursor(QTextCursor::Down);
+    case Qt::Key_PageUp:
+    case Qt::Key_PageDown:
+    case Qt::Key_Home:
+    case Qt::Key_End:
+        QPlainTextEdit::keyPressEvent(event);
         break;
 
     default:
+        if (event->text().isEmpty()) {
+            event->ignore();
+            return;
+        }
+        QString digit = event->text().left(1).toLower();
+        bool isHex;
+        digit.toUInt(&isHex, 16);
+        if (!isHex) {
+            event->ignore();
+            return;
+        }
+
+        unsigned int nibble = currentNibble();
+        QTextCursor cursor = textCursor();
+        int cp = cursor.position();
+        cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor);
+        cursor.insertText(digit);
+        cursor.setPosition(cp);
+        setTextCursor(cursor);
+
+        Word paddr = start + currentWord() * WS;
+        if (debugSession->getMachine()->WriteMemory(paddr, dataAtCursor())) {
+            QMessageBox::warning(this, "Warning",
+                                 QString("Could not write location %1").arg(FormatAddress(paddr)));
+            Refresh();
+        } else {
+            moveCursor(QTextCursor::Right, 1 + kHorizontalSpacing * nibble);
+        }
         break;
     }
 }
 
-// FIXME: implement this
 void HexView::mousePressEvent(QMouseEvent* event)
 {
     if (event->button() != Qt::LeftButton)
         return;
 
     QTextCursor cursor = cursorForPosition(event->pos());
-    qDebug() << "HexView::mousePressEvent()" << cursor.position();
+    setPoint(currentWord(cursor), currentByte(cursor),
+             std::min(currentNibble(cursor), (unsigned int) COL_LO_NIBBLE));
 }
 
 void HexView::updateMargin(const QRect& rect, int dy)
@@ -178,50 +226,78 @@ void HexView::updateMargin(const QRect& rect, int dy)
         margin->update(0, rect.y(), margin->width(), rect.height());
 }
 
-void HexView::highlightWord()
+void HexView::onCursorPositionChanged()
 {
-    QList<QTextEdit::ExtraSelection> extraSelections;
-    QTextEdit::ExtraSelection selection;
+    if (currentNibble() == COL_SPACING)
+        setPoint(currentWord());
 
-    QTextCursor cursor = textCursor();
-    cursor.clearSelection();
-
-    unsigned int bi = currentByte();
-    unsigned int ni = currentNibble();
-
-    cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor,
-                        (bi % WS) * N_COLS_PER_BYTE + ni);
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor,
-                        kCharsPerWord - 1);
-
-    selection.cursor = cursor;
-    selection.format.setBackground(palette().highlight());
-    selection.format.setForeground(palette().highlightedText());
-
-    extraSelections.append(selection);
-    setExtraSelections(extraSelections);
+    highlightWord();
 }
 
-inline unsigned int HexView::currentWord() const
+unsigned int HexView::currentWord(const QTextCursor& cursor) const
 {
-    return textCursor().position() / kCharsPerWord;
+    if (cursor.isNull())
+        return textCursor().position() / kCharsPerWord;
+    else
+        return cursor.position() / kCharsPerWord;
 }
 
-inline unsigned int HexView::currentByte() const
+unsigned int HexView::currentByte(const QTextCursor& cursor) const
 {
-    return (textCursor().position() / N_COLS_PER_BYTE) % (kWordsPerRow * WS);
+    if (cursor.isNull())
+        return (textCursor().position() / N_COLS_PER_BYTE) % WS;
+    else
+        return (cursor.position() / N_COLS_PER_BYTE) % WS;
 }
 
-inline unsigned int HexView::currentNibble() const
+unsigned int HexView::currentNibble(const QTextCursor& cursor) const
 {
-    return textCursor().position() % N_COLS_PER_BYTE;
+    if (cursor.isNull())
+        return textCursor().position() % N_COLS_PER_BYTE;
+    else
+        return cursor.position() % N_COLS_PER_BYTE;
+}
+
+unsigned char HexView::byteValue(unsigned int word, unsigned int byte) const
+{
+    return toPlainText().mid(word * kCharsPerWord + N_COLS_PER_BYTE * byte, 2).toUInt(0, 16);
+}
+
+Word HexView::dataAtCursor() const
+{
+    Word data;
+
+    for (unsigned int i = 0; i < WS; i++) {
+        if (revByteOrder)
+            ((unsigned char *) &data)[i] = byteValue(currentWord(), WS - i - 1);
+        else
+            ((unsigned char *) &data)[i] = byteValue(currentWord(), i);
+    }
+
+    return data;
 }
 
 void HexView::moveCursor(QTextCursor::MoveOperation operation, int n)
 {
     QTextCursor cursor = textCursor();
-    cursor.movePosition(operation, QTextCursor::MoveAnchor, n);
-    setTextCursor(cursor);
+    if (cursor.movePosition(operation, QTextCursor::MoveAnchor, n))
+        setTextCursor(cursor);
+}
+
+void HexView::setPoint(unsigned int word, unsigned int byte, unsigned int nibble)
+{
+    assert(byte < WS);
+    assert(nibble <= 1);
+
+    if (word >= length)
+        return;
+
+    if (nibble > COL_LO_NIBBLE)
+        nibble = COL_LO_NIBBLE;
+
+    QTextCursor c = textCursor();
+    c.setPosition(word * kCharsPerWord + byte * N_COLS_PER_BYTE + nibble);
+    setTextCursor(c);
 }
 
 void HexView::paintMargin(QPaintEvent* event)
@@ -259,6 +335,28 @@ void HexView::paintMargin(QPaintEvent* event)
         addr += WS * kWordsPerRow;
     }
 }
+
+void HexView::highlightWord()
+{
+    QList<QTextEdit::ExtraSelection> extraSelections;
+    QTextEdit::ExtraSelection selection;
+
+    QTextCursor cursor = textCursor();
+    cursor.clearSelection();
+
+    cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor,
+                        currentByte() * N_COLS_PER_BYTE + currentNibble());
+    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor,
+                        kCharsPerWord - 1);
+
+    selection.cursor = cursor;
+    selection.format.setBackground(palette().highlight());
+    selection.format.setForeground(palette().highlightedText());
+
+    extraSelections.append(selection);
+    setExtraSelections(extraSelections);
+}
+
 
 HexViewMargin::HexViewMargin(HexView* view)
     : QWidget(view),

@@ -203,3 +203,8 @@ bool Machine::ReadMemory(Word physAddr, Word* data)
 {
     return bus->WatchRead(physAddr, data);
 }
+
+bool Machine::WriteMemory(Word paddr, Word data)
+{
+    return bus->WatchWrite(paddr, data);
+}
