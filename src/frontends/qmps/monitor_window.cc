@@ -86,7 +86,12 @@ MonitorWindow::MonitorWindow()
       dbgSession(Appl()->getDebugSession())
 {
     setWindowTitle("uMPS");
-    resize(kDefaultWidth, kDefaultHeight);
+
+    QVariant savedGeometry = Appl()->settings.value("MonitorWindow/geometry");
+    if (savedGeometry.isValid())
+        restoreGeometry(savedGeometry.toByteArray());
+    else
+        resize(kDefaultWidth, kDefaultHeight);
 
     connect(Appl(), SIGNAL(MachineConfigChanged()), this, SLOT(onMachineConfigChanged()));
 
@@ -133,6 +138,7 @@ void MonitorWindow::closeEvent(QCloseEvent* event)
         if (terminalWindows[i])
             terminalWindows[i]->close();
 
+    Appl()->settings.setValue("MonitorWindow/geometry", saveGeometry());
     Appl()->settings.setValue("MonitorWindow/ShowStopMask", viewStopMaskAction->isChecked());
     event->accept();
 }
