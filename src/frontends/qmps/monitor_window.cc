@@ -120,8 +120,6 @@ MonitorWindow::MonitorWindow()
 
     setCentralWidget(centralWidget);
 
-    updateUISensitivity();
-
     configView = NULL;
 }
 
@@ -498,21 +496,6 @@ void MonitorWindow::updateRecentConfigList()
         loadRecentConfigActions[i]->setVisible(false);
         loadRecentConfigActions[i]->setData(QVariant());
     }
-}
-
-void MonitorWindow::updateUISensitivity()
-{
-#if 0
-    bool started = dbgSession->getStatus() != MS_HALTED;
-
-    tabWidget->setTabEnabled(TAB_INDEX_CPU, started);
-    tabWidget->setTabEnabled(TAB_INDEX_MEMORY, started);
-    tabWidget->setTabEnabled(TAB_INDEX_DEVICES, started);
-#endif
-}
-
-void MonitorWindow::updateActionSensitivity()
-{
 }
 
 bool MonitorWindow::discardMachineConfirmed()

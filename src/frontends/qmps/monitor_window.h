@@ -79,9 +79,6 @@ private:
 
     void updateRecentConfigList();
 
-    void updateUISensitivity();
-    void updateActionSensitivity();
-
     bool discardMachineConfirmed();
 
     DebugSession* const dbgSession;
