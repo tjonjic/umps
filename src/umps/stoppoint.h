@@ -136,6 +136,7 @@ public:
     bool CanInsert(const AddressRange& range) const;
     bool Add(const AddressRange& range, AccessMode mode);
     void Remove(size_t index);
+    void Clear();
 
     void SetEnabled(size_t index, bool setting);
 

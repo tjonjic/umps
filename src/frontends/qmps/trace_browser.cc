@@ -84,10 +84,9 @@ TraceBrowser::TraceBrowser(QAction* insertTraceAct, QAction* removeTraceAct,
 
     splitter = new QSplitter;
     splitter->addWidget(tplView);
-
     layout->addWidget(splitter, 1, 0, 1, 3);
 
-    placeholder = new QLabel(
+    QLabel* placeholder = new QLabel(
         QString("<i>No trace region selected "
                 "(use <b>Debug %1 Add Traced Region</b> to insert one)</i>").arg(QChar(0x2192)));
     placeholder->setWordWrap(true);
@@ -96,12 +95,12 @@ TraceBrowser::TraceBrowser(QAction* insertTraceAct, QAction* removeTraceAct,
 
     viewStack = new QStackedWidget;
     viewStack->addWidget(placeholder);
-
     splitter->addWidget(viewStack);
 
     connect(dbgSession, SIGNAL(MachineStarted()), this, SLOT(onMachineStarted()));
     connect(dbgSession, SIGNAL(MachineAboutToBeHalted()), this, SLOT(onMachineAboutToBeHalted()));
     connect(dbgSession, SIGNAL(DebugIterationCompleted()), this, SLOT(refreshView()));
+    connect(dbgSession, SIGNAL(MachineStopped()), this, SLOT(refreshView()));
 }
 
 TraceBrowser::~TraceBrowser() {}
@@ -133,14 +132,15 @@ void TraceBrowser::onMachineAboutToBeHalted()
 {
     for (ViewDelegateMap::iterator it = viewMap.begin(); it != viewMap.end(); ++it)
         delete it->second.widget;
-    viewMap.clear();
+
+    tplModel.reset();
 }
 
 void TraceBrowser::onSelectionChanged(const QItemSelection& selected)
 {
     QModelIndexList indexes = selected.indexes();
     if (!indexes.isEmpty()) {
-        Stoppoint* sp = dbgSession->getTracepoints()->Get(indexes[0].row());
+        Stoppoint* sp = selectedTracepoint();
         ViewDelegateMap::iterator it = viewMap.find(sp->getId());
         if (it == viewMap.end()) {
             const AddressRange& r = sp->getRange();
@@ -150,9 +150,21 @@ void TraceBrowser::onSelectionChanged(const QItemSelection& selected)
             viewMap[sp->getId()] = info;
             viewStack->setCurrentIndex(viewStack->addWidget(info.widget));
             delegateTypeCombo->setCurrentIndex(kDefaultViewDelegate);
-        } else {
-            viewStack->setCurrentWidget(it->second.widget);
+        } else if (it->second.widget.isNull()) {
+            const AddressRange& r = sp->getRange();
+            it->second.widget = delegateFactory[it->second.type].ctor(r.getStart(), r.getEnd());
+            viewStack->setCurrentIndex(viewStack->addWidget(it->second.widget));
             delegateTypeCombo->setCurrentIndex(it->second.type);
+        } else {
+            QWidget* widget = it->second.widget;
+            viewStack->setCurrentWidget(widget);
+            delegateTypeCombo->setCurrentIndex(it->second.type);
+            if (tplModel->IsDirty(indexes[0].row())) {
+                MemoryViewDelegate* d = dynamic_cast<MemoryViewDelegate*>(widget);
+                if (d)
+                    d->Refresh();
+                tplModel->ClearDirty(indexes[0].row());
+            }
         }
         delegateTypeCombo->setEnabled(true);
     } else {
@@ -180,12 +192,13 @@ void TraceBrowser::onDelegateTypeChanged(int index)
     Stoppoint* sp = selectedTracepoint();
     assert(sp != NULL);
 
-    const AddressRange& r = sp->getRange();
-    delete viewMap[sp->getId()].widget;
-    viewMap[sp->getId()].widget = delegateFactory[index].ctor(r.getStart(), r.getEnd());
-    viewMap[sp->getId()].type = index;
-
-    viewStack->setCurrentIndex(viewStack->addWidget(viewMap[sp->getId()].widget));
+    if (viewMap[sp->getId()].type != index) {
+        const AddressRange& r = sp->getRange();
+        delete viewMap[sp->getId()].widget;
+        viewMap[sp->getId()].widget = delegateFactory[index].ctor(r.getStart(), r.getEnd());
+        viewMap[sp->getId()].type = index;
+        viewStack->setCurrentIndex(viewStack->addWidget(viewMap[sp->getId()].widget));
+    }
 }
 
 Stoppoint* TraceBrowser::selectedTracepoint() const
@@ -204,9 +217,12 @@ void TraceBrowser::onTracepointAdded()
 
 void TraceBrowser::removeTracepoint()
 {
-    QModelIndexList idx = tplView->selectionModel()->selectedRows();
-    if (!idx.isEmpty())
-        tplModel->Remove(idx.first().row());
+    Stoppoint* sp = selectedTracepoint();
+    if (sp) {
+        delete viewMap[sp->getId()].widget;
+        viewMap.erase(sp->getId());
+        tplModel->Remove(sp);
+    }
 }
 
 QWidget* TraceBrowser::createHexView(Word start, Word end, bool nativeOrder)
@@ -221,7 +237,6 @@ TracepointListModel::TracepointListModel(StoppointSet* spSet, QObject* parent)
     : BaseStoppointListModel(spSet, parent),
       dirtySet(spSet->Size(), false)
 {
-    //onHitConnection = spSet->SignalHit.connect(sigc::mem_fun(*this, &TracepointListModel::onHit));
     RegisterSigc(spSet->SignalHit.connect(sigc::mem_fun(*this, &TracepointListModel::onHit)));
 }
 

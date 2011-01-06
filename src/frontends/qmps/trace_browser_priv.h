@@ -72,7 +72,9 @@ private:
     // world disconnections should work automagically via
     // sigc::trackable. It refuses to work, however, for some reason
     // or other. Sigh.
+#if 0
     sigc::connection onHitConnection;
+#endif
 };
 
 class AsciiView : public QPlainTextEdit,

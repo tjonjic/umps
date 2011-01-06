@@ -695,6 +695,11 @@ void MonitorWindow::onMachineStarted()
 
 void MonitorWindow::onMachineAboutToBeHalted()
 {
+    cpuListModel.reset();
+    breakpointListModel.reset();
+    suspectListModel.reset();
+    deviceTreeModel.reset();
+
     for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; i++)
         if (cpuWindows[i])
             cpuWindows[i]->close();

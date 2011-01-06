@@ -25,6 +25,7 @@
 #include <boost/function.hpp>
 
 #include <QWidget>
+#include <QPointer>
 
 #include "base/lang.h"
 #include "umps/types.h"
@@ -37,7 +38,6 @@ class DebugSession;
 class QItemSelection;
 class QComboBox;
 class QSplitter;
-class QLabel;
 class QStackedWidget;
 class TracepointListModel;
 
@@ -65,7 +65,7 @@ private:
 
     struct ViewDelegateInfo {
         int type;
-        QWidget* widget;
+        QPointer<QWidget> widget;
     };
 
     typedef boost::function<QWidget* (Word, Word)> DelegateFactoryFunc;
@@ -89,7 +89,6 @@ private:
     QSplitter* splitter;
     QListView* tplView;
     QStackedWidget* viewStack;
-    QLabel* placeholder;
 
     typedef std::map<unsigned int, ViewDelegateInfo> ViewDelegateMap;
     ViewDelegateMap viewMap;

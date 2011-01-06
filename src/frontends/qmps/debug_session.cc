@@ -167,9 +167,12 @@ void DebugSession::setStatus(_MachineStatus newStatus)
 
 void DebugSession::onMachineConfigChanged()
 {
-    if (Appl()->getConfig() != NULL) {
+    if (Appl()->getConfig() != NULL)
         startMachineAction->setEnabled(true);
-    }
+
+    breakpoints.Clear();
+    suspects.Clear();
+    tracepoints.Clear();
 }
 
 void DebugSession::onStartMachine()

@@ -82,6 +82,12 @@ void StoppointSet::Remove(size_t index)
     SignalStoppointRemoved(index);
 }
 
+void StoppointSet::Clear()
+{
+    addressMap.clear();
+    points.clear();
+}
+
 void StoppointSet::SetEnabled(size_t index, bool setting)
 {
     assert(index <= Size());
