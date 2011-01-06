@@ -30,7 +30,7 @@
 #include "umps/stoppoint.h"
 #include "qmps/cpu_status_map.h"
 
-enum _MachineStatus {
+enum MachineStatus {
     MS_HALTED,
     MS_RUNNING,
     MS_STOPPED
@@ -55,7 +55,7 @@ public:
 
     DebugSession();
 
-    _MachineStatus getStatus() const { return status; }
+    MachineStatus getStatus() const { return status; }
 
     bool IsStopped() const { return status == MS_STOPPED; }
     bool IsStoppedByUser() const { return stoppedByUser; }
@@ -101,13 +101,13 @@ Q_SIGNALS:
 
 private:
     void createActions();
-    void setStatus(_MachineStatus newStatus);
+    void setStatus(MachineStatus newStatus);
 
     void step(unsigned int steps);
     void runStepIteration();
     void runContIteration();
 
-    _MachineStatus status;
+    MachineStatus status;
     scoped_ptr<Machine> machine;
 
     scoped_ptr<SymbolTable> symbolTable;

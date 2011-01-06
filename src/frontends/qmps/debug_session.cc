@@ -85,6 +85,9 @@ void DebugSession::Halt()
     if (!IsStarted())
         return;
 
+    if (IsRunning())
+        timer->stop();
+
     Q_EMIT MachineAboutToBeHalted();
     machine.reset();
     symbolTable.reset();
@@ -157,7 +160,7 @@ void DebugSession::updateActionSensitivity()
     debugStopAction->setEnabled(running);
 }
 
-void DebugSession::setStatus(_MachineStatus newStatus)
+void DebugSession::setStatus(MachineStatus newStatus)
 {
     if (newStatus != status) {
         status = newStatus;
