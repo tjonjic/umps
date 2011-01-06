@@ -227,7 +227,7 @@ HIDDEN int elfConvert(const char *prgName, const char *fileName,
         expType = ET_EXEC;
 
     // open input file
-    if ((fd = open(fileName, O_RDONLY)) == EOF) {
+    if ((fd = open(fileName, O_RDONLY)) == -1) {
         fprintf(stderr, "%s : Error opening file %s : %s\n", prgName,
                 fileName, strerror(errno));
         ret = EXIT_FAILURE;
