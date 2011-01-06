@@ -131,7 +131,9 @@ void Machine::busAccessHandler(Word pAddr, Word access, Processor* cpu)
     case READ:
     case WRITE:
         if (stopMask & SC_SUSPECT) {
-            Stoppoint* suspect = suspects->Probe(MAXASID, pAddr, AM_WRITE, cpu);
+            Stoppoint* suspect = suspects->Probe(MAXASID, pAddr,
+                                                 (access == READ) ? AM_READ : AM_WRITE,
+                                                 cpu);
             if (suspect != NULL) {
                 pd[cpu->getId()].stopCause |= SC_SUSPECT;
                 pd[cpu->getId()].suspectId = suspect->getId();
@@ -197,6 +199,12 @@ unsigned int Machine::getActiveBreakpoint(unsigned int cpuId) const
 {
     assert(cpuId < config->getNumProcessors());
     return pd[cpuId].breakpointId;
+}
+
+unsigned int Machine::getActiveSuspect(unsigned int cpuId) const
+{
+    assert(cpuId < config->getNumProcessors());
+    return pd[cpuId].suspectId;
 }
 
 bool Machine::ReadMemory(Word physAddr, Word* data)

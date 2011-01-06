@@ -67,6 +67,7 @@ public:
 
     unsigned int getStopCause(unsigned int cpuId) const;
     unsigned int getActiveBreakpoint(unsigned int cpuId) const;
+    unsigned int getActiveSuspect(unsigned int cpuId) const;
 
     bool ReadMemory(Word physAddr, Word* data);
     bool WriteMemory(Word paddr, Word data);

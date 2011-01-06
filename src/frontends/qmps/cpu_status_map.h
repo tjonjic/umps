@@ -37,8 +37,6 @@ class CpuStatusMap : public QObject {
 public:
     CpuStatusMap(DebugSession* dbgSession);
 
-    const QString& operator[](unsigned int cpuId) const;
-
     const QString& getStatus(unsigned int cpuId) const;
     const QString& getLocation(unsigned int cpuId) const;
 
@@ -46,22 +44,20 @@ Q_SIGNALS:
     void Changed();
 
 private:
-    friend class DebugSession;
     struct StatusInfo {
         QString status;
         QString location;
     };
 
-    QString formatActiveCpuStatus(Processor* cpu);
-    void formatLocation(Processor* cpu);
+    void formatActiveCpuStatus(Processor* cpu);
+    void formatActiveCpuLocation(Processor* cpu);
 
     DebugSession* const dbgSession;
     Machine* const machine;
 
     static const char* const statusTemplates[];
-    std::vector<QString> statusMap;
 
-    std::vector<StatusInfo> statusMap_;
+    std::vector<StatusInfo> statusMap;
 
 private Q_SLOTS:
     void update();

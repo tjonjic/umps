@@ -32,8 +32,7 @@ CpuStatusMap::CpuStatusMap(DebugSession* dbgSession)
     : QObject(),
       dbgSession(dbgSession),
       machine(dbgSession->getMachine()),
-      statusMap(Appl()->getConfig()->getNumProcessors()),
-      statusMap_(Appl()->getConfig()->getNumProcessors())
+      statusMap(Appl()->getConfig()->getNumProcessors())
 {
     connect(dbgSession, SIGNAL(MachineStopped()), this, SLOT(update()));
     connect(dbgSession, SIGNAL(MachineRan()), this, SLOT(update()));
@@ -41,19 +40,14 @@ CpuStatusMap::CpuStatusMap(DebugSession* dbgSession)
     update();
 }
 
-const QString& CpuStatusMap::operator[](unsigned int cpuId) const
-{
-    return statusMap[cpuId];
-}
-
 const QString& CpuStatusMap::getStatus(unsigned int cpuId) const
 {
-    return statusMap[cpuId];
+    return statusMap[cpuId].status;
 }
 
 const QString& CpuStatusMap::getLocation(unsigned int cpuId) const
 {
-    return statusMap_[cpuId].location;
+    return statusMap[cpuId].location;
 }
 
 const char* const CpuStatusMap::statusTemplates[] = {
@@ -61,23 +55,22 @@ const char* const CpuStatusMap::statusTemplates[] = {
     "Stopped: User",
     "Stopped: Breakpoint(B%brkpt%)",
     "Stopped: User+Breakpoint(B%brkpt%)",
-    "Stopped: Suspect",
-    "Stopped: User+Suspect",
-    "Stopped: Breakpoint+Suspect",
-    "Stopped: User+Breakpoint(B%brkpt%)+Suspect",
+    "Stopped: Suspect(S%susp%)",
+    "Stopped: User+Suspect(S%susp%)",
+    "Stopped: Breakpoint(B%brkpt%)+Suspect(S%susp%)",
+    "Stopped: User+Breakpoint(B%brkpt%)+Suspect(S%susp%)",
     "Stopped: Exception(%excpt%)",
     "Stopped: User+Exception(%excpt%)",
-    "Stopped: Breakpoint+Exception(%excpt%)",
+    "Stopped: Breakpoint(B%brkpt%)+Exception(%excpt%)",
     "Stopped: User+Breakpoint(B%brkpt%)+Exception(%excpt%)",
-    "Stopped: Suspect+Exception(%excpt%)",
-    "Stopped: User+Suspect+Exception(%excpt%)",
-    "Stopped: Breakpoint+Suspect+Exception(%excpt%)",
-    "Stopped: User+Breakpoint(B%brkpt%)+Suspect+Exception(%excpt%)"
+    "Stopped: Suspect(S%susp%)+Exception(%excpt%)",
+    "Stopped: User+Suspect(S%susp%)+Exception(%excpt%)",
+    "Stopped: Breakpoint(B%brkpt%)+Suspect(S%susp%)+Exception(%excpt%)",
+    "Stopped: User+Breakpoint(B%brkpt%)+Suspect(S%susp%)+Exception(%excpt%)"
 };
 
 void CpuStatusMap::update()
 {
-    Machine* machine = dbgSession->getMachine();
     MachineConfig* config = Appl()->getConfig();
 
     for (unsigned int cpuId = 0; cpuId < config->getNumProcessors(); cpuId++) {
@@ -85,17 +78,17 @@ void CpuStatusMap::update()
 
         switch (cpu->getStatus()) {
         case PS_HALTED:
-            statusMap[cpuId] = "Halted";
+            statusMap[cpuId].status = "Halted";
             break;
         case PS_WAITING:
-            statusMap[cpuId] = "Waiting";
+            statusMap[cpuId].status = "Waiting";
             break;
         case PS_RUNNING:
-            statusMap[cpuId] = formatActiveCpuStatus(cpu);
-            formatLocation(cpu);
+            formatActiveCpuStatus(cpu);
+            formatActiveCpuLocation(cpu);
             break;
         default:
-            statusMap[cpuId] = "Unknown";
+            statusMap[cpuId].status = "Unknown";
             break;
         }
     }
@@ -103,33 +96,40 @@ void CpuStatusMap::update()
     Q_EMIT Changed();
 }
 
-QString CpuStatusMap::formatActiveCpuStatus(Processor* cpu)
+void CpuStatusMap::formatActiveCpuStatus(Processor* cpu)
 {
+    unsigned int stopCause;
+    QString str;
+
     switch (dbgSession->getStatus()) {
-    case MS_STOPPED: {
-        unsigned int stopCause = machine->getStopCause(cpu->getId());
+    case MS_STOPPED:
+        stopCause = machine->getStopCause(cpu->getId());
         if (dbgSession->IsStoppedByUser())
             stopCause |= SC_USER;
 
-        QString msg = statusTemplates[stopCause];
+        str = statusTemplates[stopCause];
         if (stopCause & SC_BREAKPOINT)
-            msg.replace("%brkpt%", QString::number(machine->getActiveBreakpoint(cpu->getId())));
+            str.replace("%brkpt%", QString::number(machine->getActiveBreakpoint(cpu->getId())));
+        if (stopCause & SC_SUSPECT)
+            str.replace("%susp%", QString::number(machine->getActiveSuspect(cpu->getId())));
         if (stopCause & SC_EXCEPTION)
-            msg.replace("%excpt%", cpu->getExcCauseStr());
+            str.replace("%excpt%", cpu->getExcCauseStr());
 
-        return msg;
-    }
+        statusMap[cpu->getId()].status = str;
+        break;
 
     case MS_RUNNING:
-        return "Running";
+        statusMap[cpu->getId()].status = "Running";
+        break;
 
     default:
         // We should never get here!
-        return QString();
+        statusMap[cpu->getId()].status = QString();
+        break;
     }
 }
 
-void CpuStatusMap::formatLocation(Processor* cpu)
+void CpuStatusMap::formatActiveCpuLocation(Processor* cpu)
 {
     SymbolTable* stab = dbgSession->getSymbolTable();
 
@@ -137,7 +137,7 @@ void CpuStatusMap::formatLocation(Processor* cpu)
     SWord offset;
     const char* symbol = GetSymbolicAddress(stab, asid, cpu->getPC(), true, &offset);
     if (symbol)
-        statusMap_[cpu->getId()].location = QString("%1+0x%2").arg(symbol).arg((quint32) offset, 0, 16);
+        statusMap[cpu->getId()].location = QString("%1+0x%2").arg(symbol).arg(offset, 0, 16);
     else
-        statusMap_[cpu->getId()].location = FormatAddress(cpu->getPC());
+        statusMap[cpu->getId()].location = FormatAddress(cpu->getPC());
 }
