@@ -1,3 +1,9 @@
+1.9.2
+=====
+
+* Make more user UI customizations persistent
+* Add editing support to the hex memory view
+
 1.9.1
 =====
 
