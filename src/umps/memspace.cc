@@ -47,77 +47,60 @@ HIDDEN Word * emptyFrameSignal(const char * fName, Word * sizep);
 
 // This method creates a RamSpace object of a given size (in words) and
 // fills it with core file contents if needed
-RamSpace::RamSpace(Word siz, const char * fName)
+RamSpace::RamSpace(Word siz, const char* fName)
+    : memPtr(new Word[siz]),
+      size(siz)
 {
-    FILE* cFile = NULL;
-    Word tag;
-    unsigned int i;
+    if (fName != NULL && *fName) {
+        FILE* cFile;
+        if ((cFile = fopen(fName, "r")) == NULL)
+            throw FileError(fName);
 
-    size = siz;
-    memPtr = new Word [siz];
-
-    if (fName != NULL && !SAMESTRING(fName, EMPTYSTR)) {
-        // tries to load core file from disk
-        if ((cFile = fopen(fName, "r")) == NULL ||
-            fread((void *) &tag, WORDLEN, 1, cFile) != 1 ||
+        // Check validity
+        Word tag;
+        if (fread((void *) &tag, WORDLEN, 1, cFile) != 1 ||
             tag != COREFILEID)
         {
-            if (cFile != NULL)
-                fclose(cFile);
-            throw RuntimeError(boost::str(boost::format("Invalid or missing core file `%s'") %fName));
+            fclose(cFile);
+            throw InvalidCoreFileError(fName, "Invalid core file");
         }
 
-        fread((void *) memPtr, WORDLEN, size, cFile);
+        fread((void *) memPtr.get(), WORDLEN, size, cFile);
         if (!feof(cFile)) {
-            // core too large: it did not fit in memory
-            ShowAlert("Core file did not fit in memory: too large",
-                      "Increase setup RAM size and reset the system", EMPTYSTR);
+            fclose(cFile);
+            throw CoreFileOverflow();
         }
-    }
-    if (cFile != NULL)
+
         fclose(cFile);
+    }
 }
-
-// This method deletes the contents of a RamSpace object
-RamSpace::~RamSpace()
-{
-    delete memPtr;
-}
-
 
 // This method returns the value of Word at ofs address
 // (SystemBus must assure that ofs is in range)
-Word RamSpace::MemRead(Word ofs)
+Word RamSpace::MemRead(Word ofs) const
 {
-	if (ofs < size)
-		return(memPtr[ofs]);
-	else
-	{
-		Panic("Illegal memory access in RamSpace::MemRead()");
-		return(MAXWORDVAL);
-	}
+    assert(ofs < size);
+    return memPtr[ofs];
 }
-
 
 // This method allows to write data to a specified address (as word offset)
 // (SystemBus must check address validity and make byte-to-word
 // address conversion)
 void RamSpace::MemWrite(Word ofs, Word data)
 {
-	if(ofs < size)
-		memPtr[ofs] = data;
-	else
-		Panic("Illegal memory access in RamSpace::MemWrite()");
+    assert(ofs < size);
+    memPtr[ofs] = data;
 }
-
 
 // This method returns RamSpace size in bytes
 Word RamSpace::Size()
 {
-	return(size * WORDLEN);
+    return size * WORDLEN;
 }
 
+
 /****************************************************************************/
+
 
 // This method creates a BiosSpace object, filling with .rom file contents
 BiosSpace::BiosSpace(const char* name)

@@ -23,6 +23,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <list>
 
 #include <QAction>
 #include <QTimer>
@@ -183,18 +184,69 @@ void DebugSession::onStartMachine()
     assert(status == MS_HALTED);
 
     MachineConfig* config = Appl()->getConfig();
+    assert(config != NULL);
+
+    std::list<std::string> errors;
+    if (!config->Validate(&errors)) {
+        QString el;
+        el += "<ul>";
+        foreach (const std::string& s, errors)
+            el += QString("<li>%1</li>").arg(s.c_str());
+        el += "</ul>";
+        QMessageBox::critical(
+            0, QString("%1: Error").arg(Appl()->applicationName()),
+            "Invalid and/or incomplete machine configuration: " + el);
+        return;
+    }
+
     try {
         machine.reset(new Machine(config, &breakpoints, &suspects, &tracepoints));
-    } catch (RuntimeError& e) {
+    } catch (const FileError& e) {
         QMessageBox::critical(
             0,
             QString("%1: Error").arg(Appl()->applicationName()),
-            QString("<b>Could not create machine:</b> %1").arg(e.what()));
+            QString("<b>Could not initialize machine:</b> "
+                    "the file `%1' is nonexistent or inaccessible").arg(e.fileName.c_str()));
+        return;
+    } catch (const InvalidCoreFileError& e) {
+        QMessageBox::critical(
+            0,
+            QString("%1: Error").arg(Appl()->applicationName()),
+            QString("<b>Could not initialize machine:</b> "
+                    "the file `%1' does not appear to be a valid <i>Core</i> file; "
+                    "make sure you are creating the file with the <code>umps2-elf2umps</code> utility")
+            .arg(e.fileName.c_str()));
+        return;
+    } catch (const CoreFileOverflow& e) {
+        QMessageBox::critical(
+            0,
+            QString("%1: Error").arg(Appl()->applicationName()),
+            "<b>Could not initialize machine:</b> "
+            "the core file does not fit in memory; "
+            "please increase available RAM and try again");
+        return;
+    } catch (const InvalidFileFormatError& e) {
+        QMessageBox::critical(
+            0,
+            QString("%1: Error").arg(Appl()->applicationName()),
+            QString("<b>Could not initialize machine:</b> "
+                    "the file `%1' has wrong format").arg(e.fileName.c_str()));
         return;
     }
     machine->setStopMask(stopMask);
 
-    symbolTable.reset(new SymbolTable(64, config->getROM(ROM_TYPE_STAB).c_str()));
+    try {
+        symbolTable.reset(new SymbolTable(config->getSymbolTableASID(),
+                                          config->getROM(ROM_TYPE_STAB).c_str()));
+    } catch (const Error& e) {
+        QMessageBox::critical(
+            0,
+            QString("%1: Error").arg(Appl()->applicationName()),
+            "<b>Could not initialize machine:</b> "
+            "invalid or missing symbol table file");
+        machine.reset();
+        return;
+    }
 
     stoppedByUser = true;
     setStatus(MS_STOPPED);

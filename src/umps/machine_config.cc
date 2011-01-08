@@ -191,9 +191,25 @@ MachineConfig::MachineConfig(const std::string& fn)
     resetToFactorySettings();
 }
 
-bool MachineConfig::Validate(std::string* error) const
+bool MachineConfig::Validate(std::list<std::string>* errors) const
 {
-    return true;
+    bool isValid = true;
+    if (romFiles[ROM_TYPE_BOOT].empty()) {
+        if (errors)
+            errors->push_back("Bootstrap ROM file not set");
+        isValid = false;
+    }
+    if (romFiles[ROM_TYPE_BIOS].empty()) {
+        if (errors)
+            errors->push_back("BIOS ROM file not set");
+        isValid = false;
+    }
+    if (romFiles[ROM_TYPE_STAB].empty()) {
+        if (errors)
+            errors->push_back("Symbol table file not set");
+        isValid = false;
+    }
+    return isValid;
 }
 
 void MachineConfig::setRamSize(Word size)

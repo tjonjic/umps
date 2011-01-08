@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <algorithm>
 
+#include "base/debug.h"
 #include "umps/const.h"
 #include "umps/utility.h"
 #include "umps/blockdev_params.h"
@@ -101,107 +102,96 @@ void Symbol::setSize(Word size)
 // This method builds a symbol table from .stab file fName produced by
 // elf2mps utility
 SymbolTable::SymbolTable(Word asid, const char* fName)
+    : asid(asid)
 {
-    FILE * sFile = NULL;
-    Word tag;
+    assert(fName != NULL);
+
+    FILE* file;
+
     unsigned int numF, numO, i;
     char sName[STRBUFSIZE];
     char sType[STRBUFSIZE];
-    bool error;
 
-    symASID = asid;
     fTable = NULL;
     ftSize = 0;
     oTable = NULL;
     otSize = 0;
 
-    // tries to access file
-    if (fName == NULL ||
-        SAMESTRING(fName, EMPTYSTR) ||
-        (sFile = fopen(fName, "r")) == NULL ||
-        fread((void *) &tag, WORDLEN, 1, sFile) != 1 ||
-        tag != STABFILEID ||
-        fscanf(sFile, "%X %X ", &numF, &numO) != 2)
-    {
-        // some error occurred
-        if (fName == NULL)
-            fName = EMPTYSTR;
-        ShowAlert("Unable to load symbol table file:", fName, "Wrong header");
+    if ((file = fopen(fName, "r")) == NULL) {
+        throw FileError(fName);
     } else {
-        // inits symbol table structures
-        ftSize = numF;
-        otSize = numO;
-        if (ftSize > 0) {
-            fTable = new Symbol * [ftSize];
-            for (i = 0; i < ftSize; i++)
-                fTable[i] = NULL;
+        Word tag;
+        if (fread((void *) &tag, WS, 1, file) != 1) {
+            fclose(file);
+            throw FileError(fName);
         }
-        if (otSize > 0) 
-        {
-            oTable = new Symbol * [otSize];
-            for (i = 0; i < otSize; i++)
-                oTable[i] = NULL; 
-        }
-
-        // scans symbol table file and builds objects
-        error = false;
-        for (i = 0, numF = 0, numO = 0; i < (ftSize + otSize) && !error; i++) {
-            if (fscanf(sFile, "%s :%s ", sName, sType) != 2) {
-                error = true;
-            } else if (sType[0] == 'F') {
-                fTable[numF] = new Symbol(sName, sType);
-                numF++;
-            } else {
-                // sType[0] is 'O'
-                oTable[numO] = new Symbol(sName, sType);
-                numO++;
-            }
-        }
-
-        if (error) {
-            ShowAlert("Unable to load symbol table file:", fName, "Wrong format");
-
-            // clean up
-            if (ftSize > 0)
-            {
-                for (i = 0; i < ftSize; i++)
-                    if (fTable[i] != NULL)
-                        delete (fTable[i]);
-                delete fTable;
-                fTable = NULL;
-            }
-            ftSize = 0;
-
-            if (otSize > 0)
-            {
-                for (i = 0; i < otSize; i++)
-                    if (oTable[i] != NULL)
-                        delete (oTable[i]);
-                delete oTable;
-                oTable = NULL;
-            }
-            otSize = 0;
-        }
-        else
-        {
-            // sort tables
-            if (ftSize > 1)
-            {
-                sortTable(fTable, ftSize);
-
-                // backpatch FUN part of symbol table for gcc bug
-                for (i = 0; i < (ftSize - 1); i++)
-                    if (fTable[i]->getEnd() == fTable[i]->getStart())
-                        //backpatch needed
-                        fTable[i]->setSize(fTable[i+1]->getStart() - fTable[i]->getStart());
-            }
-
-            if (otSize > 1)
-                sortTable(oTable, otSize);
+        if (tag != STABFILEID || fscanf(file, "%X %X ", &numF, &numO) != 2) {
+            fclose(file);
+            throw InvalidFileFormatError(fName, "Invalid symbol table file format");
         }
     }
-    if (sFile != NULL)
-        fclose(sFile);
+
+    // inits symbol table structures
+    ftSize = numF;
+    otSize = numO;
+    if (ftSize > 0) {
+        fTable = new Symbol* [ftSize];
+        for (i = 0; i < ftSize; i++)
+            fTable[i] = NULL;
+    }
+    if (otSize > 0)  {
+        oTable = new Symbol* [otSize];
+        for (i = 0; i < otSize; i++)
+            oTable[i] = NULL; 
+    }
+
+    // scans symbol table file and builds objects
+    bool error = false;
+    for (i = 0, numF = 0, numO = 0; i < (ftSize + otSize) && !error; i++) {
+        if (fscanf(file, "%s :%s ", sName, sType) != 2) {
+            error = true;
+        } else if (sType[0] == 'F') {
+            fTable[numF] = new Symbol(sName, sType);
+            numF++;
+        } else {
+            // sType[0] is 'O'
+            oTable[numO] = new Symbol(sName, sType);
+            numO++;
+        }
+    }
+
+    if (error) {
+        // Clean up first
+        if (ftSize > 0) {
+            for (i = 0; i < ftSize; i++)
+                if (fTable[i] != NULL)
+                    delete fTable[i];
+            delete fTable;
+        }
+        if (otSize > 0) {
+            for (i = 0; i < otSize; i++)
+                if (oTable[i] != NULL)
+                    delete oTable[i];
+            delete oTable;
+        }
+        throw InvalidFileFormatError(fName, "Invalid symbol table file format");
+    }
+
+    // sort tables
+    if (ftSize > 1) {
+        sortTable(fTable, ftSize);
+
+        // backpatch FUN part of symbol table for gcc bug
+        for (i = 0; i < ftSize - 1; i++)
+            if (fTable[i]->getEnd() == fTable[i]->getStart())
+                // backpatch needed
+                fTable[i]->setSize(fTable[i+1]->getStart() - fTable[i]->getStart());
+    }
+
+    if (otSize > 1)
+        sortTable(oTable, otSize);
+
+    fclose(file);
 }
 
 
@@ -210,15 +200,14 @@ SymbolTable::~SymbolTable()
 {
     unsigned int i;
 	
-    if (fTable != NULL)
-    {
+    if (fTable != NULL) {
         for (i = 0; i < ftSize; i++)
             if (fTable[i] != NULL)
                 delete(fTable[i]);
         delete fTable;
     }
-    if (oTable != NULL)
-    {
+
+    if (oTable != NULL) {
         for (i = 0; i < otSize; i++)
             if (oTable[i] != NULL)
                 delete(oTable[i]);
@@ -226,14 +215,13 @@ SymbolTable::~SymbolTable()
     }
 }
 
-
 // This method probes the table, given a complete address (asid +
 // pos): it probes both tables if fullSearch is TRUE, and only
 // function table otherwise.  It returns symbol name and offset of pos
 // inside it, or NULL if no match is found
 const char* SymbolTable::Probe(Word asid, Word pos, bool fullSearch, SWord* offsetp) const
 {
-    if (asid != symASID)
+    if (asid != this->asid)
         return NULL;
 
     int idx;
@@ -249,7 +237,7 @@ const char* SymbolTable::Probe(Word asid, Word pos, bool fullSearch, SWord* offs
 
 const Symbol* SymbolTable::Probe(Word asid, Word addr, bool fullSearch) const
 {
-    if (asid != symASID)
+    if (asid != this->asid)
         return NULL;
 
     int i;
@@ -265,32 +253,6 @@ const Symbol* SymbolTable::Probe(Word asid, Word addr, bool fullSearch) const
 unsigned int SymbolTable::Size() const
 {
     return otSize + ftSize;
-}
-
-
-// Given the symbol number in [0.. Size() -1] range, this
-// method returns symbol contents (and if it is a function or not,
-// as told by isFunp flag)
-const char* SymbolTable::getSymData(unsigned int symNum, bool* isFunp, Word* startp, Word* endp)
-{
-    if (symNum == 0 || symNum > (otSize + ftSize))
-        throw std::domain_error("symNum");
-
-    symNum--;
-
-    Symbol** tab;
-
-    if (symNum < ftSize) {
-        tab = fTable;
-        *isFunp = true;
-    } else {
-        tab = oTable;
-        symNum -= ftSize;
-        *isFunp = false;
-    }
-    *startp = tab[symNum]->getStart();
-    *endp = tab[symNum]->getEnd();
-    return tab[symNum]->getName();
 }
 
 const Symbol* SymbolTable::Get(unsigned int index) const

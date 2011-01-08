@@ -23,6 +23,7 @@
 #define UMPS_MACHINE_CONFIG_H
 
 #include <string>
+#include <list>
 
 #include "umps/arch.h"
 #include "umps/types.h"
@@ -63,7 +64,7 @@ public:
 
     void Save();
 
-    bool Validate(std::string* error) const;
+    bool Validate(std::list<std::string>* errors) const;
 
     void setLoadCoreEnabled(bool setting) { loadCoreFile = setting; }
     bool isLoadCoreEnabled() const { return loadCoreFile; }

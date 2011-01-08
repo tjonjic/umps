@@ -22,6 +22,7 @@
 #ifndef UMPS_MEMSPACE_H
 #define UMPS_MEMSPACE_H
 
+#include "base/lang.h"
 #include "umps/types.h"
 
 // This class implements the RAM device. Any object allows reads and
@@ -35,11 +36,9 @@ public:
     // and fills it with file contents if needed
     RamSpace(Word siz, const char* fName);
 
-    ~RamSpace();
-
     // This method returns the value of Word at ofs address
     // (SystemBus must assure that ofs is in range)
-    Word MemRead(Word ofs);
+    Word MemRead(Word ofs) const;
 
     // This method allows to write data to a specified address (as word
     // offset). SystemBus must check address validity and make
@@ -50,7 +49,7 @@ public:
     Word Size();
 
 private:
-    Word* memPtr;
+    scoped_array<Word> memPtr;
 
     // size of structure in words (C style addressing: [0..size - 1])
     Word size;

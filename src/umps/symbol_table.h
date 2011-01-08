@@ -106,27 +106,21 @@ public:
     // This method returns the total number of symbols
     unsigned int Size() const;
 
-    // Given the symbol number in [0.. Size() -1] range, this
-    // method returns symbol contents (and if it is a function or not,
-    // as told by isFunp flag)
-    const char* getSymData(unsigned int symNum, bool* isFunp, Word* startp, Word* endp);
-
     const Symbol* Get(unsigned int index) const;
 
 private:
-    void sortTable(Symbol** table, size_t size);
+    static void sortTable(Symbol** table, size_t size);
 
     // This method scans the specified table looking for a Symbol range
     // containing it; returns NOTFOUND if not found, 0..size -1 if found
     // (index into table)
     int search(Symbol** table, unsigned int size, Word pos) const;
 
-    // Symbol table ASID from SetupInfo object
-    Word symASID;
+    // Symbol table ASID
+    const Word asid;
 
-    // Number of function symbols
+    // Number of function/object symbols
     unsigned int ftSize;
-    // Number of memory object symbols
     unsigned int otSize;
 
     // Symbol tables: one for functions, other for memory object symbols
