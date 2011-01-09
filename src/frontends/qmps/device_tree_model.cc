@@ -87,7 +87,7 @@ QModelIndex DeviceTreeModel::index(int row, int column, const QModelIndex& paren
             return QModelIndex();
     } else {
         if (row <= N_EXT_IL)
-            return createIndex(row, column, NULL);
+            return createIndex(row, column, (void*) NULL);
         else
             return QModelIndex();
     }
@@ -106,7 +106,7 @@ QModelIndex DeviceTreeModel::parent(const QModelIndex& index) const
     // children, so we specify 0 for the "column" of the parent. Yuck.
     Device* device = static_cast<Device*>(index.internalPointer());
     if (device != NULL)
-        return createIndex(device->getInterruptLine(), 0, NULL);
+        return createIndex(device->getInterruptLine(), 0, (void*) NULL);
     else
         return QModelIndex();
 }
