@@ -38,9 +38,11 @@ Application::Application(int& argc, char** argv)
 
     dbgSession.reset(new DebugSession);
 
-    monitorWindow = new MonitorWindow;
+    monitorWindow.reset(new MonitorWindow);
     monitorWindow->show();
 }
+
+Application::~Application() {}
 
 void Application::CreateConfig_(const QString& path)
 {
@@ -49,7 +51,7 @@ void Application::CreateConfig_(const QString& path)
         newConfig = MachineConfig::Create(QFile::encodeName(path).constData());
     } catch (FileError& e) {
         newConfig = NULL;
-        QMessageBox::critical(monitorWindow, QString("%1: Error").arg(applicationName()),
+        QMessageBox::critical(monitorWindow.get(), QString("%1: Error").arg(applicationName()),
                               QString("<b>Could not create machine configuration:</b> %1").arg(e.what()));
     }
     if (newConfig)
@@ -64,7 +66,7 @@ void Application::LoadConfig_(const QString& path)
     if (newConfig)
         setCurrentConfig(path, newConfig);
     else
-        QMessageBox::critical(monitorWindow, QString("%1: Error").arg(applicationName()),
+        QMessageBox::critical(monitorWindow.get(), QString("%1: Error").arg(applicationName()),
                               QString("<b>Error loading machine configuration:</b> %1").arg(error.c_str()));
 }
 
@@ -78,6 +80,11 @@ void Application::LoadRecentConfig(unsigned int i)
 MachineConfig* Application::getConfig()
 {
     return config.get();
+}
+
+QWidget* Application::getApplWindow()
+{
+    return monitorWindow.get();
 }
 
 QFont Application::getMonospaceFont()

@@ -31,19 +31,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 
 #include <boost/format.hpp>
 
-#include <umps/const.h>
+#include "umps/arch.h"
+#include "umps/const.h"
 #include "umps/blockdev_params.h"
-
 #include "umps/error.h"
-
-
-HIDDEN Word * readBIOSFile(const char * fName, Word * sizep);
-HIDDEN Word * emptyFrameSignal(const char * fName, Word * sizep);
-
 
 // This method creates a RamSpace object of a given size (in words) and
 // fills it with core file contents if needed
@@ -103,85 +97,43 @@ Word RamSpace::Size()
 
 
 // This method creates a BiosSpace object, filling with .rom file contents
-BiosSpace::BiosSpace(const char* name)
+BiosSpace::BiosSpace(const char* fileName)
 {
-    memPtr = readBIOSFile(name, &size);
+    assert(fileName != NULL && *fileName);
+
+    FILE* file;
+
+    if ((file = fopen(fileName, "r")) == NULL)
+        throw FileError(fileName);
+
+    Word tag;
+    if ((fread((void *) &tag, WS, 1, file) != 1) ||
+        (tag != BIOSFILEID) ||
+        (fread((void *) &size, WS, 1, file) != 1))
+    {
+        fclose(file);
+        throw InvalidFileFormatError(fileName, "ROM file expected");
+    }
+
+    memPtr.reset(new Word[size]);
+    if (fread((void*) memPtr.get(), WS, size, file) != size) {
+        fclose(file);
+        throw InvalidFileFormatError(fileName, "Wrong ROM file size");
+    }
+
+    fclose(file);
 }
-
-
-// This method deletes the contents of a BiosSpace object
-BiosSpace::~BiosSpace()
-{
-	delete memPtr;
-}
-
 
 // This method returns the value of Word at ofs address
 // (SystemBus must assure that ofs is in range)
 Word BiosSpace::MemRead(Word ofs)
 {
-	if (ofs < size)
-		return(memPtr[ofs]);
-	else
-	{
-		Panic("Illegal memory access in BiosSpace::MemRead()");
-		return(MAXWORDVAL);
-	}
+    assert(ofs < size);
+    return memPtr[ofs];
 }
 
 // This method returns BiosSpace size in bytes
 Word BiosSpace::Size()
 {
-	return size * WORDLEN;
-}
-
-// This function reads the ROM contents from disk and returns a pointer to the
-// memory structure created and its length (via siz pointer); it recognizes
-// the file using the magic file number for .rom files.
-// If no correct load is possible, ROM itself is filled with NOPs
-
-HIDDEN Word* readBIOSFile(const char * fName, Word * sizep)
-{
-    FILE * bFile = NULL;
-    Word tag;
-    Word * biosBuf;
-
-    if (fName == NULL || SAMESTRING(fName, EMPTYSTR) || (bFile = fopen(fName, "r")) == NULL ||
-        fread((void *) &tag, WORDLEN, 1, bFile) != 1 ||
-        tag != BIOSFILEID || fread((void *) sizep, WORDLEN, 1, bFile) != 1)
-    {
-        // missing type or wrong type
-        biosBuf = emptyFrameSignal(fName, sizep);
-    }
-    else
-    {
-        biosBuf = new Word[*sizep];
-        if (fread((void *) biosBuf, WORDLEN, *sizep, bFile) != *sizep)
-        {
-            // wrong file format
-            delete biosBuf;
-            biosBuf = emptyFrameSignal(fName, sizep);
-        }
-    }
-    if (bFile != NULL)
-        fclose(bFile);
-
-    return(biosBuf);
-}
-
-
-// This function creates a "dummy" ROM memory space filled with NOPs and
-// warns user
-HIDDEN Word * emptyFrameSignal(const char * fName, Word * sizep)
-{
-	Word * bBuf;
-	unsigned int i;
-	
-	ShowAlertQuit("Unable to load critical ROM file:", fName, "cannot continue: exiting now...");
-	bBuf = new Word[FRAMESIZE];
-	for (i = 0; i < FRAMESIZE; i++)
-		bBuf[i] = NOP;
-		
-	*sizep = FRAMESIZE;
-	return(bBuf);
+    return size * WORDLEN;
 }

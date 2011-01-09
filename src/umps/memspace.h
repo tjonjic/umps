@@ -67,9 +67,6 @@ public:
     // contents
     BiosSpace(const char *name);
 
-    // This method deletes the contents of a BiosSpace object
-    ~BiosSpace();
-
     // This method returns the value of Word at ofs address
     // (SystemBus must assure that ofs is in range)
     Word MemRead(Word ofs);
@@ -78,7 +75,7 @@ public:
     Word Size();
 
 private:
-    Word* memPtr;
+    scoped_array<Word> memPtr;
 
     // size of structure in Words (C style addressing: [0..size - 1])
     Word size;

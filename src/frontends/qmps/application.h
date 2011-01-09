@@ -32,6 +32,7 @@
 #include "qmps/debug_session.h"
 
 class MonitorWindow;
+class QWidget;
 
 class Application : public QApplication {
     Q_OBJECT
@@ -40,6 +41,7 @@ public:
     static const unsigned int kMaxRecentConfigs = 5;
 
     Application(int& argc, char** argv);
+    ~Application();
 
     MachineConfig* getConfig();
     void CreateConfig_(const QString& path);
@@ -47,6 +49,7 @@ public:
     void LoadRecentConfig(unsigned int i);
 
     DebugSession* getDebugSession() { return dbgSession.get(); }
+    QWidget* getApplWindow();
 
     const QString& getCurrentDir() const { return dir; }
 
@@ -62,14 +65,13 @@ Q_SIGNALS:
 
 private:
     void setCurrentConfig(const QString& path, MachineConfig* newConfig);
-    bool discardMachineConfirmed();
 
     scoped_ptr<DebugSession> dbgSession;
 
     scoped_ptr<MachineConfig> config;
     QString dir;
 
-    MonitorWindow* monitorWindow;
+    scoped_ptr<MonitorWindow> monitorWindow;
 };
 
 Application* Appl();

@@ -203,14 +203,14 @@ void DebugSession::onStartMachine()
         machine.reset(new Machine(config, &breakpoints, &suspects, &tracepoints));
     } catch (const FileError& e) {
         QMessageBox::critical(
-            0,
+            Appl()->getApplWindow(),
             QString("%1: Error").arg(Appl()->applicationName()),
             QString("<b>Could not initialize machine:</b> "
                     "the file `%1' is nonexistent or inaccessible").arg(e.fileName.c_str()));
         return;
     } catch (const InvalidCoreFileError& e) {
         QMessageBox::critical(
-            0,
+            Appl()->getApplWindow(),
             QString("%1: Error").arg(Appl()->applicationName()),
             QString("<b>Could not initialize machine:</b> "
                     "the file `%1' does not appear to be a valid <i>Core</i> file; "
@@ -219,7 +219,7 @@ void DebugSession::onStartMachine()
         return;
     } catch (const CoreFileOverflow& e) {
         QMessageBox::critical(
-            0,
+            Appl()->getApplWindow(),
             QString("%1: Error").arg(Appl()->applicationName()),
             "<b>Could not initialize machine:</b> "
             "the core file does not fit in memory; "
@@ -227,7 +227,7 @@ void DebugSession::onStartMachine()
         return;
     } catch (const InvalidFileFormatError& e) {
         QMessageBox::critical(
-            0,
+            Appl()->getApplWindow(),
             QString("%1: Error").arg(Appl()->applicationName()),
             QString("<b>Could not initialize machine:</b> "
                     "the file `%1' has wrong format").arg(e.fileName.c_str()));
@@ -240,7 +240,7 @@ void DebugSession::onStartMachine()
                                           config->getROM(ROM_TYPE_STAB).c_str()));
     } catch (const Error& e) {
         QMessageBox::critical(
-            0,
+            Appl()->getApplWindow(),
             QString("%1: Error").arg(Appl()->applicationName()),
             "<b>Could not initialize machine:</b> "
             "invalid or missing symbol table file");
