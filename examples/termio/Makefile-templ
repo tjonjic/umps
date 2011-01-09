@@ -21,7 +21,7 @@ kernel_objects :=			\
 all : kernel.core.umps
 
 kernel.core.umps : kernel
-	umps-elf2umps -k $<
+	umps2-elf2umps -k $<
 
 kernel : $(kernel_objects)
 	$(LD) -o $@ $(kernel_objects) $(LDFLAGS)
