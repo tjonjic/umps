@@ -51,17 +51,7 @@ public:
     virtual ~CoreFileOverflow() throw() {}
 };
 
-// Error hooks
-
-// FIXME: These were the old error handling/signalling functions.  The
-// problem is their use mostly doesn't even fit the new architecture;
-// the goal is to gradually replace all of the calls to smtg
-// appropriate.
-
+// Error hook
 void Panic(const char* message);
-
-void ShowAlert(const char* s1, const char* s2, const char* s3);
-
-void ShowAlertQuit(const char* s1, const char* s2, const char* s3);
 
 #endif // UMPS_ERROR_H

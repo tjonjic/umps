@@ -21,30 +21,11 @@
 
 #include <QMessageBox>
 
+#include "umps/error.h"
 #include "qmps/application.h"
-
-/*
- * FIXME: These are here only because of lazyness. Error handling
- * (startap, general, ...) needs a lot of improvement. For now, we do
- * what the old UI did, more or less.
- */
 
 void Panic(const char* message)
 {
     QMessageBox::critical(0, "PANIC", QString("PANIC: %1").arg(message));
-    Appl()->quit();
-}
-
-void ShowAlert(const char* s1, const char* s2, const char* s3)
-{
-    QMessageBox::critical(0, "Fatal Error",
-                          QString("Fatal Error: %1 %2 %3").arg(s1).arg(s2).arg(s3));
-    Appl()->quit();
-}
-
-void ShowAlertQuit(const char* s1, const char* s2, const char* s3)
-{
-    QMessageBox::critical(0, "Fatal Error",
-                          QString("Fatal Error: %1 %2 %3").arg(s1).arg(s2).arg(s3));
     Appl()->quit();
 }
