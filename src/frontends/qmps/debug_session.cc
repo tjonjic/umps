@@ -56,28 +56,12 @@ DebugSession::DebugSession()
     createActions();
     updateActionSensitivity();
     connect(this, SIGNAL(StatusChanged()), this, SLOT(updateActionSensitivity()));
-
     connect(Appl(), SIGNAL(MachineConfigChanged()), this, SLOT(onMachineConfigChanged()));
-
-#if 0
-    breakpoints.Add(AddressRange(64, 0x20003F20, 0x20003F20), AM_EXEC);
-    breakpoints.Add(AddressRange(64, 0x1fc00004, 0x1fc00004), AM_EXEC);
-    suspects.Add(AddressRange(64, 0x20003F20, 0x20003F20), AM_READ);
-    suspects.Add(AddressRange(64, 0x20003F24, 0x20003F24), AM_READ_WRITE);
-    suspects.Add(AddressRange(64, 0x2000DA30, 0x2000DA40), AM_WRITE);
-    suspects.Add(AddressRange(64, 0x200A0000, 0x200ABBB0), AM_READ);
-    tracepoints.Add(AddressRange(64, 0x2000D010, 0x2000D034), AM_WRITE);
-    tracepoints.Add(AddressRange(64, 0x20001010, 0x20001010), AM_WRITE);
-    tracepoints.Add(AddressRange(64, 0x20002200, 0x20002900), AM_WRITE);
-    tracepoints.Add(AddressRange(64, 0x20000000, 0x20000500), AM_WRITE);
-    tracepoints.Add(AddressRange(64, 0x20010000, 0x200100A0), AM_WRITE);
-#endif
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(runIteration()));
 
     setSpeed(Appl()->settings.value("SimulationSpeed", kMaxSpeed).toInt());
-
     stopMask = Appl()->settings.value("StopMask", kDefaultStopMask).toUInt();
 }
 
