@@ -300,7 +300,9 @@ bool Device::getDevNotWorking()
 const char* Device::getDevCTStr()
 {
     if (complTime != NULL) {
-        sprintf(strbuf, "0x%.8lX.%.8lX", complTime->getHiTS(), complTime->getLoTS());
+        sprintf(strbuf, "0x%.8lX.%.8lX",
+                (unsigned long) complTime->getHiTS(),
+                (unsigned long) complTime->getLoTS());
         return strbuf;
     } else {
         return "";
@@ -687,21 +689,28 @@ const char* TerminalDevice::getDevCTStr()
     // split up by a newline
 
     if (recvCTime != NULL)
-        sprintf(tmpbuf, "0x%.8lX.%.8lX", recvCTime->getHiTS(), recvCTime->getLoTS());
+        sprintf(tmpbuf, "0x%.8lX.%.8lX",
+                (unsigned long) recvCTime->getHiTS(),
+                (unsigned long) recvCTime->getLoTS());
     else
         strcpy(tmpbuf, EMPTYSTR);
+
     if (tranCTime != NULL)
-        sprintf(strbuf, "%s\n0x%.8lX.%.8lX", tmpbuf, tranCTime->getHiTS(), tranCTime->getLoTS());
+        sprintf(strbuf, "%s\n0x%.8lX.%.8lX", tmpbuf,
+                (unsigned long) tranCTime->getHiTS(),
+                (unsigned long) tranCTime->getLoTS());
     else
         sprintf(strbuf, "%s\n", tmpbuf);
-        
-    return(strbuf);                     
+
+    return(strbuf);
 }
 
 const char* TerminalDevice::getTXCompletionTime() const
 {
     if (tranCTime != NULL)
-        sprintf(strbuf, "0x%.8lX.%.8lX", tranCTime->getHiTS(), tranCTime->getLoTS());
+        sprintf(strbuf, "0x%.8lX.%.8lX",
+                (unsigned long) tranCTime->getHiTS(),
+                (unsigned long) tranCTime->getLoTS());
     else
         *strbuf = '\0';
 
@@ -711,7 +720,9 @@ const char* TerminalDevice::getTXCompletionTime() const
 const char* TerminalDevice::getRXCompletionTime() const
 {
     if (recvCTime != NULL)
-        sprintf(strbuf, "0x%.8lX.%.8lX", recvCTime->getHiTS(), recvCTime->getLoTS());
+        sprintf(strbuf, "0x%.8lX.%.8lX",
+                (unsigned long) recvCTime->getHiTS(),
+                (unsigned long) recvCTime->getLoTS());
     else
         *strbuf = '\0';
 
