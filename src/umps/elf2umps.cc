@@ -449,7 +449,6 @@ HIDDEN int mkaOut(const char *prg, Elf * elf, Word prgStart, Word phEnt,
 
         if (phdr == NULL)
             elfFail(prg);
-        // else all is ok
 
         // scan for .text & .data sizes (ignores .reginfo for now)
         if (phdr->p_type == PT_LOAD) {
@@ -493,6 +492,7 @@ HIDDEN int mkaOut(const char *prg, Elf * elf, Word prgStart, Word phEnt,
             }
         }
     }
+
     if (ret != EXIT_FAILURE && foundText && foundData) {
         // program headers scanned successfully and memory areas prepared
         aoutTab[TEXTFOFFS] = 0UL;
@@ -500,27 +500,26 @@ HIDDEN int mkaOut(const char *prg, Elf * elf, Word prgStart, Word phEnt,
 
         // fill areas with sections
         scn = NULL;
-        while ((scn = elf_nextscn(elf, scn)) != NULL
-               && ret != EXIT_FAILURE) {
+        while ((scn = elf_nextscn(elf, scn)) != NULL && ret != EXIT_FAILURE) {
             if ((shdr = elf32_getshdr(scn)) == NULL)
                 elfFail(prg);
-            // else all is ok
-            if ((shdr->sh_type == SHT_PROGBITS
-                 || shdr->sh_type == SHT_REGINFO
-                 || shdr->sh_type == SHT_NOBITS) && (shdr->sh_addr > 0)) {
+            if ((shdr->sh_type == SHT_PROGBITS ||
+                 shdr->sh_type == SHT_REGINFO  ||
+                 shdr->sh_type == SHT_NOBITS) &&
+                (shdr->sh_addr > 0))
+            {
                 // found useful section 
-                if (verb)
+                if (verb) {
+                    // .bss is added only if .core file is built 
                     if (shdr->sh_type != SHT_NOBITS || coreHdr != NULL)
-                        // .bss is added only if .core file is built 
-                        printf
-                            ("Adding section %-10.10s : start 0x%.8lX : size 0x%.8lX  to a.out image\n",
-                             elf_strptr(elf, ndx, shdr->sh_name),
-                             shdr->sh_addr, shdr->sh_size);
+                        printf("Adding section %-10.10s : start 0x%.8lX : size 0x%.8lX  to a.out image\n",
+                               elf_strptr(elf, ndx, shdr->sh_name),
+                               (unsigned long) shdr->sh_addr, (unsigned long) shdr->sh_size);
                     else
-                        printf
-                            ("Found  section %-10.10s : start 0x%.8lX : size 0x%.8lX\n",
-                             elf_strptr(elf, ndx, shdr->sh_name),
-                             shdr->sh_addr, shdr->sh_size);
+                        printf("Found  section %-10.10s : start 0x%.8lX : size 0x%.8lX\n",
+                               elf_strptr(elf, ndx, shdr->sh_name),
+                               (unsigned long) shdr->sh_addr, (unsigned long) shdr->sh_size);
+                }
 
                 if (shdr->sh_type != SHT_NOBITS) {
                     // not a .bss section: .data sub-section proper
@@ -540,24 +539,21 @@ HIDDEN int mkaOut(const char *prg, Elf * elf, Word prgStart, Word phEnt,
                     // copy section parts to memory area
                     data = NULL;
                     while ((data = elf_getdata(scn, data)) != NULL) {
-                        for (i = 0;
-                             i < data->d_size && ret != EXIT_FAILURE; i++)
-                            if ((i + pos) < bufmax)
-                                buf[i + pos] =
-                                    *((unsigned char *) (data->d_buf) + i);
-                            else {
-                                fprintf(stderr,
-                                        "%s : Error in ELF file : two or more sections overlap\n",
-                                        prg);
+                        for (i = 0; i < data->d_size && ret != EXIT_FAILURE; i++) {
+                            if ((i + pos) < bufmax) {
+                                buf[i + pos] = *((unsigned char *) (data->d_buf) + i);
+                            } else {
+                                fprintf(stderr, "%s : Error in ELF file : two or more sections overlap\n", prg);
                                 ret = EXIT_FAILURE;
                             }
+                        }
                         pos += data->d_size;
                     }
 
                     if (pos != endpos) {
                         fprintf(stderr,
                                 "%s : Error in ELF file : declared section size differs from real size : %.8lX: %.8lX \n",
-                                prg, pos, endpos);
+                                prg, (unsigned long) pos, (unsigned long) endpos);
                         ret = EXIT_FAILURE;
                     }
                 }
@@ -571,34 +567,25 @@ HIDDEN int mkaOut(const char *prg, Elf * elf, Word prgStart, Word phEnt,
                 if (wBuf[i] == 0UL)
                     wBuf[i] = aoutTab[i];
                 else {
-                    fprintf(stderr,
-                            "%s : Error in ELF file : no space for a.out header\n",
-                            prg);
+                    fprintf(stderr, "%s : Error in ELF file : no space for a.out header\n", prg);
                     ret = EXIT_FAILURE;
                 }
             if (ret != EXIT_FAILURE) {
                 // may write a.out output file
                 if ((outFile = fopen(out, "w")) == NULL ||
-                    (coreHdr != NULL
-                     && fwrite((void *) coreHdr, WORDLEN, COREHDRSIZE,
-                               outFile) != COREHDRSIZE)
-                    || fwrite((void *) textA, sizeof(unsigned char),
-                              aoutTab[TEXTFSIZE],
-                              outFile) != aoutTab[TEXTFSIZE]
-                    || fwrite((void *) dataA, sizeof(unsigned char),
-                              aoutTab[DATAFSIZE],
-                              outFile) != aoutTab[DATAFSIZE]
-                    || fclose(outFile) == EOF) {
-                    fprintf(stderr, "%s : Error writing a.out file %s\n",
-                            prg, out);
+                    (coreHdr != NULL && fwrite((void *) coreHdr, WORDLEN, COREHDRSIZE, outFile) != COREHDRSIZE) ||
+                    fwrite((void *) textA, sizeof(unsigned char), aoutTab[TEXTFSIZE], outFile) != aoutTab[TEXTFSIZE] ||
+                    fwrite((void *) dataA, sizeof(unsigned char), aoutTab[DATAFSIZE], outFile) != aoutTab[DATAFSIZE] ||
+                    fclose(outFile) == EOF)
+                {
+                    fprintf(stderr, "%s : Error writing a.out file %s\n", prg, out);
                     ret = EXIT_FAILURE;
                 } else
                     // all OK : print verbose mode info
                     if (verb) {
                         printf("\na.out file %s created: \n\n", out);
                         for (i = 1; i < AOUTENTNUM; i++)
-                            printf("%-35.35s: 0x%.8lX\n", aoutName[i],
-                                   aoutTab[i]);
+                            printf("%-35.35s: 0x%.8lX\n", aoutName[i], (unsigned long) aoutTab[i]);
                     }
             }
         }
@@ -739,18 +726,17 @@ HIDDEN int mkSTab(const char *prg, Elf * elf, const char *out, bool verb)
                                     (*(strTabp + symb->st_name) != '_' || SAMESTRING((strTabp + symb->st_name), SYMSTART)))
                                 {
                                     // symbol is valid: it is written in the file
-                                    fprintf(outFile,
-                                            "%-16.16s :%s:0x%.8lX:0x%.8lX:%s\n",
+                                    fprintf(outFile, "%-16.16s :%s:0x%.8lX:0x%.8lX:%s\n",
                                             strTabp + symb->st_name,
-                                            symType[stype], symb->st_value,
-                                            symb->st_size, symBind[sbind]);
+                                            symType[stype], (unsigned long) symb->st_value,
+                                            (unsigned long) symb->st_size, symBind[sbind]);
                                     if (verb)
-                                        printf
-                                            ("%-10.10s : %s : 0x%.8lX : 0x%.8lX : %s\n",
-                                             strTabp + symb->st_name,
-                                             symType[stype],
-                                             symb->st_value, symb->st_size,
-                                             symBind[sbind]);
+                                        printf("%-10.10s : %s : 0x%.8lX : 0x%.8lX : %s\n",
+                                               strTabp + symb->st_name,
+                                               symType[stype],
+                                               (unsigned long) symb->st_value,
+                                               (unsigned long) symb->st_size,
+                                               symBind[sbind]);
 
                                     // counts functions and objects
                                     if (stype == STT_FUNC)
