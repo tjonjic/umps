@@ -85,7 +85,7 @@ public:
 
     Word getASID() const;
     Word getPC() const { return currPC; }
-    Word getInstrunction() const { return currInstr; }
+    Word getInstruction() const { return currInstr; }
     bool getVM() const;
 
     void getPrevStatus(Word * pc, Word * instr);

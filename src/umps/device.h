@@ -44,12 +44,10 @@ enum DeviceType {
 #define ETHBUFSIZE 128
  
 class SystemBus;
-class SetupInfo;
 class Block;
 class DriveParams;
 class netinterface;
 class TimeStamp;
-
 class MachineConfig;
 
 // Device class defines the interface to all device types, and represents
@@ -123,11 +121,6 @@ public:
     void setCondition(bool working);
     bool getCondition() const { return isWorking; }
 
-    // This method returns old value of statChanged and sets it to
-    // FALSE: this way any change into device status may be closely
-    // monitored
-    bool ClearDevStatChange(void);
-
     sigc::signal<void, const char*> SignalStatusChanged;
     sigc::signal<void, bool> SignalConditionChanged;
 
@@ -149,9 +142,6 @@ protected:
 
     // device operational status 
     bool isWorking;
-
-    // device status change flag
-    bool statChanged;
 };
 
 
@@ -167,25 +157,20 @@ protected:
 // a static buffer for device operation & status description;
 // a FILE structure for log file access.
 
-class PrinterDevice : public Device
-{
+class PrinterDevice : public Device {
 public:
-    PrinterDevice(SystemBus * busl, SetupInfo * stp, unsigned int intl, unsigned int dnum);
     PrinterDevice(SystemBus* busl, const MachineConfig* config, unsigned int intl, unsigned int dnum);
     virtual ~PrinterDevice();
     virtual void WriteDevReg(unsigned int regnum, Word data);
     virtual unsigned int CompleteDevOp();
     virtual const char* getDevSStr();
-		
+
 private:
-    // to be used for getting printer output file name...
-    //SetupInfo * setup;
     const MachineConfig* const config;
 
     // log file handling
     FILE * prntFile;
-		
-    // static buffer
+
     char statStr[PRNTBUFSIZE];
 };
 
@@ -225,9 +210,6 @@ public:
     sigc::signal<void, char> SignalTransmitted;
 
 private:
-    // for log file name
-    SetupInfo * setup;
-
     const MachineConfig* const config;
 
     // for log file handling
@@ -279,7 +261,6 @@ private:
 
 class DiskDevice : public Device {
 public:
-    DiskDevice(SystemBus * busl, SetupInfo * stp, unsigned int intl, unsigned int dnum);
     DiskDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line, unsigned int devNo);
     virtual ~DiskDevice();
     virtual void WriteDevReg(unsigned int regnum, Word data);
@@ -287,9 +268,6 @@ public:
     virtual const char * getDevSStr();
 
 private:
-    // to get disk image file name
-    SetupInfo * setup;
-
     const MachineConfig* const config;
 
     // to handle it
@@ -332,7 +310,6 @@ private:
 
 class TapeDevice : public Device {
 public:
-    TapeDevice(SystemBus * busl, SetupInfo * stp, unsigned int intl, unsigned int dnum);
     TapeDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line, unsigned int devNo);
     virtual ~TapeDevice();
     virtual void WriteDevReg(unsigned int regnum, Word data);
@@ -341,8 +318,6 @@ public:
     virtual bool TapeLoad(const char * tFName);
 
 private:
-    // to get tape cartridge file name
-    SetupInfo * setup;
     const MachineConfig* const config;
 
     // to access tape image file
@@ -371,7 +346,6 @@ private:
 class EthDevice : public Device
 { 
 public:
-    EthDevice(SystemBus * busl, SetupInfo * stp, unsigned int intl, unsigned int dnum);
     EthDevice(SystemBus* bus, const MachineConfig* config, unsigned int line, unsigned int devNo);
     virtual ~EthDevice();
     virtual void WriteDevReg(unsigned int regnum, Word data);
@@ -380,8 +354,6 @@ public:
     //virtual bool EthLoad(const char * tFName);
 
 private:
-    // to get eth file name
-    SetupInfo * setup;
     const MachineConfig* const config;
 
     Block *readbuf;

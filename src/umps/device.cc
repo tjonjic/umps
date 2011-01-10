@@ -244,9 +244,6 @@ Device::Device(SystemBus * busl, unsigned int intl, unsigned int dnum)
         
     // a NULLDEV never works
     isWorking = false;
-        
-    // at creation status is surely changed...
-    statChanged = true;
 }
 
 // No operation for "uninstalled" devices
@@ -331,15 +328,6 @@ void Device::setCondition(bool working)
     }
 }
 
-// This method returns old value of statChanged and sets it to FALSE: this
-// way any change into device status may be closely monitored
-bool Device::ClearDevStatChange()
-{
-    bool old = statChanged;
-    statChanged = false;
-    return old;
-}
-
 // This method allows to copy inputstr contents inside TerminalDevice
 // receiver buffer: not operational for all other devices (NULLDEV included)
 // and produces a panic message
@@ -406,19 +394,16 @@ void PrinterDevice::WriteDevReg(unsigned int regnum, Word data)
 {
     // Only COMMAND and DATA0 registers are writable, and only when 
     // device is not busy.
-
     if (reg[STATUS] == BUSY)
         return;
 
     switch (regnum) {
     case COMMAND:
-        statChanged = true;
         reg[COMMAND] = data;
 
         // decode operation requested: for each, acknowledges a
         // previous interrupt if pending, sets the device registers,
         // and inserts an Event in SystemBus mantained queue
-
         switch (data) {
         case RESET:
             bus->IntAck(intL, devNum);
@@ -447,6 +432,11 @@ void PrinterDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntReq(intL, devNum);
             break;
         }
+
+        // Status has changed (almost certanly, that is -- we don't
+        // worry about spurious status change notifications as they
+        // are harmless).
+        SignalStatusChanged(getDevSStr());
         break;
 
     case DATA0:
@@ -456,7 +446,7 @@ void PrinterDevice::WriteDevReg(unsigned int regnum, Word data)
     default:
         break;
     }
-}       
+}
 
 const char* PrinterDevice::getDevSStr()
 {
@@ -498,7 +488,7 @@ unsigned int PrinterDevice::CompleteDevOp()
         break;
     }
 
-    statChanged = true;
+    SignalStatusChanged(getDevSStr());
     complTime = NULL;
 
     bus->IntReq(intL, devNum);
@@ -569,7 +559,6 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
         // previous interrupt if pending, sets the device registers,
         // and inserts an Event in SystemBus mantained queue
         if (reg[RECVSTATUS] != BUSY) {
-            statChanged = true;
             reg[RECVCOMMAND] = data;
 
             switch (data) {
@@ -621,7 +610,6 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
         // and inserts an Event in SystemBus mantained queue
         if (reg[TRANSTATUS] != BUSY) {
             reg[TRANCOMMAND] = data;
-            statChanged = true;
 
             // to extract command
             switch (data & BYTEMASK) {
@@ -735,7 +723,7 @@ unsigned int TerminalDevice::CompleteDevOp()
     // only one sub-device should complete its op: which one?
     bool doRecv;
     unsigned int devMod;
-        
+
     // determines which operation must be completed
     if (reg[RECVSTATUS] == BUSY && reg[TRANSTATUS] == BUSY) {
         // Both sub-devices are working, so tie breaking depends on
@@ -767,12 +755,12 @@ unsigned int TerminalDevice::CompleteDevOp()
             recvCTime = NULL;
             bus->IntReq(intL, devNum);
             break;
-                
+
         case RECVCHR:
             if (recvBuf == NULL || recvBuf[recvBp] == EOS) {
                 // no char in input: wait another receiver cycle
                 recvCTime = bus->EventReq(intL, devNum, RECVCHRTIME * config->getClockRate());
-            } else {    
+            } else {
                 // buffer is not empty
                 if (isWorking) {
                     sprintf(recvStatStr, "Received char 0x%.2X : waiting for ACK", recvBuf[recvBp]);
@@ -809,7 +797,7 @@ unsigned int TerminalDevice::CompleteDevOp()
             sprintf(tranStatStr, "Reset completed : waiting for ACK");
             reg[TRANSTATUS] = READY;
             break;
-                
+
         case TRANCHR:
             if (isWorking) {
                 if (fputc((unsigned char) ((reg[TRANCOMMAND] >> BYTELEN) & BYTEMASK), termFile) == EOF) {
@@ -840,7 +828,6 @@ unsigned int TerminalDevice::CompleteDevOp()
         tranCTime = NULL;
         devMod = TRANSTATUS;
     }
-    statChanged = true;
     SignalStatusChanged.emit(getDevSStr());
     return devMod;
 }
@@ -868,7 +855,6 @@ void TerminalDevice::Input(const char* inputstr)
         recvBuf = strp;
     }
     recvBp = 0;
-    statChanged = true;
 
     // writes input to log file 
     if (fprintf(termFile, "%s\n", inputstr) < 0) {
@@ -954,7 +940,6 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
 
     switch (regnum) {
     case COMMAND:
-        statChanged = true;
         reg[COMMAND] = data;
 
         // Decode operation requested: for each, acknowledges a
@@ -1095,6 +1080,8 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntReq(intL, devNum);
             break;
         }
+
+        SignalStatusChanged(getDevSStr());
         break;
 
     case DATA0:
@@ -1117,7 +1104,7 @@ unsigned int DiskDevice::CompleteDevOp()
     // for file access
     SWord blkOfs;
     unsigned int head, sect;
-        
+
     // checks which operation must be completed: for each, sets device
     // register, performs requested operation and produces an interrupt
     // request
@@ -1187,11 +1174,13 @@ unsigned int DiskDevice::CompleteDevOp()
         head = (reg[COMMAND] >> HWORDLEN) & BYTEMASK;
         sect = (reg[COMMAND] >> BYTELEN) & BYTEMASK;
         if (isWorking) {
-            blkOfs = (diskOfs + ((currCyl * diskP->getHeadNum() * diskP->getSectNum()) + (head * diskP->getSectNum()) + sect) * BLOCKSIZE) * WORDLEN;
+            blkOfs = (diskOfs +
+                      ((currCyl * diskP->getHeadNum() * diskP->getSectNum()) +
+                       (head * diskP->getSectNum()) + sect) * BLOCKSIZE) * WORDLEN;
             if (diskBuf->WriteBlock(diskFile, blkOfs)) {
                 // error writing block to disk file
                 sprintf(strbuf, "Unable to write disk %u file : invalid/corrupted file", devNum);
-                Panic(strbuf);                          
+                Panic(strbuf);
             }
             // else all is ok: buffer is still valid
             sprintf(statStr, "C/H/S 0x%.4X/0x%.2X/0x%.2X block written : waiting for ACK",
@@ -1210,10 +1199,11 @@ unsigned int DiskDevice::CompleteDevOp()
         Panic("Unknown operation in DiskDevice::CompleteDevOp()");
         break;
     }
-    statChanged = true;
+
+    SignalStatusChanged(getDevSStr());
     complTime = NULL;
     bus->IntReq(intL, devNum);
-    return(STATUS);
+    return STATUS;
 }
 
 
@@ -1223,14 +1213,10 @@ unsigned int DiskDevice::CompleteDevOp()
 // interface as Device, redefining only a few methods' implementation: refer
 // to it for individual methods descriptions.
 // It adds to Device data structure:
-// a pointer to SetupInfo object containing tape cartridge log file name;
-// a static buffer for device operation & status description;
-// a FILE structure for log file access;
-// a Block object for file handling.
-
-//
-// See Device class methods description for interface
-//
+// a pointer to the configuration object containing tape cartridge log
+// file name; a static buffer for device operation & status
+// description; a FILE structure for log file access; a Block object
+// for file handling.
 
 TapeDevice::TapeDevice(SystemBus* bus, const MachineConfig* config,
                        unsigned int line, unsigned int devNo)
@@ -1273,7 +1259,7 @@ TapeDevice::~TapeDevice()
 bool TapeDevice::TapeLoad(const char* tFName)
 {
     Word tapeid = 0;
-        
+
     if (tFName == NULL || strlen(tFName) == 0) {
         // only a request for tape loading availability
         return !tapeLoaded || (reg[STATUS] == READY && reg[DATA1] == TAPESTART);
@@ -1286,8 +1272,7 @@ bool TapeDevice::TapeLoad(const char* tFName)
             if (tapeLoaded) {
                 // a tape is currently loaded
                 delete tapeFName;
-                if (fclose(tapeFile) == EOF)
-                {
+                if (fclose(tapeFile) == EOF) {
                     sprintf(strbuf, "Cannot close tape file %u : %s", devNum, strerror(errno));
                     Panic(strbuf);
                 }
@@ -1306,7 +1291,7 @@ bool TapeDevice::TapeLoad(const char* tFName)
             reg[DATA1] = TAPESTART;
             tapeLoaded = true;
             tapeBp = 0;
-            statChanged = true;
+            SignalStatusChanged(getDevSStr());
             return true;
         }
     }
@@ -1314,97 +1299,97 @@ bool TapeDevice::TapeLoad(const char* tFName)
 
 void TapeDevice::WriteDevReg(unsigned int regnum, Word data)
 {
-    // only COMMAND and DATA0 registers are writable, and only when 
-    // device is not busy and a tape is loaded
-        
-    if (reg[STATUS] != BUSY && tapeLoaded)
-        switch (regnum)
-        {
-        case COMMAND:
+    // Only COMMAND and DATA0 registers are writable, and only when 
+    // device is not busy and a tape is loaded.
+    if (!tapeLoaded || reg[STATUS] == BUSY)
+        return;
 
-            // decode operation requested: for each, acknowledges a
-            // previous interrupt if pending, sets the device registers,
-            // and inserts an Event in SystemBus mantained queue
-                                
-            statChanged = true;
-            reg[COMMAND] = data;
-            switch (data)
-            {
-                // it rewinds the tape too
-            case RESET:
-                bus->IntAck(intL, devNum);
-                complTime = bus->EventReq(intL, devNum, (TAPERESETTIME + (REWBLKTIME * tapeBp)) * config->getClockRate());
-                sprintf(statStr, "Rewinding the tape (last op: %s)", isSuccess(dType, reg[STATUS]));
+    switch (regnum) {
+    case COMMAND:
+        // decode operation requested: for each, acknowledges a
+        // previous interrupt if pending, sets the device registers,
+        // and inserts an Event in SystemBus mantained queue
+
+        reg[COMMAND] = data;
+
+        switch (data) {
+        case RESET:
+            // it rewinds the tape too
+            bus->IntAck(intL, devNum);
+            complTime = bus->EventReq(intL, devNum, (TAPERESETTIME + (REWBLKTIME * tapeBp)) * config->getClockRate());
+            sprintf(statStr, "Rewinding the tape (last op: %s)", isSuccess(dType, reg[STATUS]));
+            reg[STATUS] = BUSY;
+            break;
+
+        case ACK:
+            bus->IntAck(intL, devNum);
+            sprintf(statStr, "Idle (last op: %s)", isSuccess(dType, reg[STATUS]));
+            reg[STATUS] = READY;
+            break;
+
+        case SKIPBLK:
+            bus->IntAck(intL, devNum);
+            if (reg[DATA1] != TAPEEOT) {
+                sprintf(statStr, "Skipping block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
+                complTime = bus->EventReq(intL, devNum, SKIPBLKTIME * config->getClockRate());
                 reg[STATUS] = BUSY;
-                break;
-                                
-            case ACK:
-                bus->IntAck(intL, devNum);
-                sprintf(statStr, "Idle (last op: %s)", isSuccess(dType, reg[STATUS]));
-                reg[STATUS] = READY;
-                break;
-                                                
-            case SKIPBLK:
-                bus->IntAck(intL, devNum);
-                if (reg[DATA1] != TAPEEOT) {
-                    sprintf(statStr, "Skipping block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
-                    complTime = bus->EventReq(intL, devNum, SKIPBLKTIME * config->getClockRate());
-                    reg[STATUS] = BUSY;
-                } else {
-                    sprintf(statStr, "Cannot skip beyond EOT : waiting for ACK");
-                    reg[STATUS] = SKIPERR;
-                    bus->IntReq(intL, devNum);
-                }
-                break;
-
-            case READBLK:
-                bus->IntAck(intL, devNum);
-                if (reg[DATA1] != TAPEEOT) {
-                    sprintf(statStr, "Reading block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
-                    complTime = bus->EventReq(intL, devNum, READBLKTIME * config->getClockRate() + DMATICKS);
-                    reg[STATUS] = BUSY;
-                } else {
-                    sprintf(statStr, "Cannot read beyond EOT : waiting for ACK");
-                    reg[STATUS] = READERR;
-                    bus->IntReq(intL, devNum);
-                }
-                break;  
-
-            case BACKBLK:
-                bus->IntAck(intL, devNum);
-                // overkill test
-                if (reg[DATA1] != TAPESTART && tapeBp != 0) {
-                    sprintf(statStr, "Rewinding to block %u (last op: %s)", tapeBp - 1, isSuccess(dType, reg[STATUS]));
-                    complTime = bus->EventReq(intL, devNum, REWBLKTIME * config->getClockRate());
-                    reg[STATUS] = BUSY;
-                } else {
-                    sprintf(statStr, "Cannot rewind beyond tape start : waiting for ACK");
-                    reg[STATUS] = BACKERR;
-                    bus->IntReq(intL, devNum);
-                }
-                break;
-
-            default:
-                sprintf(statStr, "Unknown command (last op: %s)", isSuccess(dType, reg[STATUS]));
-                reg[STATUS] = ILOPERR;
+            } else {
+                sprintf(statStr, "Cannot skip beyond EOT : waiting for ACK");
+                reg[STATUS] = SKIPERR;
                 bus->IntReq(intL, devNum);
-                break;
             }
-            break;                                       
+            break;
 
-        case DATA0:
-            // sets physical address for buffer in memory
-            reg[DATA0] = data;
+        case READBLK:
+            bus->IntAck(intL, devNum);
+            if (reg[DATA1] != TAPEEOT) {
+                sprintf(statStr, "Reading block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
+                complTime = bus->EventReq(intL, devNum, READBLKTIME * config->getClockRate() + DMATICKS);
+                reg[STATUS] = BUSY;
+            } else {
+                sprintf(statStr, "Cannot read beyond EOT : waiting for ACK");
+                reg[STATUS] = READERR;
+                bus->IntReq(intL, devNum);
+            }
+            break;
+
+        case BACKBLK:
+            bus->IntAck(intL, devNum);
+            // overkill test
+            if (reg[DATA1] != TAPESTART && tapeBp != 0) {
+                sprintf(statStr, "Rewinding to block %u (last op: %s)", tapeBp - 1, isSuccess(dType, reg[STATUS]));
+                complTime = bus->EventReq(intL, devNum, REWBLKTIME * config->getClockRate());
+                reg[STATUS] = BUSY;
+            } else {
+                sprintf(statStr, "Cannot rewind beyond tape start : waiting for ACK");
+                reg[STATUS] = BACKERR;
+                bus->IntReq(intL, devNum);
+            }
             break;
 
         default:
+            sprintf(statStr, "Unknown command (last op: %s)", isSuccess(dType, reg[STATUS]));
+            reg[STATUS] = ILOPERR;
+            bus->IntReq(intL, devNum);
             break;
         }
-}       
+
+        SignalStatusChanged(getDevSStr());
+        break;                                       
+
+    case DATA0:
+        // sets physical address for buffer in memory
+        reg[DATA0] = data;
+        break;
+
+    default:
+        break;
+    }
+}
 
 const char* TapeDevice::getDevSStr()
 {
-    return(statStr);
+    return statStr;
 }
 
 unsigned int TapeDevice::CompleteDevOp()
@@ -1434,7 +1419,7 @@ unsigned int TapeDevice::CompleteDevOp()
         sprintf(statStr, "Block %u skipped : waiting for ACK", tapeBp);
         tapeBp++;
         break;
-                                        
+
     case READBLK:
         if (tapeBlk->ReadBlock(tapeFile, (tapeBp * BLOCKSIZE * WORDLEN) + ((tapeBp + 1) * WORDLEN)) ||
             fread((void *) &(reg[DATA1]), WORDLEN, 1, tapeFile) != 1 || reg[DATA1] > TAPEEOB)
@@ -1483,9 +1468,11 @@ unsigned int TapeDevice::CompleteDevOp()
         Panic("Unknown operation in TapeDevice::CompleteDevOp()");
         break;
     }
-    statChanged = true;
+
+    SignalStatusChanged(getDevSStr());
     complTime = NULL;
     bus->IntReq(intL, devNum);
+
     // here Reg[DATA1] too is changed, but there is only one return value
     // however, if area is traced/suspected fully the result does not change
     return STATUS;
@@ -1499,32 +1486,31 @@ unsigned int TapeDevice::CompleteDevOp()
 // has been successful or not
 HIDDEN const char * isSuccess(unsigned int devType, Word regVal)
 {
-        const char * result = NULL;
+    const char * result = NULL;
         
-        switch (devType)
-        {
-                case PRNTDEV:
-                case DISKDEV:
-                case TAPEDEV:
-                case ETHDEV:
-                        if (regVal == READY)
-                                result = opResult[true];
-                        else
-                                result = opResult[false];
-                        break;
+    switch (devType) {
+    case PRNTDEV:
+    case DISKDEV:
+    case TAPEDEV:
+    case ETHDEV:
+        if (regVal == READY)
+            result = opResult[true];
+        else
+            result = opResult[false];
+        break;
                 
-                case TERMDEV:
-                        if (regVal == READY || regVal == RECVD || regVal == TRANSMD)
-                                result = opResult[true];
-                        else
-                                result = opResult[false];
-                        break;
+    case TERMDEV:
+        if (regVal == READY || regVal == RECVD || regVal == TRANSMD)
+            result = opResult[true];
+        else
+            result = opResult[false];
+        break;
                 
-                default:
-                        Panic("Unknown device in device module::isSuccess()");
-                        break;
-        }
-        return(result);
+    default:
+        Panic("Unknown device in device module::isSuccess()");
+        break;
+    }
+    return(result);
 }       
 
 
@@ -1570,12 +1556,9 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
         switch (regnum)
         {
         case COMMAND:
-
             // decode operation requested: for each, acknowledges a
             // previous interrupt if pending, sets the device registers,
             // and inserts an Event in SystemBus mantained queue
-
-            statChanged = true;
             reg[COMMAND] = data;
             switch (data) {
             case RESET:
@@ -1628,13 +1611,17 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
             reg[STATUS] |= rp;
             if (err)
                 bus->IntReq(intL, devNum);
+            SignalStatusChanged(getDevSStr());
             break;
+
         case DATA0:
             reg[DATA0] = data;
             break;
+
         case DATA1:
             reg[DATA1] = data;
             break;
+
         default:
             break;
         }
@@ -1655,7 +1642,7 @@ unsigned int EthDevice::CompleteDevOp()
         if (!rp) { /*process has not been informed yet */
             if (netint->polling()) {  /*there are waiting packets*/
                 reg[STATUS] = reg[STATUS] | READPENDING;
-                statChanged = true;
+                SignalStatusChanged(getDevSStr());
                 bus->IntReq(intL, devNum);
             } else                   /* there are not waiting packets */
                 if ((netint->getmode() & INTERRUPT)!= 0)        /*continue polling if the user
@@ -1754,7 +1741,8 @@ unsigned int EthDevice::CompleteDevOp()
             }
             break;
         }
-        statChanged = true;
+
+        SignalStatusChanged(getDevSStr());
         complTime = NULL;
         reg[STATUS] |= rp;
         bus->IntReq(intL, devNum);
