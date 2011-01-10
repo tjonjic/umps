@@ -201,7 +201,6 @@ Processor::Processor(const MachineConfig* config, Word cpuId, Machine* machine, 
     : id(cpuId),
       machine(machine),
       bus(bus),
-      running(false),
       status(PS_HALTED),
       tlbSize(config->getTLBSize()),
       tlb(new TLBEntry[tlbSize])
@@ -219,7 +218,6 @@ void Processor::Start()
     assert(status == PS_HALTED);
     reset();
     status = PS_RUNNING;
-    running = true;
     SignalStatusChanged.emit();
 }
 
