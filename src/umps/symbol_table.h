@@ -22,6 +22,10 @@
 #ifndef UMPS_SYMBOL_TABLE_H
 #define UMPS_SYMBOL_TABLE_H
 
+#include <list>
+#include <map>
+#include <string>
+
 #include "base/basic_types.h"
 
 #include "umps/arch.h"
@@ -95,18 +99,17 @@ public:
 
     ~SymbolTable();
 
+    unsigned int Size() const;
+
     // This method probes the table, given a complete address (asid +
     // pos): it probes both tables if fullSearch is TRUE, and only
     // function table otherwise.  It returns symbol name and offset
     // inside it, or NULL if no match is found
     const char* Probe(Word asid, Word pos, bool fullSearch, SWord* offsetp) const;
-
     const Symbol* Probe(Word asid, Word addr, bool fullSearch) const;
 
-    // This method returns the total number of symbols
-    unsigned int Size() const;
-
     const Symbol* Get(unsigned int index) const;
+    std::list<const Symbol*> Lookup(const char* name) const;
 
 private:
     static void sortTable(Symbol** table, size_t size);
@@ -126,6 +129,9 @@ private:
     // Symbol tables: one for functions, other for memory object symbols
     Symbol** fTable;
     Symbol** oTable;
+
+    typedef std::map< std::string, std::list<const Symbol*> > SymbolMap;
+    SymbolMap map;
 };
 
 #endif // UMPS_SYMBOL_TABLE_H

@@ -191,6 +191,11 @@ SymbolTable::SymbolTable(Word asid, const char* fName)
     if (otSize > 1)
         sortTable(oTable, otSize);
 
+    for (unsigned int i = 0; i < Size(); i++) {
+        const Symbol* s = Get(i);
+        map[s->getName()].push_back(s);
+    }
+
     fclose(file);
 }
 
@@ -261,6 +266,15 @@ const Symbol* SymbolTable::Get(unsigned int index) const
         return fTable[index];
     else
         return oTable[index - ftSize];
+}
+
+std::list<const Symbol*> SymbolTable::Lookup(const char* name) const
+{
+    SymbolMap::const_iterator it = map.find(name);
+    if (it != map.end())
+        return it->second;
+    else
+        return std::list<const Symbol*>();
 }
 
 // This method scans the specified table looking for a Symbol range
