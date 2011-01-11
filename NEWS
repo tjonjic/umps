@@ -1,3 +1,11 @@
+1.9.3
+=====
+
+* Better error reporting
+* Don't assume ulong == umps-word, i.e. make sure code is 64-bit
+  friendly
+* Notify observers on device status change
+
 1.9.2
 =====
 
