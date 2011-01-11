@@ -99,6 +99,8 @@ public:
 
     ~SymbolTable();
 
+    Word getASID() const { return asid; }
+
     unsigned int Size() const;
 
     // This method probes the table, given a complete address (asid +

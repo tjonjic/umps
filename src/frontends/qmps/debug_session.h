@@ -107,6 +107,8 @@ private:
     void runStepIteration();
     void runContIteration();
 
+    void relocateStoppoints(const SymbolTable* newTable, StoppointSet& set);
+
     MachineStatus status;
     scoped_ptr<Machine> machine;
 

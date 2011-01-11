@@ -75,7 +75,6 @@ void DebugSession::Halt()
 
     Q_EMIT MachineAboutToBeHalted();
     machine.reset();
-    symbolTable.reset();
 
     setStatus(MS_HALTED);
 }
@@ -219,9 +218,10 @@ void DebugSession::onStartMachine()
     }
     machine->setStopMask(stopMask);
 
+    SymbolTable* stab;
     try {
-        symbolTable.reset(new SymbolTable(config->getSymbolTableASID(),
-                                          config->getROM(ROM_TYPE_STAB).c_str()));
+        stab = new SymbolTable(config->getSymbolTableASID(),
+                                          config->getROM(ROM_TYPE_STAB).c_str());
     } catch (const Error& e) {
         QMessageBox::critical(
             Appl()->getApplWindow(),
@@ -231,6 +231,13 @@ void DebugSession::onStartMachine()
         machine.reset();
         return;
     }
+
+    if (symbolTable && stab->getASID() == symbolTable->getASID()) {
+        relocateStoppoints(stab, breakpoints);
+        relocateStoppoints(stab, suspects);
+        relocateStoppoints(stab, tracepoints);
+    }
+    symbolTable.reset(stab);
 
     stoppedByUser = true;
     setStatus(MS_STOPPED);
@@ -343,4 +350,31 @@ void DebugSession::runContIteration()
     } else {
         Q_EMIT DebugIterationCompleted();
     }
+}
+
+void DebugSession::relocateStoppoints(const SymbolTable* newTable, StoppointSet& set)
+{
+    StoppointSet rset;
+
+    foreach (Stoppoint::Ptr sp, set) {
+        const AddressRange& origin = sp->getRange();
+        const Symbol* symbol = symbolTable->Probe(origin.getASID(), origin.getStart(), true);
+        bool relocated = false;
+        if (symbol != NULL) {
+            std::list<const Symbol*> symbols = newTable->Lookup(symbol->getName());
+            foreach (const Symbol* dest, symbols) {
+                if (dest->getType() != symbol->getType())
+                    continue;
+                Word start = dest->getStart() + symbol->Offset(origin.getStart());
+                Word end = start + (origin.getEnd() - origin.getStart());
+                rset.Add(AddressRange(origin.getASID(), start, end), sp->getAccessMode());
+                relocated = true;
+                break;
+            }
+        }
+        if (!relocated)
+            rset.Add(origin, sp->getAccessMode());
+    }
+
+    set = rset;
 }
