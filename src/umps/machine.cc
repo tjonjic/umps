@@ -21,10 +21,6 @@
 
 #include "umps/machine.h"
 
-#include <iostream>
-
-#include <algorithm>
-#include <cassert>
 #include <cstdlib>
 
 #include "base/lang.h"
@@ -33,7 +29,6 @@
 #include "umps/types.h"
 #include "umps/const.h"
 #include "umps/processor.h"
-
 #include "umps/machine_config.h"
 #include "umps/stoppoint.h"
 #include "umps/systembus.h"
@@ -56,10 +51,10 @@ Machine::Machine(const MachineConfig* config,
     for (unsigned int i = 0; i < config->getNumProcessors(); i++) {
         Processor* cpu = new Processor(config, i, this, bus.get());
         cpu->SignalException.connect(
-            sigc::bind(sigc::mem_fun(this, &Machine::cpuExceptionHandler), cpu)
+            sigc::bind(sigc::mem_fun(this, &Machine::onCpuException), cpu)
         );
         cpu->SignalStatusChanged.connect(
-            sigc::bind(sigc::mem_fun(this, &Machine::cpuStatusChangedHandler), cpu)
+            sigc::bind(sigc::mem_fun(this, &Machine::onCpuStatusChanged), cpu)
         );
         pd[i].stopCause = 0;
         cpus.push_back(cpu);
@@ -109,15 +104,20 @@ void Machine::Step(bool* stopped)
         *stopped = stopPointsReached;
 }
 
-void Machine::cpuExceptionHandler(unsigned int excCode, Processor* cpu)
+void Machine::onCpuException(unsigned int excCode, Processor* cpu)
 {
-    if (stopMask & SC_EXCEPTION) {
+    bool utlbExc = (excCode == UTLBLEXCEPTION || excCode == UTLBSEXCEPTION);
+
+    if (((stopMask & SC_EXCEPTION) && !utlbExc) ||
+        ((stopMask & SC_UTLB_USER) && utlbExc && cpu->InUserMode()) ||
+        ((stopMask & SC_UTLB_KERNEL) && utlbExc && cpu->InKernelMode()))
+    {
         pd[cpu->getId()].stopCause |= SC_EXCEPTION;
         stopPointsReached = true;
     }
 }
 
-void Machine::cpuStatusChangedHandler(Processor* cpu)
+void Machine::onCpuStatusChanged(Processor* cpu)
 {
     if (cpu->getStatus() == PS_RUNNING) {
         activeCpus.push_back(cpu->getId());

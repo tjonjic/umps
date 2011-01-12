@@ -88,6 +88,9 @@ public:
     Word getInstruction() const { return currInstr; }
     bool getVM() const;
 
+    bool InUserMode() const;
+    bool InKernelMode() const;
+
     void getPrevStatus(Word * pc, Word * instr);
     const char* getExcCauseStr();
     Word getNextPC(void); 
@@ -204,8 +207,6 @@ private:
     bool execStoreInstr(Word instr);
     bool execLoadCopInstr(Word instr);
     bool execStoreCopInstr(Word instr);
-    bool userMode(void);
-    bool kernelMode(void);
     bool mapVirtual(Word vaddr, Word * paddr, Word accType);
     bool probeTLB(unsigned int * index, Word asid, Word vpn);
     void completeLoad(void);

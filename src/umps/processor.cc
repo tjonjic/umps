@@ -315,6 +315,16 @@ bool Processor::getVM() const
     return BitVal(cpreg[STATUS], VMCBITPOS);
 }
 
+bool Processor::InUserMode() const
+{
+    return BitVal(cpreg[STATUS], KUCBITPOS);
+}
+
+bool Processor::InKernelMode() const
+{
+    return (!BitVal(cpreg[STATUS], KUCBITPOS));
+}
+
 // This method allows to get Processor previously executed instruction and 
 // location
 void Processor::getPrevStatus(Word * pc, Word * instr)
@@ -709,20 +719,6 @@ void Processor::completeLoad()
     }
 }
 
-
-// This simple method detects if Processor is in User mode
-bool Processor::userMode()
-{
-    return BitVal(cpreg[STATUS], KUCBITPOS);
-}
-
-
-// This simple method detects if Processor is in Kernel mode
-bool Processor::kernelMode()
-{
-    return (!BitVal(cpreg[STATUS], KUCBITPOS));
-}
-
 // This method maps the virtual addresses to physical ones following the
 // complex mapping algorithm and TLB used by MIPS (see external doc). 
 // It returns TRUE if conversion was not possible (this implies an exception
@@ -741,7 +737,7 @@ bool Processor::mapVirtual(Word vaddr, Word * paddr, Word accType)
         SignalVAMappingRequested.emit(ASID(cpreg[ENTRYHI]) >> ASIDOFFS, vaddr, accType);
 
         // address validity and bounds check
-        if (BADADDR(vaddr) || (userMode() && (vaddr < KUSEG2BASE))) {
+        if (BADADDR(vaddr) || (InUserMode() && (vaddr < KUSEG2BASE))) {
             // bad offset or kernel segment access from user mode
             *paddr = MAXWORDVAL;
 		
@@ -809,7 +805,7 @@ bool Processor::mapVirtual(Word vaddr, Word * paddr, Word accType)
         SignalVAMappingRequested.emit(MAXASID, vaddr, accType);
 
         // address validity and bounds check
-        if (BADADDR(vaddr) || (userMode() && (vaddr < KSEG0TOP))) {
+        if (BADADDR(vaddr) || (InUserMode() && (vaddr < KSEG0TOP))) {
             // bad offset or kernel segment access from user mode
             *paddr = MAXWORDVAL;
 

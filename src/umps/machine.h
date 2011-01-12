@@ -81,8 +81,8 @@ private:
         unsigned int suspectId;
     };
 
-    void cpuStatusChangedHandler(Processor* cpu);
-    void cpuExceptionHandler(unsigned int, Processor* cpu);
+    void onCpuStatusChanged(Processor* cpu);
+    void onCpuException(unsigned int, Processor* cpu);
 
     unsigned int stopMask;
 
