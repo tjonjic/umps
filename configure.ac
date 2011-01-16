@@ -16,8 +16,6 @@ AC_CONFIG_SRCDIR([src/umps/device.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
-AC_PREFIX_DEFAULT(/usr/local)
-
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
