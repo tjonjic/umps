@@ -29,6 +29,7 @@
 #include "umps/symbol_table.h"
 #include "umps/stoppoint.h"
 #include "qmps/cpu_status_map.h"
+#include "qmps/stoppoint_list_model.h"
 
 enum MachineStatus {
     MS_HALTED,
@@ -71,6 +72,8 @@ public:
     SymbolTable* getSymbolTable() { return symbolTable.get(); }
 
     StoppointSet* getBreakpoints() { return &breakpoints; }
+    StoppointListModel* getBreakpointListModel() { return bplModel.get(); }
+
     StoppointSet* getSuspects() { return &suspects; }
     StoppointSet* getTracepoints() { return &tracepoints; }
 
@@ -79,6 +82,7 @@ public:
     // Global actions
     QAction* startMachineAction;
     QAction* haltMachineAction;
+    QAction* resetMachineAction;
 
     QAction* debugContinueAction;
     QAction* debugStepAction;
@@ -88,13 +92,15 @@ public:
 public Q_SLOTS:
     void setStopMask(unsigned int value);
     void setSpeed(int value);
+    void Stop();
 
 Q_SIGNALS:
     void StatusChanged();
     void MachineStarted();
     void MachineStopped();
     void MachineRan();
-    void MachineAboutToBeHalted();
+    void MachineHalted();
+    void MachineReset();
     void DebugIterationCompleted();
 
     void SpeedChanged(int);
@@ -102,6 +108,8 @@ Q_SIGNALS:
 private:
     void createActions();
     void setStatus(MachineStatus newStatus);
+
+    void initializeMachine();
 
     void step(unsigned int steps);
     void runStepIteration();
@@ -123,6 +131,7 @@ private:
     static unsigned int iterationTimeoutInterval[kNumSpeedLevels];
 
     StoppointSet breakpoints;
+    scoped_ptr<StoppointListModel> bplModel;
     StoppointSet suspects;
     StoppointSet tracepoints;
 
@@ -138,12 +147,12 @@ private:
 private Q_SLOTS:
     void onMachineConfigChanged();
 
-    void onStartMachine();
+    void startMachine();
     void onHaltMachine();
+    void onResetMachine();
     void onContinue();
     void onStep();
     void onMultiStep();
-    void onStop();
 
     void updateActionSensitivity();
 

@@ -24,6 +24,8 @@
 
 #include <QMainWindow>
 
+#include "umps/types.h"
+
 class Processor;
 class StoppointListModel;
 class DebugSession;
@@ -39,9 +41,7 @@ class ProcessorWindow : public QMainWindow {
     Q_OBJECT
 
 public:
-    ProcessorWindow(Processor* p,
-                    StoppointListModel* bplModel,
-                    QWidget* parent = 0);
+    ProcessorWindow(Word cpuId, QWidget* parent = 0);
 
 protected:
     virtual void closeEvent(QCloseEvent* event);
@@ -53,6 +53,7 @@ private:
     void createDockableWidgets();
 
     DebugSession* const dbgSession;
+    const Word cpuId;
     Processor* cpu;
 
     QVBoxLayout* centralLayout;
@@ -73,6 +74,7 @@ private:
     RegisterSetWidget* regView;
 
 private Q_SLOTS:
+    void onMachineReset();
     void updateStatusInfo();
 };
 

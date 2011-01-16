@@ -73,9 +73,10 @@ void DebugSession::Halt()
     if (IsRunning())
         timer->stop();
 
-    Q_EMIT MachineAboutToBeHalted();
     machine.reset();
+    bplModel.reset();
 
+    Q_EMIT MachineHalted();
     setStatus(MS_HALTED);
 }
 
@@ -104,7 +105,7 @@ void DebugSession::createActions()
     startMachineAction = new QAction("Power On", this);
     startMachineAction->setShortcut(QKeySequence("F5"));
     startMachineAction->setIcon(QIcon(":/icons/machine_start-22.png"));
-    connect(startMachineAction, SIGNAL(triggered()), this, SLOT(onStartMachine()));
+    connect(startMachineAction, SIGNAL(triggered()), this, SLOT(startMachine()));
     startMachineAction->setEnabled(false);
 
     haltMachineAction = new QAction("Shut Down", this);
@@ -112,6 +113,12 @@ void DebugSession::createActions()
     haltMachineAction->setIcon(QIcon(":/icons/machine_halt-22.png"));
     connect(haltMachineAction, SIGNAL(triggered()), this, SLOT(onHaltMachine()));
     haltMachineAction->setEnabled(false);
+
+    resetMachineAction = new QAction("Reset", this);
+    resetMachineAction->setShortcut(QKeySequence("F6"));
+    resetMachineAction->setIcon(QIcon(":/icons/machine_reset-22.png"));
+    connect(resetMachineAction, SIGNAL(triggered()), this, SLOT(onResetMachine()));
+    resetMachineAction->setEnabled(false);
 
     debugContinueAction = new QAction("&Continue", this);
     debugContinueAction->setShortcut(QKeySequence("F9"));
@@ -126,7 +133,7 @@ void DebugSession::createActions()
     debugStopAction = new QAction("&Stop", this);
     debugStopAction->setShortcut(QKeySequence("F12"));
     debugStopAction->setIcon(QIcon(":/icons/debug_stop-22.png"));
-    connect(debugStopAction, SIGNAL(triggered()), this, SLOT(onStop()));
+    connect(debugStopAction, SIGNAL(triggered()), this, SLOT(Stop()));
 }
 
 void DebugSession::updateActionSensitivity()
@@ -137,10 +144,10 @@ void DebugSession::updateActionSensitivity()
 
     startMachineAction->setEnabled(Appl()->getConfig() != NULL && !started);
     haltMachineAction->setEnabled(started);
+    resetMachineAction->setEnabled(started);
 
     debugContinueAction->setEnabled(stopped);
     debugStepAction->setEnabled(stopped);
-
     debugStopAction->setEnabled(running);
 }
 
@@ -152,20 +159,8 @@ void DebugSession::setStatus(MachineStatus newStatus)
     }
 }
 
-void DebugSession::onMachineConfigChanged()
+void DebugSession::initializeMachine()
 {
-    if (Appl()->getConfig() != NULL)
-        startMachineAction->setEnabled(true);
-
-    breakpoints.Clear();
-    suspects.Clear();
-    tracepoints.Clear();
-}
-
-void DebugSession::onStartMachine()
-{
-    assert(status == MS_HALTED);
-
     MachineConfig* config = Appl()->getConfig();
     assert(config != NULL);
 
@@ -221,7 +216,7 @@ void DebugSession::onStartMachine()
     SymbolTable* stab;
     try {
         stab = new SymbolTable(config->getSymbolTableASID(),
-                                          config->getROM(ROM_TYPE_STAB).c_str());
+                               config->getROM(ROM_TYPE_STAB).c_str());
     } catch (const Error& e) {
         QMessageBox::critical(
             Appl()->getApplWindow(),
@@ -239,18 +234,53 @@ void DebugSession::onStartMachine()
     }
     symbolTable.reset(stab);
 
+    bplModel.reset(new StoppointListModel(&breakpoints, "Breakpoint", 'B'));
+
     stoppedByUser = true;
     setStatus(MS_STOPPED);
 
     cpuStatusMap.reset(new CpuStatusMap(this));
+}
 
-    Q_EMIT MachineStarted();
+void DebugSession::onMachineConfigChanged()
+{
+    if (Appl()->getConfig() != NULL)
+        startMachineAction->setEnabled(true);
+
+    breakpoints.Clear();
+    suspects.Clear();
+    tracepoints.Clear();
+}
+
+void DebugSession::startMachine()
+{
+    assert(status == MS_HALTED);
+
+    initializeMachine();
+    if (machine)
+        Q_EMIT MachineStarted();
 }
 
 void DebugSession::onHaltMachine()
 {
     assert(status != MS_HALTED);
     Halt();
+}
+
+void DebugSession::onResetMachine()
+{
+    assert(IsStarted());
+
+    Stop();
+
+    machine.reset();
+    initializeMachine();
+    if (machine) {
+        Q_EMIT MachineReset();
+    } else {
+        Q_EMIT MachineHalted();
+        setStatus(MS_HALTED);
+    }
 }
 
 void DebugSession::onContinue()
@@ -275,7 +305,7 @@ void DebugSession::onMultiStep()
     step(1);
 }
 
-void DebugSession::onStop()
+void DebugSession::Stop()
 {
     if (status == MS_RUNNING) {
         stoppedByUser = true;

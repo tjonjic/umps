@@ -40,25 +40,19 @@ const char* const RegisterSetSnapshot::registerTypeNames[RegisterSetSnapshot::kN
     "Other Registers"
 };
 
-RegisterSetSnapshot::RegisterSetSnapshot(Processor* p, QObject* parent)
+RegisterSetSnapshot::RegisterSetSnapshot(Word cpuId, QObject* parent)
     : QAbstractItemModel(parent),
-      cpu(p)
+      cpuId(cpuId)
 {
-    connect(debugSession, SIGNAL(StatusChanged()), this, SLOT(updateCache()));
+    connect(debugSession, SIGNAL(MachineStopped()), this, SLOT(updateCache()));
+    connect(debugSession, SIGNAL(MachineRan()), this, SLOT(updateCache()));
     connect(debugSession, SIGNAL(DebugIterationCompleted()), this, SLOT(updateCache()));
+
+    connect(debugSession, SIGNAL(MachineReset()), this, SLOT(reset()));
 
     topLevelFont.setBold(true);
 
-    sprCache.push_back(SpecialRegisterInfo("nextPC",
-                                           boost::bind(&Processor::getNextPC, cpu)));
-    sprCache.push_back(SpecialRegisterInfo("succPC",
-                                           boost::bind(&Processor::getSuccPC, cpu)));
-    sprCache.push_back(SpecialRegisterInfo("prevPhysPC",
-                                           boost::bind(&Processor::getPrevPPC, cpu)));
-    sprCache.push_back(SpecialRegisterInfo("currPhysPC",
-                                           boost::bind(&Processor::getCurrPPC, cpu)));
-
-    updateCache();
+    reset();
 }
 
 QModelIndex RegisterSetSnapshot::index(int row, int column, const QModelIndex& parent) const
@@ -198,6 +192,23 @@ Qt::ItemFlags RegisterSetSnapshot::flags(const QModelIndex& index) const
     if (!index.isValid())
         return 0;
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+}
+
+void RegisterSetSnapshot::reset()
+{
+    cpu = debugSession->getMachine()->getProcessor(cpuId);
+
+    sprCache.clear();
+    sprCache.push_back(SpecialRegisterInfo("nextPC",
+                                           boost::bind(&Processor::getNextPC, cpu)));
+    sprCache.push_back(SpecialRegisterInfo("succPC",
+                                           boost::bind(&Processor::getSuccPC, cpu)));
+    sprCache.push_back(SpecialRegisterInfo("prevPhysPC",
+                                           boost::bind(&Processor::getPrevPPC, cpu)));
+    sprCache.push_back(SpecialRegisterInfo("currPhysPC",
+                                           boost::bind(&Processor::getCurrPPC, cpu)));
+
+    updateCache();
 }
 
 void RegisterSetSnapshot::updateCache()

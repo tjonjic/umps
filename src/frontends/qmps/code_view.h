@@ -44,7 +44,7 @@ class CodeView : public QPlainTextEdit,
     Q_OBJECT
 
 public:
-    CodeView(Processor* p, StoppointListModel* bpListModel);
+    CodeView(Word cpuId);
 
 protected:
     // We need to handle the resizeEvent since we're responsible of
@@ -55,6 +55,7 @@ private Q_SLOTS:
     void loadCode();
     void onMachineStopped();
     void updateMargin(const QRect& rect, int dy);
+    void reset();
 
 private:
     static const int TAB_STOP_CHARS = 8;
@@ -69,8 +70,9 @@ private:
     CodeViewMargin* codeMargin;
 
     DebugSession* const dbgSession;
-    Processor* const cpu;
-    SymbolTable* const symbolTable;
+    const Word cpuId;
+    Processor* cpu;
+    SymbolTable* symbolTable;
     StoppointSet* breakpoints;
 
     bool codeLoaded;

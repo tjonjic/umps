@@ -11,6 +11,7 @@
 
     <file>icons/machine_start-22.png</file>
     <file>icons/machine_halt-22.png</file>
+    <file>icons/machine_reset-22.png</file>
     <file>icons/machine_settings-22.png</file>
 
     <file>icons/debug_continue-22.png</file>

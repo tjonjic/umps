@@ -21,11 +21,6 @@
 
 #include "qmps/terminal_window.h"
 
-#include <cassert>
-#include <algorithm>
-#include <cstring>
-#include <string>
-
 #include <QVBoxLayout>
 #include <QGridLayout>
 #include <QIcon>
@@ -33,6 +28,7 @@
 #include <QPushButton>
 #include <QCheckBox>
 
+#include "base/debug.h"
 #include "umps/types.h"
 #include "umps/device.h"
 #include "qmps/application.h"
@@ -42,38 +38,58 @@
 
 TerminalWindow::TerminalWindow(unsigned int devNo, QWidget* parent)
     : QMainWindow(parent),
-      terminal(TerminalWindow::getTerminal(devNo))
+      devNo(devNo)
 {
     setWindowTitle(QString("uMPS Terminal %1").arg(devNo));
 
+    TerminalDevice* terminal = getTerminal(devNo);
+
     QWidget* centralWidget = new QWidget;
-    QVBoxLayout* layout = new QVBoxLayout(centralWidget);
+
+    layout = new QVBoxLayout(centralWidget);
     layout->setContentsMargins(0, 0, 0, 0);
     setCentralWidget(centralWidget);
-    TerminalView* tView = new TerminalView(terminal);
-    layout->addWidget(tView);
-    layout->addWidget(new TerminalStatusWidget(terminal));
+    terminalView = new TerminalView(terminal);
+    layout->addWidget(terminalView);
+    statusWidget = new TerminalStatusWidget(terminal);
+    layout->addWidget(statusWidget);
 
     QString key = QString("TerminalWindow%1/geometry").arg(devNo);
     QVariant savedGeometry = Appl()->settings.value(key);
     if (savedGeometry.isValid()) {
         restoreGeometry(savedGeometry.toByteArray());
     } else {
-        QFontMetrics fm = tView->fontMetrics();
+        QFontMetrics fm = terminalView->fontMetrics();
         resize(fm.width(QLatin1Char('x')) * kDefaultCols, fm.lineSpacing() * kDefaultRows);
     }
+
+    connect(debugSession, SIGNAL(MachineReset()), this, SLOT(onMachineReset()));
 }
 
 void TerminalWindow::closeEvent(QCloseEvent* event)
 {
-    QString key = QString("TerminalWindow%1/geometry").arg(terminal->getNumber());
+    QString key = QString("TerminalWindow%1/geometry").arg(devNo);
     Appl()->settings.setValue(key, saveGeometry());
     event->accept();
 }
 
+void TerminalWindow::onMachineReset()
+{
+    delete terminalView;
+    delete statusWidget;
+
+    TerminalDevice* terminal = getTerminal(devNo);
+
+    terminalView = new TerminalView(terminal);
+    layout->addWidget(terminalView);
+
+    statusWidget = new TerminalStatusWidget(terminal);
+    layout->addWidget(statusWidget);
+}
+
 TerminalDevice* TerminalWindow::getTerminal(unsigned int devNo)
 {
-    Device* device = Appl()->getDebugSession()->getMachine()->getDevice(4, devNo);
+    Device* device = debugSession->getMachine()->getDevice(4, devNo);
     assert(device->Type() == TERMDEV);
     return static_cast<TerminalDevice*>(device);
 }
@@ -83,8 +99,8 @@ TerminalStatusWidget::TerminalStatusWidget(TerminalDevice* t, QWidget* parent)
     : QWidget(parent),
       terminal(t),
       expanded(false),
-      collapsedIcon(":/icons/expander_up-16.png"),
-      expandedIcon(":/icons/expander_down-16.png")
+      expandedIcon(":/icons/expander_down-16.png"),
+      collapsedIcon(":/icons/expander_up-16.png")
 {
     QGridLayout* layout = new QGridLayout(this);
     layout->setContentsMargins(5, 0, 5, 0);

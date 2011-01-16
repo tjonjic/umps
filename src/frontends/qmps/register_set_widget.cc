@@ -112,9 +112,9 @@ static void addDisplayAction(const QString& text,
     toolBar->addAction(action);
 }
 
-RegisterSetWidget::RegisterSetWidget(Processor* cpu, QWidget* parent)
+RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     : QDockWidget("Registers", parent),
-      model(new RegisterSetSnapshot(cpu, this))
+      model(new RegisterSetSnapshot(cpuId, this))
 {
     QWidget* widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout(widget);

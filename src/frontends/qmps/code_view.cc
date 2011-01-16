@@ -20,7 +20,6 @@
  */
 
 #include "qmps/code_view.h"
-#include <QtDebug>
 
 #include <list>
 #include <iterator>
@@ -45,14 +44,11 @@
 #include "qmps/code_view_priv.h"
 #include "qmps/ui_utils.h"
 
-CodeView::CodeView(Processor* p, StoppointListModel* bpListModel)
+CodeView::CodeView(Word cpuId)
     : QPlainTextEdit(),
       codeMargin(new CodeViewMargin(this)),
       dbgSession(Appl()->getDebugSession()),
-      cpu(p),
-      symbolTable(dbgSession->getSymbolTable()),
-      breakpoints(dbgSession->getBreakpoints()),
-      bplModel(bpListModel),
+      cpuId(cpuId),
       pcMarkerPixmap(":/icons/pc_marker-16.png"),
       enabledBpMarkerPixmap(":/icons/breakpoint_enabled_marker-16.png"),
       disabledBpMarkerPixmap(":/icons/breakpoint_disabled_marker-16.png")
@@ -78,18 +74,11 @@ CodeView::CodeView(Processor* p, StoppointListModel* bpListModel)
     connect(this, SIGNAL(updateRequest(QRect, int)), this, SLOT(updateMargin(QRect, int)));
 
     // Connect to debugger events of interest
-    DebugSession* dbgSession = Appl()->getDebugSession();
     connect(dbgSession, SIGNAL(MachineStopped()), this, SLOT(onMachineStopped()));
     connect(dbgSession, SIGNAL(MachineRan()), this, SLOT(update()));
+    connect(dbgSession, SIGNAL(MachineReset()), this, SLOT(reset()));
 
-    breakpoints->SignalStoppointInserted.connect(
-        sigc::mem_fun(this, &CodeView::onBreakpointInserted));
-    breakpoints->SignalStoppointRemoved.connect(
-        sigc::mem_fun(this, &CodeView::onBreakpointChanged));
-    breakpoints->SignalEnabledChanged.connect(
-        sigc::mem_fun(this, &CodeView::onBreakpointChanged));
-
-    loadCode();
+    reset();
 }
 
 // We need to handle resize events since we contain a child widget (a
@@ -190,6 +179,24 @@ void CodeView::updateMargin(const QRect& rect, int dy)
         codeMargin->update(0, rect.y(), codeMargin->width(), rect.height());
 }
 
+void CodeView::reset()
+{
+    cpu = dbgSession->getMachine()->getProcessor(cpuId);
+
+    breakpoints = dbgSession->getBreakpoints();
+    breakpoints->SignalStoppointInserted.connect(
+        sigc::mem_fun(this, &CodeView::onBreakpointInserted));
+    breakpoints->SignalStoppointRemoved.connect(
+        sigc::mem_fun(this, &CodeView::onBreakpointChanged));
+    breakpoints->SignalEnabledChanged.connect(
+        sigc::mem_fun(this, &CodeView::onBreakpointChanged));
+
+    symbolTable = dbgSession->getSymbolTable();
+    bplModel = dbgSession->getBreakpointListModel();
+
+    loadCode();
+}
+
 void CodeView::paintMargin(QPaintEvent* event)
 {
     QPainter painter(codeMargin);
@@ -256,6 +263,7 @@ void CodeView::ensureCurrentInstuctionVisible()
     cursor.movePosition(QTextCursor::NextBlock, QTextCursor::MoveAnchor, offset);
     setTextCursor(cursor);
 }
+
 
 CodeViewMargin::CodeViewMargin(CodeView* view)
     : QWidget(view),

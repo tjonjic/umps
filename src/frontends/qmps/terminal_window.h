@@ -26,6 +26,9 @@
 
 class TerminalDevice;
 class QLabel;
+class QVBoxLayout;
+class TerminalView;
+class TerminalStatusWidget;
 
 class TerminalWindow : public QMainWindow {
     Q_OBJECT
@@ -36,18 +39,20 @@ public:
 protected:
     virtual void closeEvent(QCloseEvent* event);
 
+private Q_SLOTS:
+    void onMachineReset();
+
 private:
     static const int kDefaultCols = 60;
     static const int kDefaultRows = 20;
 
     static TerminalDevice* getTerminal(unsigned int devNo);
 
-    TerminalDevice* const terminal;
+    const unsigned int devNo;
 
-    QLabel* rxStatus;
-    QLabel* rxCompletionTime;
-    QLabel* txStatus;
-    QLabel* txCompletionTime;
+    QVBoxLayout* layout;
+    TerminalView* terminalView;
+    TerminalStatusWidget* statusWidget;
 };
 
 #endif // QMPS_TERMINAL_WINDOW_H

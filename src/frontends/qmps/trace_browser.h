@@ -52,7 +52,7 @@ public:
 
 private Q_SLOTS:
     void onMachineStarted();
-    void onMachineAboutToBeHalted();
+    void onMachineHalted();
 
     void onTracepointAdded();
     void removeTracepoint();

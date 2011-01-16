@@ -86,7 +86,6 @@ private:
 
     scoped_ptr<ProcessorListModel> cpuListModel;
 
-    scoped_ptr<StoppointListModel> breakpointListModel;
     scoped_ptr<StoppointListModel> suspectListModel;
 
     scoped_ptr<DeviceTreeModel> deviceTreeModel;
@@ -160,7 +159,7 @@ private Q_SLOTS:
     void onMachineConfigChanged();
 
     void onMachineStarted();
-    void onMachineAboutToBeHalted();
+    void onMachineHalted();
 
     void updateStoppointActionsSensitivity();
 

@@ -98,7 +98,9 @@ TraceBrowser::TraceBrowser(QAction* insertTraceAct, QAction* removeTraceAct,
     splitter->addWidget(viewStack);
 
     connect(dbgSession, SIGNAL(MachineStarted()), this, SLOT(onMachineStarted()));
-    connect(dbgSession, SIGNAL(MachineAboutToBeHalted()), this, SLOT(onMachineAboutToBeHalted()));
+    connect(dbgSession, SIGNAL(MachineReset()), this, SLOT(onMachineStarted()));
+
+    connect(dbgSession, SIGNAL(MachineHalted()), this, SLOT(onMachineHalted()));
     connect(dbgSession, SIGNAL(DebugIterationCompleted()), this, SLOT(refreshView()));
     connect(dbgSession, SIGNAL(MachineStopped()), this, SLOT(refreshView()));
 }
@@ -113,6 +115,9 @@ bool TraceBrowser::AddTracepoint(Word start, Word end)
 
 void TraceBrowser::onMachineStarted()
 {
+    for (ViewDelegateMap::iterator it = viewMap.begin(); it != viewMap.end(); ++it)
+        delete it->second.widget;
+
     tplModel.reset(new TracepointListModel(dbgSession->getTracepoints()));
     tplView->setModel(tplModel.get());
 
@@ -128,7 +133,7 @@ void TraceBrowser::onMachineStarted()
         tplView->setCurrentIndex(tplModel->index(0, 0));
 }
 
-void TraceBrowser::onMachineAboutToBeHalted()
+void TraceBrowser::onMachineHalted()
 {
     for (ViewDelegateMap::iterator it = viewMap.begin(); it != viewMap.end(); ++it)
         delete it->second.widget;

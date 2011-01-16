@@ -24,6 +24,8 @@
 
 #include <QDockWidget>
 
+#include "umps/types.h"
+
 class QAction;
 class QTreeView;
 class Processor;
@@ -33,7 +35,7 @@ class RegisterSetWidget : public QDockWidget {
     Q_OBJECT
 
 public:
-    RegisterSetWidget(Processor* cpu, QWidget* parent = 0);
+    RegisterSetWidget(Word cpuId, QWidget* parent = 0);
 
 protected:
     RegisterSetSnapshot* model;

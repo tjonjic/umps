@@ -97,8 +97,11 @@ MonitorWindow::MonitorWindow()
 
     connect(dbgSession, SIGNAL(MachineStarted()),
             this, SLOT(onMachineStarted()));
-    connect(dbgSession, SIGNAL(MachineAboutToBeHalted()),
-            this, SLOT(onMachineAboutToBeHalted()));
+    connect(dbgSession, SIGNAL(MachineReset()),
+            this, SLOT(onMachineStarted()));
+
+    connect(dbgSession, SIGNAL(MachineHalted()),
+            this, SLOT(onMachineHalted()));
     connect(dbgSession, SIGNAL(StatusChanged()),
             this, SLOT(updateStoppointActionsSensitivity()));
 
@@ -271,6 +274,7 @@ void MonitorWindow::createMenu()
     QMenu* machineMenu = menuBar()->addMenu("&Machine");
     machineMenu->addAction(dbgSession->startMachineAction);
     machineMenu->addAction(dbgSession->haltMachineAction);
+    machineMenu->addAction(dbgSession->resetMachineAction);
     machineMenu->addSeparator();
     machineMenu->addAction(editConfigAction);
 
@@ -323,6 +327,7 @@ void MonitorWindow::initializeToolBar()
     toolBar->addSeparator();
     toolBar->addAction(dbgSession->startMachineAction);
     toolBar->addAction(dbgSession->haltMachineAction);
+    toolBar->addAction(dbgSession->resetMachineAction);
     toolBar->addAction(editConfigAction);
     toolBar->addSeparator();
     toolBar->addAction(dbgSession->debugContinueAction);
@@ -622,8 +627,7 @@ void MonitorWindow::showCpuWindow()
     QAction* action = static_cast<QAction*>(sender());
     unsigned int cpuId = action->data().toUInt();
     if (cpuWindows[cpuId].isNull()) {
-        cpuWindows[cpuId] = new ProcessorWindow(dbgSession->getMachine()->getProcessor(0),
-                                                breakpointListModel.get());
+        cpuWindows[cpuId] = new ProcessorWindow(cpuId);
         cpuWindows[cpuId]->setAttribute(Qt::WA_QuitOnClose, false);
         cpuWindows[cpuId]->setAttribute(Qt::WA_DeleteOnClose);
         cpuWindows[cpuId]->show();
@@ -656,9 +660,7 @@ void MonitorWindow::onMachineStarted()
     cpuListView->resizeColumnToContents(ProcessorListModel::COLUMN_CPU_STATUS);
     cpuListView->resizeColumnToContents(ProcessorListModel::COLUMN_CPU_ADDRESS);
 
-    breakpointListModel.reset(new StoppointListModel(dbgSession->getBreakpoints(),
-                                                     "Breakpoint", 'B'));
-    breakpointListView->setModel(breakpointListModel.get());
+    breakpointListView->setModel(dbgSession->getBreakpointListModel());
     breakpointListView->hideColumn(StoppointListModel::COLUMN_ACCESS_TYPE);
     breakpointListView->resizeColumnToContents(StoppointListModel::COLUMN_STOPPOINT_ID);
     breakpointListView->resizeColumnToContents(StoppointListModel::COLUMN_ACCESS_TYPE);
@@ -693,10 +695,9 @@ void MonitorWindow::onMachineStarted()
     editConfigAction->setEnabled(false);
 }
 
-void MonitorWindow::onMachineAboutToBeHalted()
+void MonitorWindow::onMachineHalted()
 {
     cpuListModel.reset();
-    breakpointListModel.reset();
     suspectListModel.reset();
     deviceTreeModel.reset();
 
@@ -739,7 +740,7 @@ void MonitorWindow::onAddBreakpoint()
     AddBreakpointDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         AddressRange r(dialog.getASID(), dialog.getStartAddress(), dialog.getStartAddress());
-        breakpointListModel->Add(r, AM_EXEC);
+        dbgSession->getBreakpointListModel()->Add(r, AM_EXEC);
     }
 }
 
@@ -747,7 +748,7 @@ void MonitorWindow::onRemoveBreakpoint()
 {
     QModelIndexList idx = breakpointListView->selectionModel()->selectedRows();
     if (!idx.isEmpty())
-        breakpointListModel->Remove(idx.first().row());
+        dbgSession->getBreakpointListModel()->Remove(idx.first().row());
 }
 
 void MonitorWindow::onAddSuspect()
@@ -805,6 +806,7 @@ StatusDisplay::StatusDisplay(QWidget* parent)
 
     connect(Appl(), SIGNAL(MachineConfigChanged()), this, SLOT(refreshAll()));
     connect(debugSession, SIGNAL(StatusChanged()), this, SLOT(refreshAll()));
+    connect(debugSession, SIGNAL(MachineReset()), this, SLOT(refreshAll()));
     connect(debugSession, SIGNAL(DebugIterationCompleted()), this, SLOT(refreshTod()));
 
     refreshAll();

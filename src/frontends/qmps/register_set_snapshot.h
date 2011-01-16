@@ -41,7 +41,7 @@ public:
         N_COLUMNS
     };
 
-    RegisterSetSnapshot(Processor* cpu, QObject* parent = 0);
+    RegisterSetSnapshot(Word cpuId, QObject* parent = 0);
 
     QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const;
     QModelIndex parent(const QModelIndex& index) const;
@@ -79,7 +79,9 @@ private:
 
     static const char* const registerTypeNames[kNumRegisterTypes];
 
-    Processor* const cpu;
+    const Word cpuId;
+    Processor* cpu;
+
     Word gprCache[Processor::kNumCPURegisters];
     Word cp0Cache[Processor::kNumCP0Registers];
     std::vector<SpecialRegisterInfo> sprCache;
@@ -87,6 +89,7 @@ private:
     QFont topLevelFont;
 
 private Q_SLOTS:
+    void reset();
     void updateCache();
 };
 

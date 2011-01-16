@@ -47,14 +47,14 @@
 static const int kDefaultWidth = 400;
 static const int kDefaultHeight = 540;
 
-ProcessorWindow::ProcessorWindow(Processor* p,
-                                 StoppointListModel* bplModel,
-                                 QWidget* parent)
+ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
     : QMainWindow(parent),
       dbgSession(Appl()->getDebugSession()),
-      cpu(p)
+      cpuId(cpuId)
 {
-    setWindowTitle(QString("uMPS: Processor %1").arg(cpu->getId()));
+    cpu = dbgSession->getMachine()->getProcessor(cpuId);
+
+    setWindowTitle(QString("uMPS: Processor %1").arg(cpuId));
 
     createDockableWidgets();
     createMenu();
@@ -71,7 +71,7 @@ ProcessorWindow::ProcessorWindow(Processor* p,
     statusLabel->setFont(Appl()->getMonospaceFont());
     centralLayout->addWidget(statusLabel);
 
-    centralLayout->addWidget(new CodeView(cpu, bplModel));
+    centralLayout->addWidget(new CodeView(cpuId));
     centralLayout->addLayout(createInstrPanel());
 
     secStatusLabel = new QLabel;
@@ -103,6 +103,8 @@ ProcessorWindow::ProcessorWindow(Processor* p,
 
     connect(dbgSession->getCpuStatusMap(), SIGNAL(Changed()),
             this, SLOT(updateStatusInfo()));
+    connect(dbgSession, SIGNAL(MachineReset()),
+            this, SLOT(onMachineReset()));
 }
 
 void ProcessorWindow::closeEvent(QCloseEvent* event)
@@ -170,7 +172,7 @@ QLayout* ProcessorWindow::createInstrPanel()
 
 void ProcessorWindow::createDockableWidgets()
 {
-    regView = new RegisterSetWidget(cpu);
+    regView = new RegisterSetWidget(cpuId);
     regView->setObjectName("RegisterSetWidget");
     addDockWidget(Qt::BottomDockWidgetArea, regView);
 }
@@ -192,8 +194,18 @@ void ProcessorWindow::updateStatusInfo()
     bdIndicator->setEnabled(isBD);
     ldIndicator->setEnabled(isLD);
 
-    QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpu->getId());
+    QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpuId);
     if (dbgSession->IsStopped())
         newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
     statusLabel->setText(newStatus);
+}
+
+void ProcessorWindow::onMachineReset()
+{
+    cpu = dbgSession->getMachine()->getProcessor(cpuId);
+
+    connect(dbgSession->getCpuStatusMap(), SIGNAL(Changed()),
+            this, SLOT(updateStatusInfo()));
+
+    updateStatusInfo();
 }

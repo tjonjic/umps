@@ -35,9 +35,6 @@ class TerminalView : public QPlainTextEdit,
     Q_OBJECT
 
 public:
-    static const int INITIAL_COLUMN_WIDTH = 60;
-    static const int INITIAL_COLUMN_HEIGHT = 20;
-
     TerminalView(TerminalDevice* terminal, QWidget* parent = 0);
 
 protected:
