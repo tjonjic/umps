@@ -54,12 +54,18 @@ bool StoppointSet::CanInsert(const AddressRange& range) const
 
 bool StoppointSet::Add(const AddressRange& range, AccessMode mode)
 {
+    return Add(range, mode, nextId());
+}
+
+bool StoppointSet::Add(const AddressRange& range, AccessMode mode, unsigned int id, bool enabled)
+{
     // Check for collisions
     if (!CanInsert(range))
         return false;
 
     // No overlap: safe to add
-    Stoppoint* p = new Stoppoint(nextId++, range, mode);
+    Stoppoint* p = new Stoppoint(std::max(id, nextId()), range, mode);
+    p->SetEnabled(enabled);
     points.push_back(Stoppoint::Ptr(p));
     addressMap[p->getRange()] = p;
 
@@ -147,4 +153,12 @@ std::string StoppointSet::ToString(bool sorted) const
     }
 
     return result.append("]");
+}
+
+unsigned int StoppointSet::nextId() const
+{
+    unsigned int id = 0;
+    foreach (Stoppoint::Ptr p, points)
+        id = std::max(id, p->getId() + 1);
+    return id;
 }

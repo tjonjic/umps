@@ -26,6 +26,9 @@
 
 #include <stdexcept>
 #include <algorithm>
+#include <iterator>
+#include <functional>
+#include <boost/bind.hpp>
 
 #include "base/debug.h"
 #include "umps/const.h"
@@ -275,6 +278,17 @@ std::list<const Symbol*> SymbolTable::Lookup(const char* name) const
         return it->second;
     else
         return std::list<const Symbol*>();
+}
+
+std::list<const Symbol*> SymbolTable::Lookup(const char* name, Symbol::Type type) const
+{
+    std::list<const Symbol*> symbols = Lookup(name);
+    std::list<const Symbol*> subset;
+    std::remove_copy_if(symbols.begin(), symbols.end(), std::back_inserter(subset),
+                        boost::bind(std::not_equal_to<Symbol::Type>(),
+                                    boost::bind(&Symbol::getType, _1),
+                                    type));
+    return subset;
 }
 
 // This method scans the specified table looking for a Symbol range

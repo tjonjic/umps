@@ -117,12 +117,9 @@ private:
     AccessMode accessMode;
 };
 
+
 class StoppointSet {
 public:
-    StoppointSet()
-        : nextId(0)
-    {}
-
     virtual ~StoppointSet();
 
     size_t Size() const { return points.size(); }
@@ -135,6 +132,7 @@ public:
 
     bool CanInsert(const AddressRange& range) const;
     bool Add(const AddressRange& range, AccessMode mode);
+    bool Add(const AddressRange& range, AccessMode mode, unsigned int id, bool enabled = true);
     void Remove(size_t index);
     void Clear();
 
@@ -153,7 +151,7 @@ public:
     sigc::signal<void, size_t, const Stoppoint*, Word, const Processor*> SignalHit;
 
 private:
-    unsigned int nextId;
+    unsigned int nextId() const;
 
     typedef std::vector<Stoppoint::Ptr> StoppointVector;
     StoppointVector points;

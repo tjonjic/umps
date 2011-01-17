@@ -389,21 +389,17 @@ void DebugSession::relocateStoppoints(const SymbolTable* newTable, StoppointSet&
     foreach (Stoppoint::Ptr sp, set) {
         const AddressRange& origin = sp->getRange();
         const Symbol* symbol = symbolTable->Probe(origin.getASID(), origin.getStart(), true);
-        bool relocated = false;
         if (symbol != NULL) {
-            std::list<const Symbol*> symbols = newTable->Lookup(symbol->getName());
-            foreach (const Symbol* dest, symbols) {
-                if (dest->getType() != symbol->getType())
-                    continue;
-                Word start = dest->getStart() + symbol->Offset(origin.getStart());
+            std::list<const Symbol*> dest = newTable->Lookup(symbol->getName(), symbol->getType());
+            if (dest.size() == 1) {
+                Word start = dest.front()->getStart() + symbol->Offset(origin.getStart());
                 Word end = start + (origin.getEnd() - origin.getStart());
-                rset.Add(AddressRange(origin.getASID(), start, end), sp->getAccessMode());
-                relocated = true;
-                break;
+                rset.Add(AddressRange(origin.getASID(), start, end),
+                         sp->getAccessMode(), sp->getId(), sp->IsEnabled());
+                continue;
             }
         }
-        if (!relocated)
-            rset.Add(origin, sp->getAccessMode());
+        rset.Add(origin, sp->getAccessMode(), sp->getId(), sp->IsEnabled());
     }
 
     set = rset;

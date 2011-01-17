@@ -112,6 +112,7 @@ public:
 
     const Symbol* Get(unsigned int index) const;
     std::list<const Symbol*> Lookup(const char* name) const;
+    std::list<const Symbol*> Lookup(const char* name, Symbol::Type type) const;
 
 private:
     static void sortTable(Symbol** table, size_t size);

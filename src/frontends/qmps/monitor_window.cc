@@ -475,6 +475,7 @@ QWidget* MonitorWindow::createCpuTab()
 QWidget* MonitorWindow::createMemoryTab()
 {
     suspectListView = new QTreeView;
+    suspectListView->setAlternatingRowColors(true);
     suspectListView->setContextMenuPolicy(Qt::ActionsContextMenu);
     suspectListView->addAction(addSuspectAction);
     suspectListView->addAction(removeSuspectAction);
