@@ -109,6 +109,8 @@ public:
     void setNextPC(Word npc);
     void setSuccPC(Word spc);
     void setTLB(unsigned int index, Word hi, Word lo);
+    void setTLBHi(unsigned int index, Word value);
+    void setTLBLo(unsigned int index, Word value);
 
     void handleBusWrite(Word pa, Word cpuId);
 

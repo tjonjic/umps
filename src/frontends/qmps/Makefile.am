@@ -105,6 +105,8 @@ umps2_SOURCES = \
 	address_line_edit.cc		\
 	boolean_item_delegate.h		\
 	boolean_item_delegate.cc	\
+	register_item_delegate.h	\
+	register_item_delegate.cc	\
 	ui_utils.h			\
 	ui_utils.cc			\
 	flat_push_button.h		\

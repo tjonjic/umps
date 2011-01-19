@@ -27,77 +27,10 @@
 #include <QToolBar>
 #include <QAction>
 #include <QTreeView>
-#include <QStyledItemDelegate>
 
 #include "qmps/register_set_snapshot.h"
 #include "qmps/ui_utils.h"
-
-class RegisterItemDelegate : public QStyledItemDelegate {
-public:
-    RegisterItemDelegate(QObject* parent = 0)
-        : QStyledItemDelegate(parent) {}
-
-    virtual QString displayText(const QVariant& value, const QLocale& locale) const;
-
-protected:
-    virtual QString Text(Word value) const = 0;
-};
-
-QString RegisterItemDelegate::displayText(const QVariant& variant, const QLocale& locale) const
-{
-    if (variant.canConvert<Word>())
-        return Text(variant.value<Word>());
-    else
-        return QStyledItemDelegate::displayText(variant, locale);
-}
-
-class RIDelegateHex : public RegisterItemDelegate {
-public:
-    RIDelegateHex(QObject* parent = 0)
-        : RegisterItemDelegate(parent) {}
-
-    virtual QString Text(Word value) const
-    {
-        return QString("0x%1").arg(value, 8, 16, QLatin1Char('0'));
-    }
-};
-
-class RIDelegateSignedDecimal : public RegisterItemDelegate {
-public:
-    RIDelegateSignedDecimal(QObject* parent = 0)
-        : RegisterItemDelegate(parent) {}
-
-    virtual QString Text(Word value) const
-    {
-        return QString::number((SWord) value, 10);
-    }
-};
-
-class RIDelegateUnsignedDecimal : public RegisterItemDelegate {
-public:
-    RIDelegateUnsignedDecimal(QObject* parent = 0)
-        : RegisterItemDelegate(parent) {}
-
-    virtual QString Text(Word value) const
-    {
-        return QString::number(value, 10);
-    }
-};
-
-class RIDelegateBinary : public RegisterItemDelegate {
-public:
-    RIDelegateBinary(QObject* parent = 0)
-        : RegisterItemDelegate(parent) {}
-
-    virtual QString Text(Word value) const
-    {
-        return (QString("%1|%2|%3|%4")
-                .arg((value >> 24) & 0xFFU, 8, 2, QLatin1Char('0'))
-                .arg((value >> 16) & 0xFFU, 8, 2, QLatin1Char('0'))
-                .arg((value >>  8) & 0xFFU, 8, 2, QLatin1Char('0'))
-                .arg((value >>  0) & 0xFFU, 8, 2, QLatin1Char('0')));
-    }
-};
+#include "qmps/register_item_delegate.h"
 
 static void addDisplayAction(const QString& text,
                              QStyledItemDelegate* delegate,

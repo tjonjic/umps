@@ -19,10 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtDebug>
-
 #include "qmps/tlb_model.h"
 
+#include "base/debug.h"
 #include "umps/processor.h"
 #include "umps/processor_defs.h"
 #include "umps/utility.h"
@@ -75,13 +74,7 @@ Qt::ItemFlags TLBModel::flags(const QModelIndex& index) const
     if (!index.isValid())
         return 0;
 
-    // FIXME: Figure out how exactly to support editing (i.e. what
-    // kind of editor we want to provide) and then enable this!
-#if 0
     return QAbstractTableModel::flags(index) | Qt::ItemIsEditable;
-#else
-    return QAbstractTableModel::flags(index);
-#endif
 }
 
 int TLBModel::rowCount(const QModelIndex& parent) const
@@ -127,7 +120,7 @@ QVariant TLBModel::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == Qt::EditRole) {
         switch (index.column()) {
         case COLUMN_PTE_HI:
             return cpu->getTLBHi(index.row());
@@ -147,10 +140,31 @@ QVariant TLBModel::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
+bool TLBModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    if (!(index.isValid() && role == Qt::EditRole && value.canConvert<Word>()))
+        return false;
+
+    switch (index.column()) {
+    case COLUMN_PTE_HI:
+        cpu->setTLBHi(index.row(), value.value<Word>());
+        break;
+    case COLUMN_PTE_LO:
+        cpu->setTLBLo(index.row(), value.value<Word>());
+        break;
+    default:
+        AssertNotReached();
+    }
+
+    return true;
+}
+
 void TLBModel::onMachineReset()
 {
+    beginResetModel();
     cpu = debugSession->getMachine()->getProcessor(cpuId);
     cpu->SignalTLBChanged.connect(sigc::mem_fun(this, &TLBModel::onTLBChanged));
+    endResetModel();
 }
 
 void TLBModel::onTLBChanged(unsigned int tlbIndex)
@@ -166,10 +180,13 @@ QString TLBModel::tlbEntryDetails(unsigned int index) const
     QString buf(detailsTemplate);
     buf.replace("%EntryNo%", QString::number(index));
 
-    buf.replace("%EntryHi.VPN%", QString("%1").arg(VPN(hi), 5, 16, QLatin1Char('0')));
-    buf.replace("%EntryHi.ASID%", QString::number(ASID(hi), 16));
+    buf.replace("%EntryHi.VPN%",
+                QString("%1").arg(VPN(hi) >> 12, 5, 16, QLatin1Char('0')));
+    buf.replace("%EntryHi.ASID%",
+                QString::number(ASID(hi) >> 6, 16));
 
-    buf.replace("%EntryLo.PFN%", QString("%1").arg(VPN(lo), 5, 16, QLatin1Char('0')));
+    buf.replace("%EntryLo.PFN%",
+                QString("%1").arg(VPN(lo) >> 12, 5, 16, QLatin1Char('0')));
     buf.replace("%EntryLo.D%", QString::number(BitVal(lo, DBITPOS)));
     buf.replace("%EntryLo.V%", QString::number(BitVal(lo, VBITPOS)));
     buf.replace("%EntryLo.G%", QString::number(BitVal(lo, GBITPOS)));

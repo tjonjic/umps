@@ -52,9 +52,7 @@ public:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-#if 0
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
-#endif
 
 private Q_SLOTS:
     void onMachineReset();

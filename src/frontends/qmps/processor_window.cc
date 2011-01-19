@@ -39,8 +39,8 @@
 #include "qmps/code_view.h"
 #include "qmps/ui_utils.h"
 #include "qmps/register_set_widget.h"
-
 #include "qmps/tlb_model.h"
+#include "qmps/register_item_delegate.h"
 
 static const int kDefaultWidth = 420;
 static const int kDefaultHeight = 580;
@@ -190,6 +190,7 @@ void ProcessorWindow::createDockableWidgets()
     tlbView->verticalHeader()->setHighlightSections(false);
     tlbView->verticalHeader()->setResizeMode(QHeaderView::Fixed);
     tlbView->setAlternatingRowColors(true);
+    tlbView->setItemDelegate(new RIDelegateHex(this));
     tlbView->resizeRowsToContents();
 
     tlbWidget = new QDockWidget("TLB");

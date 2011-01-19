@@ -450,6 +450,20 @@ void Processor::setTLB(unsigned int index, Word hi, Word lo)
     }
 }
 
+void Processor::setTLBHi(unsigned int index, Word value)
+{
+    assert(index < tlbSize);
+    tlb[index].setHI(value);
+    SignalTLBChanged(index);
+}
+
+void Processor::setTLBLo(unsigned int index, Word value)
+{
+    assert(index < tlbSize);
+    tlb[index].setLO(value);
+    SignalTLBChanged(index);
+}
+
 
 //
 // Processor private methods start here
