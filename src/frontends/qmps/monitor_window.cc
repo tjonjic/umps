@@ -271,7 +271,7 @@ void MonitorWindow::createMenu()
     viewMenu->addAction(toolBar->toggleViewAction());
     viewMenu->addAction(viewStopMaskAction);
 
-    QMenu* machineMenu = menuBar()->addMenu("&Machine");
+    QMenu* machineMenu = menuBar()->addMenu("M&achine");
     machineMenu->addAction(dbgSession->startMachineAction);
     machineMenu->addAction(dbgSession->haltMachineAction);
     machineMenu->addAction(dbgSession->resetMachineAction);
@@ -377,7 +377,7 @@ void MonitorWindow::createTabs()
     tabWidget->addTab(createMemoryTab(),
                       QIcon(":/icons/memory-16.png"), "&Memory");
     tabWidget->addTab(createDeviceTab(),
-                      QIcon(":/icons/device-16.png"), "&Device Status");
+                      QIcon(":/icons/device-16.png"), "D&evice Status");
 
     tabWidget->setTabEnabled(TAB_INDEX_CPU, false);
     tabWidget->setTabEnabled(TAB_INDEX_MEMORY, false);
@@ -541,7 +541,6 @@ void MonitorWindow::onLoadConfig()
         return;
 
     QString fileName = QFileDialog::getOpenFileName(this, "Open Machine Configuration");
-    qDebug() << fileName;
     if (!fileName.isEmpty())
         Appl()->LoadConfig_(fileName);
 }
