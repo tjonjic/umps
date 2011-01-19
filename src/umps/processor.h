@@ -43,12 +43,6 @@ enum ProcessorStatus {
 
 class Processor {
 public:
-    // Signals
-    sigc::signal<void> SignalStatusChanged;
-    sigc::signal<void, unsigned int> SignalException;
-    // arguments: ASID, virtual address, access
-    sigc::signal<void, Word, Word, Word> SignalVAMappingRequested;
-
     // Register file size:
     static const unsigned int kNumCPURegisters = 34;
     static const unsigned int kNumCP0Registers = 9;
@@ -99,7 +93,9 @@ public:
     Word getCurrPPC(void);
     SWord getGPR(unsigned int num);
     Word getCP0Reg(unsigned int num);
-    void getTLB(unsigned int index, Word * hi, Word * lo);
+    void getTLB(unsigned int index, Word * hi, Word * lo) const;
+    Word getTLBHi(unsigned int index) const;
+    Word getTLBLo(unsigned int index) const;
 
     // The following methods allow to change Processor internal status
     // Name & parameters are almost self-explanatory: remember that
@@ -115,6 +111,13 @@ public:
     void setTLB(unsigned int index, Word hi, Word lo);
 
     void handleBusWrite(Word pa, Word cpuId);
+
+    // Signals
+    sigc::signal<void> SignalStatusChanged;
+    sigc::signal<void, unsigned int> SignalException;
+    // arguments: ASID, virtual address, access
+    sigc::signal<void, Word, Word, Word> SignalVAMappingRequested;
+    sigc::signal<void, unsigned int> SignalTLBChanged;
 
 private:
 
@@ -138,8 +141,6 @@ private:
     SystemBus* bus;
 
     ProcessorStatus status;
-    // XXX: unused?
-    bool running;
 
     // last exception cause: an internal format is used (see excName[]
     // for mnemonic code) and it is mapped to CAUSE register format by

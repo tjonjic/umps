@@ -150,6 +150,7 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     layout->addWidget(treeView);
 
     setAllowedAreas(Qt::AllDockWidgetAreas);
+    setFeatures(DockWidgetClosable | DockWidgetMovable | DockWidgetFloatable);
 }
 
 void RegisterSetWidget::setDisplayType(QAction* action)

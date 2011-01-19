@@ -61,7 +61,6 @@ private:
     static const int TAB_STOP_CHARS = 8;
 
     void paintMargin(QPaintEvent* event);
-    void onPCChanged();
     void ensureCurrentInstuctionVisible();
 
     void onBreakpointInserted();

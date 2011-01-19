@@ -35,6 +35,7 @@ umps2_moc_sources = \
 	terminal_view.moc.cc \
 	terminal_window.moc.cc \
 	terminal_window_priv.moc.cc \
+	tlb_model.moc.cc \
 	trace_browser.moc.cc \
 	trace_browser_priv.moc.cc
 
@@ -77,6 +78,8 @@ umps2_SOURCES = \
 	register_set_snapshot.cc	\
 	register_set_widget.h		\
 	register_set_widget.cc		\
+	tlb_model.h			\
+	tlb_model.cc			\
 	terminal_view.h			\
 	terminal_view.cc		\
 	terminal_window.h		\

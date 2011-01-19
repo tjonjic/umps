@@ -389,10 +389,20 @@ Word Processor::getCP0Reg(unsigned int num)
     return(cpreg[num]);
 }
 
-void Processor::getTLB(unsigned int index, Word* hi, Word* lo)
+void Processor::getTLB(unsigned int index, Word* hi, Word* lo) const
 {
     *hi = tlb[index].getHI();
     *lo = tlb[index].getLO();
+}
+
+Word Processor::getTLBHi(unsigned int index) const
+{
+    return tlb[index].getHI();
+}
+
+Word Processor::getTLBLo(unsigned int index) const
+{
+    return tlb[index].getLO();
 }
 
 // This method allows to modify the current value of a general purpose
@@ -434,6 +444,7 @@ void Processor::setTLB(unsigned int index, Word hi, Word lo)
     if (index < tlbSize) {
         tlb[index].setHI(hi);
         tlb[index].setLO(lo);
+        SignalTLBChanged(index);
     } else {
         Panic("Unknown TLB entry in Processor::setTLB()");
     }
@@ -653,6 +664,7 @@ void Processor::zapTLB()
     for (size_t i = 1; i < tlbSize; ++i) {
         tlb[i].setHI(0);
         tlb[i].setLO(0);
+        SignalTLBChanged(i);
     }
 }
 
@@ -921,11 +933,13 @@ bool Processor::execInstr(Word instr)
                     case TLBWI:
                         tlb[RNDIDX(cpreg[INDEX])].setHI(cpreg[ENTRYHI]);
                         tlb[RNDIDX(cpreg[INDEX])].setLO(cpreg[ENTRYLO]);
+                        SignalTLBChanged(RNDIDX(cpreg[INDEX]));
                         break;
 
                     case TLBWR:
                         tlb[RNDIDX(cpreg[RANDOM])].setHI(cpreg[ENTRYHI]);
                         tlb[RNDIDX(cpreg[RANDOM])].setLO(cpreg[ENTRYLO]);
+                        SignalTLBChanged(RNDIDX(cpreg[INDEX]));
                         break;
 
                     default:

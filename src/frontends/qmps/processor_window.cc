@@ -28,14 +28,10 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QGridLayout>
-#include <QTabWidget>
-#include <QTreeView>
-#include <QCheckBox>
-#include <QSplitter>
-#include <QTextEdit>
-#include <QGroupBox>
 #include <QDockWidget>
 #include <QStatusBar>
+#include <QTableView>
+#include <QHeaderView>
 
 #include "umps/processor.h"
 #include "umps/disassemble.h"
@@ -44,8 +40,10 @@
 #include "qmps/ui_utils.h"
 #include "qmps/register_set_widget.h"
 
-static const int kDefaultWidth = 400;
-static const int kDefaultHeight = 540;
+#include "qmps/tlb_model.h"
+
+static const int kDefaultWidth = 420;
+static const int kDefaultHeight = 580;
 
 ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
     : QMainWindow(parent),
@@ -55,15 +53,16 @@ ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
     cpu = dbgSession->getMachine()->getProcessor(cpuId);
 
     setWindowTitle(QString("uMPS: Processor %1").arg(cpuId));
+    setDockOptions(AnimatedDocks | AllowTabbedDocks);
 
+    createToolBar();
     createDockableWidgets();
     createMenu();
-    createToolBar();
 
     QWidget* centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
-    centralLayout = new QVBoxLayout(centralWidget);
+    QVBoxLayout* centralLayout = new QVBoxLayout(centralWidget);
     centralLayout->setContentsMargins(0, 7, 0, 0);
 
     statusLabel = new QLabel;
@@ -74,7 +73,6 @@ ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
     centralLayout->addWidget(new CodeView(cpuId));
     centralLayout->addLayout(createInstrPanel());
 
-    secStatusLabel = new QLabel;
     QWidget* secStatusWidget = new QWidget;
     QHBoxLayout* secStatusLayout = new QHBoxLayout(secStatusWidget);
     secStatusLayout->setSpacing(12);
@@ -100,6 +98,9 @@ ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
     QVariant savedState = Appl()->settings.value(key);
     if (savedState.isValid())
         restoreState(savedState.toByteArray());
+    else {
+        tlbWidget->hide();
+    }
 
     connect(dbgSession->getCpuStatusMap(), SIGNAL(Changed()),
             this, SLOT(updateStatusInfo()));
@@ -124,7 +125,10 @@ void ProcessorWindow::createMenu()
     debugMenu->addAction(dbgSession->debugStopAction);
 
     QMenu* viewMenu = menuBar()->addMenu("&View");
+    viewMenu->addAction(toolBar->toggleViewAction());
+    viewMenu->addSeparator();
     viewMenu->addAction(regView->toggleViewAction());
+    viewMenu->addAction(tlbWidget->toggleViewAction());
 
     QMenu* helpMenu = menuBar()->addMenu("&Help");
     (void) helpMenu;
@@ -132,7 +136,7 @@ void ProcessorWindow::createMenu()
 
 void ProcessorWindow::createToolBar()
 {
-    QToolBar* toolBar = addToolBar("ToolBar");
+    toolBar = addToolBar("ToolBar");
     toolBar->setObjectName("ToolBar");
     toolBar->addAction(dbgSession->debugContinueAction);
     toolBar->addAction(dbgSession->debugStepAction);
@@ -175,6 +179,27 @@ void ProcessorWindow::createDockableWidgets()
     regView = new RegisterSetWidget(cpuId);
     regView->setObjectName("RegisterSetWidget");
     addDockWidget(Qt::BottomDockWidgetArea, regView);
+
+    QTableView* tlbView = new QTableView;
+    tlbView->setModel(new TLBModel(cpuId));
+    tlbView->setSelectionMode(QAbstractItemView::SingleSelection);
+    tlbView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    tlbView->horizontalHeader()->setStretchLastSection(true);
+    tlbView->horizontalHeader()->setResizeMode(QHeaderView::Stretch);
+    tlbView->horizontalHeader()->setHighlightSections(false);
+    tlbView->verticalHeader()->setHighlightSections(false);
+    tlbView->verticalHeader()->setResizeMode(QHeaderView::Fixed);
+    tlbView->setAlternatingRowColors(true);
+    tlbView->resizeRowsToContents();
+
+    tlbWidget = new QDockWidget("TLB");
+    tlbWidget->setWidget(tlbView);
+    tlbWidget->setObjectName("TLBWidget");
+    tlbWidget->setFeatures(QDockWidget::DockWidgetClosable |
+                           QDockWidget::DockWidgetMovable |
+                           QDockWidget::DockWidgetFloatable);
+    addDockWidget(Qt::BottomDockWidgetArea, tlbWidget);
+    tabifyDockWidget(regView, tlbWidget);
 }
 
 void ProcessorWindow::updateStatusInfo()

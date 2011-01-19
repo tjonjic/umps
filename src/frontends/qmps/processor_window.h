@@ -26,15 +26,13 @@
 
 #include "umps/types.h"
 
+class QToolBar;
 class Processor;
-class StoppointListModel;
 class DebugSession;
-class QVBoxLayout;
 class QLabel;
-class QCheckBox;
-class QTextEdit;
 class CodeView;
 class QLayout;
+class QDockWidget;
 class RegisterSetWidget;
 
 class ProcessorWindow : public QMainWindow {
@@ -56,8 +54,7 @@ private:
     const Word cpuId;
     Processor* cpu;
 
-    QVBoxLayout* centralLayout;
-
+    QToolBar* toolBar;
     QLabel* statusLabel;
     CodeView* codeView;
 
@@ -69,9 +66,9 @@ private:
     QLabel* vmIndicator;
     QLabel* bdIndicator;
     QLabel* ldIndicator;
-    QLabel* secStatusLabel;
 
     RegisterSetWidget* regView;
+    QDockWidget* tlbWidget;
 
 private Q_SLOTS:
     void onMachineReset();

@@ -20,7 +20,6 @@
  */
 
 #include "qmps/application.h"
-#include "qmps/monitor_window.h"
 
 int main(int argc, char** argv)
 {
