@@ -1,4 +1,5 @@
 XCPP_FLAGS = -I$(top_srcdir)/src
+CCASFLAGS="-KPIC"
 
 umps_datadir = $(datadir)/umps2
 umps_includedir = $(includedir)/umps2/umps
@@ -30,16 +31,16 @@ umps_include_HEADERS = e/libumps.e h/types.h
 
 # generic aout startup function 
 .S.o:
-	$(XGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $<
+	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $<
 
 exec: exec.S
-	$(XGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
 
 coreboot: coreboot.S
-	$(XGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
 
 tapeboot: tapeboot.S
-	$(XGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
 
 exec.rom.umps: exec
 	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<

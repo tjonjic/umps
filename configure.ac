@@ -63,11 +63,6 @@ AC_CHECK_HEADERS([fcntl.h libelf.h stdint.h stdlib.h string.h strings.h sys/ioct
 
 # Checks for typedefs, structures, and compiler characteristics.
 
-# We can specify crosscompiler PATH or use the conventional /usr/local/bin
-AC_ARG_WITH([cross],[  --with-cross[=PATH]       pathname of the crosscompiler set.], [CROSSBIN="${withval}"], [CROSSBIN="/usr/local/bin"])
-
-CROSSBIN=`readlink -f $CROSSBIN`
-
 # Checks for library functions.
 AC_FUNC_MEMCMP
 AC_FUNC_SETVBUF_REVERSED
@@ -89,33 +84,31 @@ else
 	LDCORESCRIPT="elf32ltsmip.h.umpscore.x"
 	LDAOUTSCRIPT="elf32ltsmip.h.umpsaout.x"
 fi
+AC_SUBST(LDCORESCRIPT)
+AC_SUBST(LDAOUTSCRIPT)
+AC_SUBST(LDCOREFLAGS)
+AC_SUBST(LDAOUTFLAGS)
 
-# Checking for gcc, ar, as and ld crosscompiling tools.
-AC_CHECK_PROGS([GCCUMPS], ["${crosscompiler_prefix}"-gcc], ["no"], ["${CROSSBIN}"])
-if test "x${GCCUMPS}" = "xno"
-then
-	AC_MSG_ERROR([*** ${crosscompiler_prefix}-gcc not found in ${CROSSBIN}. Specify a different path or install it.])
-fi
-AC_CHECK_PROGS([ASUMPS], ["${crosscompiler_prefix}"-as], ["no"], ["${CROSSBIN}"])
-if test "x${ASUMPS}" = "xno"
-then
-	AC_MSG_ERROR([*** ${crosscompiler_prefix}-as not found in ${CROSSBIN}. Specify a different path or install it.])
-fi
-AC_CHECK_PROGS([ARUMPS], ["${crosscompiler_prefix}"-ar], ["no"], ["${CROSSBIN}"])
-if test "x${ARUMPS}" = "xno"
-then
-	AC_MSG_ERROR([*** ${crosscompiler_prefix}-ar not found in ${CROSSBIN}. Specify a different path or install it.])
-fi
-AC_CHECK_PROGS([LDUMPS], ["${crosscompiler_prefix}"-ld], ["no"], ["${CROSSBIN}"])
-if test "x${LDUMPS}" = "xno"
-then
-	AC_MSG_ERROR([*** ${crosscompiler_prefix}-ld not found in ${CROSSBIN}. Specify a different path or install it.])
+# Check for toolchain
+
+AC_PATH_PROG([XCGCC], ["${crosscompiler_prefix}"-gcc], ["no"])
+if test "x${XCGCC}" = "xno"; then
+    AC_MSG_ERROR([${crosscompiler_prefix}-gcc not found.])
 fi
 
-# If cross-tools path have to be in the form /dir/
-if test `expr ${CROSSBIN} : '.*/$'` -eq "0"
-then
-	CROSSBIN=${CROSSBIN}/
+AC_PATH_PROG([XCAS], ["${crosscompiler_prefix}"-as], ["no"])
+if test "x${XCAS}" = "xno"; then
+    AC_MSG_ERROR([${crosscompiler_prefix}-as not found.])
+fi
+
+AC_PATH_PROG([XCAR], ["${crosscompiler_prefix}"-ar], ["no"])
+if test "x${XCAR}" = "xno"; then
+    AC_MSG_ERROR([${crosscompiler_prefix}-ar not found.])
+fi
+
+AC_PATH_PROG([XCLD], ["${crosscompiler_prefix}"-ld], ["no"])
+if test "x${XCLD}" = "xno"; then
+    AC_MSG_ERROR([${crosscompiler_prefix}-ld not found.])
 fi
 
 # Checking for hosttype.
@@ -125,37 +118,7 @@ case "${host}" in
 	;;
 esac
 
-# Adding cross-tools complete pathname.
-GCCUMPS=${CROSSBIN}${GCCUMPS}
-ASUMPS=${CROSSBIN}${ASUMPS}
-ARUMPS=${CROSSBIN}$ARUMPS}
-LDUMPS=${CROSSBIN}${LDUMPS}
-
-# We have to setup example's Makefiles
-dnl for i in `find ./*example* -name Makefile.mod`
-dnl do
-dnl 	rm -rf `dirname $i`/Makefile
-dnl 	sed 	-e s%LD_AOUT_FLAGS%${LDAOUTSCRIPT}%g \
-dnl 		-e s%LD_CORE_FLAGS%${LDCORESCRIPT}%g \
-dnl 		-e s%GCC-UMPS%${GCCUMPS}%g \
-dnl 		-e s%LD-UMPS%${LDUMPS}%g \
-dnl 		-e s%AS-UMPS%${ASUMPS}%g \
-dnl 		-e s%PACKAGENAME%${PACKAGE_NAME}%g \
-dnl 		$i >> `dirname $i`/Makefile
-dnl done
-	
-# Setting variable for @@ substitution in Makefile.am
-XGCC=${GCCUMPS}
-AC_SUBST(XGCC)
-CCAS=${ASUMPS}
-AC_SUBST(CCAS)
-CCASFLAGS="-KPIC"
-AC_SUBST(CCASFLAGS)
 AC_SUBST(UMPSCPPFLAG)
-AC_SUBST(LDCOREFLAGS)
-AC_SUBST(LDAOUTFLAGS)
-AC_SUBST(LDCORESCRIPT)
-AC_SUBST(LDAOUTSCRIPT)
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
