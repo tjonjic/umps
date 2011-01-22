@@ -22,6 +22,8 @@
 #ifndef UMPS_UTILITY_H
 #define UMPS_UTILITY_H
 
+#include <string>
+
 #include "umps/types.h"
 
 
@@ -81,5 +83,9 @@ void trace(char *format, ...);
 // This function converts a string to a Word (typically, an address) value.
 // Returns TRUE if conversion was successful, FALSE otherwise
 bool StrToWord(const char * str, Word * value);
+
+uint8_t* ParseMACId(const std::string& input, uint8_t* id);
+
+std::string MACIdToString(const uint8_t* id);
 
 #endif // UMPS_UTILITY_H

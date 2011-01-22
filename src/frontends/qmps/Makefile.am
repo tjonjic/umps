@@ -103,6 +103,8 @@ umps2_SOURCES = \
 	add_tracepoint_dialog.cc	\
 	address_line_edit.h		\
 	address_line_edit.cc		\
+	mac_id_edit.h			\
+	mac_id_edit.cc			\
 	boolean_item_delegate.h		\
 	boolean_item_delegate.cc	\
 	register_item_delegate.h	\

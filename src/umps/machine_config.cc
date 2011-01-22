@@ -24,14 +24,17 @@
 #include <config.h>
 
 #include <iostream>
+#include <cstdio>
 #include <fstream>
 #include <cassert>
+#include <algorithm>
 
 #include <boost/format.hpp>
 
 #include "base/json.h"
 #include "umps/const.h"
 #include "umps/error.h"
+#include "umps/utility.h"
 
 template<typename T>
 static T bumpProperty(T minValue, T value, T maxValue)
@@ -113,6 +116,11 @@ MachineConfig* MachineConfig::LoadFromFile(const std::string& fileName, std::str
                         JsonObject* devObj = devices->Get(key)->AsObject();
                         config->setDeviceEnabled(il, devNo, devObj->Get("enabled")->AsBool());
                         config->setDeviceFile(il, devNo, devObj->Get("file")->AsString());
+                        if (il == EXT_IL_INDEX(IL_ETHERNET) && devObj->HasMember("address")) {
+                            uint8_t macId[6];
+                            if (ParseMACId(devObj->Get("address")->AsString(), macId))
+                                config->setMACId(devNo, macId);
+                        }
                     }
                 }
             }
@@ -169,6 +177,8 @@ void MachineConfig::Save()
                 JsonObject* object = new JsonObject;
                 object->Set("enabled", devEnabled[il][devNo]);
                 object->Set("file", devFiles[il][devNo]);
+                if (il == EXT_IL_INDEX(IL_ETHERNET) && getMACId(devNo))
+                    object->Set("address", MACIdToString(getMACId(devNo)));
                 std::string key = boost::str(boost::format("%s%u") %deviceKeyPrefix[il] %devNo);
                 devicesObject->Set(key, object);
             }
@@ -283,6 +293,24 @@ const std::string& MachineConfig::getDeviceFile(unsigned int il, unsigned int de
 {
     assert(il < N_EXT_IL && devNo < N_DEV_PER_IL);
     return devFiles[il][devNo];
+}
+
+const uint8_t* MachineConfig::getMACId(unsigned int devNo) const
+{
+    assert(devNo < N_DEV_PER_IL);
+    return macId[devNo].get();
+}
+
+void MachineConfig::setMACId(unsigned int devNo, const uint8_t* value)
+{
+    assert(devNo < N_DEV_PER_IL);
+
+    if (value != NULL) {
+        macId[devNo].reset(new uint8_t[6]);
+        std::copy(value, value + 6, macId[devNo].get());
+    } else {
+        macId[devNo].reset();
+    }
 }
 
 void MachineConfig::resetToFactorySettings()

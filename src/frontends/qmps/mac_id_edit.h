@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,22 +19,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef BASE_BASIC_TYPES_H
-#define BASE_BASIC_TYPES_H
+#ifndef QMPS_MAC_ID_EDIT_H
+#define QMPS_MAC_ID_EDIT_H
 
-// Not everyone has stdint.h appearently. Guess who lags behind?
-#ifndef _MSC_VER
-// Just use C99 `stdint.h'. Should be "anywhere it matters".
-# include <stdint.h>
-#else
-# include <boost/cstdint.hpp>
-// Pollute namespace as need arises!
-using boost::uint8_t;
-using boost::uint32_t;
-using boost::int32_t;
-#endif
+#include <QLineEdit>
 
-#include <cstddef>
-using std::size_t;
+#include "base/basic_types.h"
 
-#endif // BASE_BASIC_TYPES_H
+class MacIdEdit : public QLineEdit {
+public:
+    MacIdEdit(QWidget* parent = 0);
+
+    uint8_t* getMacId(uint8_t* id) const;
+    void setMacId(const uint8_t* id);
+};
+
+#endif // QMPS_MAC_ID_EDIT_H

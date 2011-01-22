@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <algorithm>
 
 #include "umps/utility.h"
 
@@ -226,4 +227,36 @@ bool StrToWord(const char * str, Word * value)
 		}
 	}
 	return(valid);
+}
+
+uint8_t* ParseMACId(const std::string& input, uint8_t* id)
+{
+    unsigned int groups[6];
+    if (sscanf(input.c_str(), "%02x:%02x:%02x:%02x:%02x:%02x",
+               &groups[0],
+               &groups[1],
+               &groups[2],
+               &groups[3],
+               &groups[4],
+               &groups[5]) != 6)
+        return NULL;
+
+    if (groups[0] % 2)
+        return NULL;
+
+    std::copy(groups, groups + 6, id);
+    return id;
+}
+
+std::string MACIdToString(const uint8_t* id)
+{
+    char buf[6*3 + 1];
+    sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x",
+            (unsigned int) id[0],
+            (unsigned int) id[1],
+            (unsigned int) id[2],
+            (unsigned int) id[3],
+            (unsigned int) id[4],
+            (unsigned int) id[5]);
+    return std::string(buf);
 }

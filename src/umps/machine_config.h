@@ -25,6 +25,8 @@
 #include <string>
 #include <list>
 
+#include "base/lang.h"
+#include "base/basic_types.h"
 #include "umps/arch.h"
 #include "umps/types.h"
 
@@ -92,6 +94,8 @@ public:
     void setDeviceEnabled(unsigned int il, unsigned int devNo, bool setting);
     void setDeviceFile(unsigned int il, unsigned int devNo, const std::string& fileName);
     const std::string& getDeviceFile(unsigned int il, unsigned int devNo) const;
+    const uint8_t* getMACId(unsigned int devNo) const;
+    void setMACId(unsigned int devNo, const uint8_t* value);
 
 private:
     MachineConfig(const std::string& fileName);
@@ -113,6 +117,7 @@ private:
 
     std::string devFiles[N_EXT_IL][N_DEV_PER_IL];
     bool devEnabled[N_EXT_IL][N_DEV_PER_IL];
+    scoped_array<uint8_t> macId[N_DEV_PER_IL];
 
     static const char* const deviceKeyPrefix[N_EXT_IL];
 };

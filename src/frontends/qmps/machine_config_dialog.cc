@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2010, 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,24 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "machine_config_dialog.h"
+#include "qmps/machine_config_dialog.h"
 
-#include <iostream>
-#include <QtDebug>
 #include <cassert>
 
 #include <QSignalMapper>
 #include <QLineEdit>
 #include <QCheckBox>
-#include <QStandardItemModel>
-#include <QListView>
-#include <QStandardItem>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDialogButtonBox>
-#include <QSplitter>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QStackedLayout>
@@ -47,9 +41,9 @@
 #include <QFileDialog>
 
 #include "umps/arch.h"
-
 #include "qmps/application.h"
 #include "qmps/address_line_edit.h"
+#include "qmps/mac_id_edit.h"
 #include "qmps/machine_config_dialog_priv.h"
 
 MachineConfigDialog::MachineConfigDialog(MachineConfig* config, QWidget* parent)
@@ -59,8 +53,8 @@ MachineConfigDialog::MachineConfigDialog(MachineConfig* config, QWidget* parent)
     setWindowTitle("Machine Configuration");
 
     QTabWidget* tabWidget = new QTabWidget;
-    tabWidget->addTab(createGeneralTab(), "General");
-    tabWidget->addTab(createDeviceTab(), "Devices");
+    tabWidget->addTab(createGeneralTab(), "&General");
+    tabWidget->addTab(createDeviceTab(), "&Devices");
 
     QDialogButtonBox* buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok |
                                                        QDialogButtonBox::Cancel);
@@ -256,7 +250,13 @@ void MachineConfigDialog::registerDeviceClass(const QString& label,
                                               const QString& devName,
                                               bool           selected)
 {
-    DeviceFileChooser* devfc = new DeviceFileChooser(devClassName, devName, devClassIndex);
+    QWidget* devfc;
+
+    if (devClassIndex == EXT_IL_INDEX(IL_ETHERNET))
+        devfc = new NetworkConfigWidget();
+    else
+        devfc = new DeviceFileChooser(devClassName, devName, devClassIndex);
+
     connect(this, SIGNAL(accepted()), devfc, SLOT(Save()));
     devFileChooserStack->addWidget(devfc);
 
@@ -326,7 +326,7 @@ DeviceFileChooser::DeviceFileChooser(const QString& deviceClassName,
 
     const MachineConfig* config = Appl()->getConfig();
 
-    for (unsigned int i = 0; i < 8; i++) {
+    for (unsigned int i = 0; i < N_DEV_PER_IL; i++) {
         QLabel* fileLabel = new QLabel(QString("%1:").arg(i));
         fileNameEdit[i] = new QLineEdit;
         fileNameEdit[i]->setText(config->getDeviceFile(il, i).c_str());
@@ -377,4 +377,111 @@ void DeviceFileChooser::browseDeviceFile(int devNo)
     if (!fileName.isNull()) {
         fileNameEdit[devNo]->setText(fileName);
     }
+}
+
+
+NetworkConfigWidget::NetworkConfigWidget(QWidget* parent)
+    : QWidget(parent)
+{
+    const unsigned int il = EXT_IL_INDEX(IL_ETHERNET);
+    QVBoxLayout* layout = new QVBoxLayout(this);
+
+    QLabel* header = new QLabel("Network Adapters");
+    QFont font;
+    font.setPointSizeF(font.pointSizeF() * 1.5);
+    header->setFont(font);
+    layout->addWidget(header);
+    QFrame* separator = new QFrame;
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    layout->addWidget(separator);
+
+    QComboBox* nics = new QComboBox;
+    for (unsigned int i = 0; i < N_DEV_PER_IL; i++)
+        nics->addItem(QString("Network Adapter %1").arg(i));
+    layout->addWidget(nics);
+
+    QStackedLayout* nicConfigStack = new QStackedLayout;
+    layout->addLayout(nicConfigStack);
+
+    connect(nics, SIGNAL(currentIndexChanged(int)),
+            nicConfigStack, SLOT(setCurrentIndex(int)));
+
+    const MachineConfig* config = Appl()->getConfig();
+
+    QSignalMapper* signalMapper = new QSignalMapper(this);
+    connect(signalMapper, SIGNAL(mapped(int)), this, SLOT(browseDeviceFile(int)));
+
+    for (unsigned int i = 0; i < N_DEV_PER_IL; i++) {
+        QWidget* widget = new QWidget;
+        nicConfigStack->addWidget(widget);
+        QVBoxLayout* box = new QVBoxLayout(widget);
+        box->setContentsMargins(0, 6, 0, 0);
+
+        enabledCB[i] = new QCheckBox("&Enable");
+        box->addWidget(enabledCB[i]);
+
+        QWidget* form = new QWidget;
+        QGridLayout* grid = new QGridLayout(form);
+        box->addWidget(form);
+        grid->setContentsMargins(0, 0, 0, 0);
+
+        connect(enabledCB[i], SIGNAL(toggled(bool)), form, SLOT(setEnabled(bool)));
+        enabledCB[i]->setChecked(config->getDeviceEnabled(il, i));
+        form->setEnabled(config->getDeviceEnabled(il, i));
+
+        QLabel* fileLabel = new QLabel("Device &File:");
+        fileEdit[i] = new QLineEdit;
+        fileLabel->setBuddy(fileEdit[i]);
+        fileEdit[i]->setText(config->getDeviceFile(il, i).c_str());
+        grid->addWidget(fileLabel, 1, 0);
+        grid->addWidget(fileEdit[i], 1, 1);
+        QPushButton* fileBt = new QPushButton("&Browse...");
+        grid->addWidget(fileBt, 1, 2);
+        connect(fileBt, SIGNAL(clicked()), signalMapper, SLOT(map()));
+        signalMapper->setMapping(fileBt, (int) i);
+
+        fixedMacId[i] = new QCheckBox("Fixed &MAC address");
+        grid->addWidget(fixedMacId[i], 2, 0, 1, 3);
+        QLabel* macIdLabel = new QLabel("MAC &Address");
+        grid->addWidget(macIdLabel, 3, 0);
+        macIdEdit[i] = new MacIdEdit;
+        macIdEdit[i]->setFont(Appl()->getMonospaceFont());
+        macIdLabel->setBuddy(macIdEdit[i]);
+        if (config->getMACId(i))
+            macIdEdit[i]->setMacId(config->getMACId(i));
+        grid->addWidget(macIdEdit[i], 3, 1, 1, 2);
+        connect(fixedMacId[i], SIGNAL(toggled(bool)), macIdLabel, SLOT(setEnabled(bool)));
+        connect(fixedMacId[i], SIGNAL(toggled(bool)), macIdEdit[i], SLOT(setEnabled(bool)));
+        fixedMacId[i]->setChecked(config->getMACId(i) != NULL);
+        macIdLabel->setEnabled(config->getMACId(i) != NULL);
+        macIdEdit[i]->setEnabled(config->getMACId(i) != NULL);
+    }
+
+    layout->addStretch(1);
+}
+
+void NetworkConfigWidget::Save()
+{
+    MachineConfig* config = Appl()->getConfig();
+    const unsigned int il = EXT_IL_INDEX(IL_ETHERNET);
+
+    for (unsigned int devNo = 0; devNo < N_DEV_PER_IL; devNo++) {
+        config->setDeviceFile(il, devNo, QFile::encodeName(fileEdit[devNo]->text()).constData());
+        config->setDeviceEnabled(il, devNo, enabledCB[devNo]->isChecked());
+        if (fixedMacId[devNo]->isChecked()) {
+            uint8_t macId[6];
+            assert(macIdEdit[devNo]->getMacId(macId));
+            config->setMACId(devNo, macId);
+        } else {
+            config->setMACId(devNo, NULL);
+        }
+    }
+}
+
+void NetworkConfigWidget::browseDeviceFile(int devNo)
+{
+    QString fileName = QFileDialog::getOpenFileName(this, "Select Device File");
+    if (!fileName.isNull())
+        fileEdit[devNo]->setText(fileName);
 }

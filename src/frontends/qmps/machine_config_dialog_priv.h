@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2010, 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 
 class QLineEdit;
 class QCheckBox;
+class MacIdEdit;
 
 class DeviceFileChooser : public QWidget {
     Q_OBJECT
@@ -49,6 +50,25 @@ private:
     QString deviceName;
     QLineEdit* fileNameEdit[N_DEV_PER_IL];
     QCheckBox* enabledCB[N_DEV_PER_IL];
+
+private Q_SLOTS:
+    void browseDeviceFile(int devNo);
+};
+
+class NetworkConfigWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    NetworkConfigWidget(QWidget* parent = 0);
+
+public Q_SLOTS:
+    void Save();
+
+private:
+    QCheckBox* enabledCB[N_DEV_PER_IL];
+    QLineEdit* fileEdit[N_DEV_PER_IL];
+    QCheckBox* fixedMacId[N_DEV_PER_IL];
+    MacIdEdit* macIdEdit[N_DEV_PER_IL];
 
 private Q_SLOTS:
     void browseDeviceFile(int devNo);
