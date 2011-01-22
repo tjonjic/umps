@@ -327,8 +327,9 @@ DeviceFileChooser::DeviceFileChooser(const QString& deviceClassName,
     const MachineConfig* config = Appl()->getConfig();
 
     for (unsigned int i = 0; i < N_DEV_PER_IL; i++) {
-        QLabel* fileLabel = new QLabel(QString("%1:").arg(i));
+        QLabel* fileLabel = new QLabel(QString("&%1:").arg(i));
         fileNameEdit[i] = new QLineEdit;
+        fileLabel->setBuddy(fileNameEdit[i]);
         fileNameEdit[i]->setText(config->getDeviceFile(il, i).c_str());
         QPushButton* bt = new QPushButton("Browse...");
         connect(bt, SIGNAL(clicked()), signalMapper, SLOT(map()));
