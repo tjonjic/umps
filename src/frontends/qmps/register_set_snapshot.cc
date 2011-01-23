@@ -27,6 +27,7 @@
 #include "base/lang.h"
 
 #include "umps/disassemble.h"
+#include "umps/systembus.h"
 #include "qmps/application.h"
 
 const char* const RegisterSetSnapshot::headers[RegisterSetSnapshot::N_COLUMNS] = {
@@ -207,6 +208,10 @@ void RegisterSetSnapshot::reset()
                                            boost::bind(&Processor::getPrevPPC, cpu)));
     sprCache.push_back(SpecialRegisterInfo("currPhysPC",
                                            boost::bind(&Processor::getCurrPPC, cpu)));
+
+    SystemBus* bus = debugSession->getMachine()->getBus();
+    sprCache.push_back(SpecialRegisterInfo("Timer",
+                                           boost::bind(&SystemBus::getTimer, bus)));
 
     updateCache();
 }

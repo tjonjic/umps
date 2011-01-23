@@ -1540,6 +1540,10 @@ EthDevice::EthDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line
     writebuf = new Block();
     sprintf(statStr, "Idle");
 
+    // FIXME: we should make this much better (and hairy...)
+    if (!testnetinterface(config->getDeviceFile(intL, devNum).c_str()))
+        throw EthError(devNo);
+
     /* open the net */
     netint = new netinterface(config->getDeviceFile(intL, devNum).c_str(),
                               (const char*) config->getMACId(devNum),

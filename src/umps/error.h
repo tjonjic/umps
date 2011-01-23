@@ -51,6 +51,15 @@ public:
     virtual ~CoreFileOverflow() throw() {}
 };
 
+class EthError : public Error {
+public:
+    EthError(unsigned int devNo) throw()
+        : Error("Ethernet device error"), devNo(devNo) {}
+    virtual ~EthError() throw() {}
+
+    const unsigned int devNo;
+};
+
 // Error hook
 void Panic(const char* message);
 

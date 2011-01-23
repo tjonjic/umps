@@ -47,6 +47,7 @@
 
 enum request_type { REQ_NEW_CONTROL };
 
+// FIXME: what is this for?
 struct request_v3 {
   uint32_t magic;
   uint32_t version;
@@ -63,94 +64,80 @@ HIDDEN struct vdepluglib vdepluglib;
 HIDDEN char strbuf[STRBUFLEN];
 HIDDEN char packbuf[MAXPACKETLEN];
 
-#ifndef LINUX
-HIDDEN char *BSD_SUN_PATH;
-#endif
 
+class netblock {
+public:
+    netblock(const char *icontent,int ilen);
+    ~netblock(void);
+    class netblock *getNext();
+    void setNext(class netblock *p);
+    char * getContent();
+    int getLen();
 
-class netblock
-{
-	public:
-		netblock(const char *icontent,int ilen);
-		~netblock(void);
-		class netblock *getNext();
-		void setNext(class netblock *p);
-		char * getContent();
-		int getLen();
-
-	private:
-		char *content;
-		int len;
-		struct netblock *next;
+private:
+    char *content;
+    int len;
+    struct netblock *next;
 };
 
-class netblockq
-{
-	public:
-		netblockq(int imaxelem);
-		~netblockq();
-		int enqueue(const char *content,int len);
-		int empty();
-		int dequeue(char *pcontent, int len);
+class netblockq {
+public:
+    netblockq(int imaxelem);
+    ~netblockq();
+    int enqueue(const char *content,int len);
+    int empty();
+    int dequeue(char *pcontent, int len);
 
-	private:
-		class netblock *head,*tail;
-		int maxelem,nelem;
+private:
+    class netblock *head,*tail;
+    int maxelem,nelem;
 };
 
 unsigned int testnetinterface(const char *name)
 {
-	int fdctl;
-	struct sockaddr_un sock;
-	char name2[1024];
-	int size;
-	
-	libvdeplug_dynopen(vdepluglib);
-	/* vde lib does not exist */
-	if (vdepluglib.dl_handle == NULL)
-		return 0;
-	if ((size=readlink(name,name2,1023)) > 0) {
-		name2[size]=0;
-		name=name2;
-	}
-	/* file does not exist or read error */
-	if (access(name,R_OK) != 0)
-		return 0;
-	return 1;
+    char name2[1024];
+    int size;
+
+    if (!vdepluglib.dl_handle)
+        libvdeplug_dynopen(vdepluglib);
+    /* vde lib does not exist */
+    if (vdepluglib.dl_handle == NULL)
+        return 0;
+
+    if ((size = readlink(name,name2,1023)) > 0) {
+        name2[size]=0;
+        name=name2;
+    }
+    /* file does not exist or read error */
+    if (access(name,R_OK) != 0)
+        return 0;
+    return 1;
 }
 
 netinterface::netinterface(const char *name, const char *addr, int intnum)
 { 
-	struct request_v3 req;
-	struct sockaddr_un sock;
 	char name2[1024];
 	int size;
 
-	
 	if ((size=readlink(name,name2,1023)) > 0) {
 		name2[size]=0;
 		name=name2;
 	}
 
-	vdeconn=vdepluglib.vde_open(name,"uMPS",NULL);
+	vdeconn = vdepluglib.vde_open(name,"uMPS",NULL);
 	queue=NULL;
-	polldata.fd=vdepluglib.vde_datafd(vdeconn);
-	polldata.events=POLLIN|POLLOUT|POLLERR|POLLHUP|POLLNVAL;
+	polldata.fd = vdepluglib.vde_datafd(vdeconn);
+	polldata.events = POLLIN | POLLOUT | POLLERR | POLLHUP | POLLNVAL;
+
 	if (addr != NULL) {
-		int i;
-		for (i=0;i<6;i++)
+		for (int i=0;i<6;i++)
 			ethaddr[i]=addr[i];
-	}
-	else {
+	} else {
 		sprintf(ethaddr," %5d",getpid());
 		ethaddr[0]=intnum*2;
 	}
-	
-//	for (int i = 0; i < 6; i++)
-//		printf("%x:",ethaddr[i]);
-//	printf("\n");
-	
-	mode=PROMISQ|NAMED;
+
+	mode = PROMISQ | NAMED;
 	queue = new netblockq(MAXNETQUEUE);
 }
 
@@ -242,21 +229,6 @@ unsigned int netinterface::getmode()
 	return mode;
 }
 
-/*class netblock
-{
-	public:
-		netblock(const char *icontent,int len);
-		~netblock(void);
-		class netblock *getNext();
-		void setNext(class netblock *p);
-		char * getContent();
-		int getLen();
-	private:
-		char *content;
-		int len;
-		struct netblock *next;
-}*/
-
 netblock::netblock(const char *icontent,int ilen)
 {
 	if (ilen>0) {
@@ -293,20 +265,6 @@ int netblock::getLen()
 	return len;
 }
 
-
-/*class netblockq
-{
-	public:
-		netblockq(int imaxelem);
-		~netblockq();
-		int enqueue(const char *content,int len);
-		int empty();
-		int dequeue(char **pcontent);
-	private:
-		class netblock head,tail;
-		int maxelem;
-		int nelem;
-}*/
 
 netblockq::netblockq(int imaxelem)
 {

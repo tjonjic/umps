@@ -210,7 +210,15 @@ void DebugSession::initializeMachine()
             QString("<b>Could not initialize machine:</b> "
                     "the file `%1' has wrong format").arg(e.fileName.c_str()));
         return;
+    } catch (const EthError& e) {
+        QMessageBox::critical(
+            Appl()->getApplWindow(),
+            QString("%1: Error").arg(Appl()->applicationName()),
+            QString("<b>Could not initialize machine:</b> "
+                    "error initializing network device %1").arg(e.devNo));
+        return;
     }
+
     machine->setStopMask(stopMask);
 
     SymbolTable* stab;
