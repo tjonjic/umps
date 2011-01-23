@@ -61,6 +61,8 @@ umps2_elf2umps_SOURCES = \
 	processor_defs.h	\
 	aout.h
 
+umps2_elf2umps_LDADD = $(ELF_LIBS)
+
 umps2_mkdev_SOURCES = \
 	mkdev.cc		\
 	const.h			\

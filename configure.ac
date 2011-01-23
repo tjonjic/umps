@@ -32,8 +32,6 @@ LT_INIT
 
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
-PKG_CHECK_MODULES([SIGCPP], sigc++-2.0)
-AC_SUBST(SIGCCP_CFLAGS)
 
 # Do you have external libelf?
 AC_ARG_WITH([elf],[  --with-elf[=PATH]         libelf-dev patname if not in standard location.], [ELFLIB="${withval}"], [ELFLIB="no"])
@@ -50,12 +48,16 @@ fi
 
 # Checks for libraries.
 
-AC_CHECK_LIB([elf], [elf_version], [],
+AC_CHECK_LIB([elf], [elf_version], [ELF_LIBS=-lelf],
 	     AC_MSG_ERROR([*** Libelf not found. Specify a different path or install it. --help for info.])
 	     )
+AC_SUBST([ELF_LIBS])
 
 AC_CHECK_LIB([dl], [dlopen], [DL_LIBS=-ldl], [AC_MSG_ERROR([*** Libdl not found.])])
 AC_SUBST([DL_LIBS])
+
+PKG_CHECK_MODULES([SIGCPP], sigc++-2.0)
+AC_SUBST(SIGCCP_CFLAGS)
 
 BOOST_REQUIRE([1.34])
 
