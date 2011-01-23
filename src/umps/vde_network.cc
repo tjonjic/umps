@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include "umps/vde_network.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -38,8 +40,6 @@
 #include "umps/const.h"
 #include "umps/types.h"
 #include "umps/blockdev_params.h"
-
-#include "umps/libvdeplug_dyn.h"
 
 #include "umps/utility.h"
 #include "umps/error.h"
@@ -66,48 +66,7 @@ HIDDEN char packbuf[MAXPACKETLEN];
 #ifndef LINUX
 HIDDEN char *BSD_SUN_PATH;
 #endif
-//
-// local functions
-//
 
-
-/****************************************************************************/
-/* Definitions to be exported.                                              */
-/****************************************************************************/
-
-// Device class defines the interface to all device types, and represents
-// the "uninstalled device" (NULLDEV) itself. Device objects are created and
-// controlled by a SystemBus object, but also may be inspected by Watch if
-// needed
-
-#define PROMISQ  0x4
-#define INTERRUPT  0x2
-#define NAMED  0x1
-
-unsigned int testnetinterface(const char *name);
-
-class netinterface
-{
-	public:
-		netinterface(const char *name, const char *addr, int intnum);
-	
-		~netinterface(void);
-
-		unsigned int readdata(char *buf, int len);
-		unsigned int writedata(char *buf, int len);
-		unsigned int polling();
-		void setaddr(char *iethaddr);
-		void getaddr(char *pethaddr);
-		void setmode(int imode);
-		unsigned int getmode();
-
-	private:
-		VDECONN *vdeconn;
-		char ethaddr[6];
-		char mode;
-		struct pollfd polldata;
-		class netblockq *queue;
-};
 
 class netblock
 {

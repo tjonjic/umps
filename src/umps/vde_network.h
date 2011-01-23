@@ -19,28 +19,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-/****************************************************************************
- *
- * This module contains definitions for the vde_Network class.  
- * It is an implementation of the netinterface class
- *
- ****************************************************************************/
+#ifndef UMPS_VDE_NETWORK_H
+#define UMPS_VDE_NETWORK_H
 
 #include <sys/socket.h>
 #include <sys/poll.h>
 #include <sys/un.h>
 
-class netblockq; 
+#include "umps/libvdeplug_dyn.h"
 
-/****************************************************************************/
-/* Inclusion of header files.                                               */
-/****************************************************************************/
+class netblockq;
 
 #define PROMISQ  0x4
 #define INTERRUPT  0x2
 #define NAMED  0x1
 
-int testnetinterface(const char *name);
+unsigned int testnetinterface(const char *name);
 
 class netinterface
 {
@@ -58,12 +52,11 @@ class netinterface
 		unsigned int getmode();
 
 	private:
-		int fdctl,fddata;
+		VDECONN *vdeconn;
 		char ethaddr[6];
 		char mode;
-		struct sockaddr_un datasock;
 		struct pollfd polldata;
 		class netblockq *queue;
 };
 
-
+#endif // UMPS_VDE_NETWORK_H
