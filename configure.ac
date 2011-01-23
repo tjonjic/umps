@@ -25,6 +25,7 @@ AC_PROG_LN_S
 AC_PROG_LIBTOOL
 AM_PROG_AS
 AM_PROG_LD
+AC_PROG_RANLIB
 
 # Initialize libtool
 LT_INIT
@@ -52,6 +53,9 @@ fi
 AC_CHECK_LIB([elf], [elf_version], [],
 	     AC_MSG_ERROR([*** Libelf not found. Specify a different path or install it. --help for info.])
 	     )
+
+AC_CHECK_LIB([dl], [dlopen], [DL_LIBS=-ldl], [AC_MSG_ERROR([*** Libdl not found.])])
+AC_SUBST([DL_LIBS])
 
 BOOST_REQUIRE([1.34])
 

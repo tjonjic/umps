@@ -129,6 +129,7 @@ umps2_DEPENDENCIES = \
 	$(top_builddir)/src/umps/libumps.a
 
 umps2_LDADD = \
+	$(DL_LIBS)				\
 	$(top_builddir)/src/umps/libumps.a	\
 	$(top_builddir)/src/base/libbase.a	\
 	$(QT_LIBS)				\

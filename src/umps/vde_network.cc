@@ -26,9 +26,11 @@
  *
  ****************************************************************************/
 
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <dlfcn.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -41,16 +43,15 @@
 #include <sys/uio.h>
 #include <sys/poll.h>
 
-#include <umps/const.h>
+#include "umps/const.h"
 #include "umps/types.h"
 #include "umps/blockdev_params.h"
+
+#include "umps/libvdeplug_dyn.h"
 
 #include "umps/utility.h"
 #include "umps/error.h"
 
-/****************************************************************************/
-/* Declarations strictly local to the module.                               */
-/****************************************************************************/
 
 enum request_type { REQ_NEW_CONTROL };
 
@@ -66,6 +67,7 @@ struct request_v3 {
 #define MAXNETQUEUE 16
 #define MAXPACKETLEN 1536
 
+HIDDEN struct vdepluglib vdepluglib;
 HIDDEN char strbuf[STRBUFLEN];
 HIDDEN char packbuf[MAXPACKETLEN];
 
@@ -109,10 +111,9 @@ class netinterface
 		unsigned int getmode();
 
 	private:
-		int fdctl,fddata;
+		VDECONN *vdeconn;
 		char ethaddr[6];
 		char mode;
-		struct sockaddr_un datasock;
 		struct pollfd polldata;
 		class netblockq *queue;
 };
@@ -154,22 +155,18 @@ unsigned int testnetinterface(const char *name)
 	char name2[1024];
 	int size;
 	
+	libvdeplug_dynopen(vdepluglib);
+	/* vde lib does not exist */
+	if (vdepluglib.dl_handle == NULL)
+		return 0;
 	if ((size=readlink(name,name2,1023)) > 0) {
 		name2[size]=0;
 		name=name2;
 	}
-
-	if((fdctl = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
-		sprintf(strbuf,"vde_test control socket: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	sock.sun_family = AF_UNIX;
-	snprintf(sock.sun_path, sizeof(sock.sun_path), "%s", name);
-	if(connect(fdctl, (struct sockaddr *) &sock, sizeof(sock)) == 0){
-		return 1;
-	}
-	close(fdctl);
-	return 0;
+	/* file does not exist or read error */
+	if (access(name,R_OK) != 0)
+		return 0;
+	return 1;
 }
 
 netinterface::netinterface(const char *name, const char *addr, int intnum)
@@ -185,48 +182,9 @@ netinterface::netinterface(const char *name, const char *addr, int intnum)
 		name=name2;
 	}
 
-
+	vdeconn=vdepluglib.vde_open(name,"uMPS",NULL);
 	queue=NULL;
-	if((fdctl = socket(AF_UNIX, SOCK_STREAM, 0)) < 0){
-		sprintf(strbuf,"vde_interface control socket: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	if((fddata = socket(AF_UNIX, SOCK_DGRAM, 0)) < 0){ 
-		sprintf(strbuf,"vde_interface data socket: %s",strerror(errno)); 
-		Panic(strbuf); 
-	}
-	sock.sun_family = AF_UNIX;
-	snprintf(sock.sun_path, sizeof(sock.sun_path), "%s", name);
-	if(connect(fdctl, (struct sockaddr *) &sock, sizeof(sock))){
-		sprintf(strbuf,"connect: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	req.magic=SWITCH_MAGIC;
-	req.version=3;
-	req.type=REQ_NEW_CONTROL;
-	req.sock.sun_family=AF_UNIX;
-
-#ifndef LINUX
-	BSD_SUN_PATH=tmpnam(NULL);
-	strcpy(req.sock.sun_path, BSD_SUN_PATH); 
-#else
-	memset(req.sock.sun_path, 0, sizeof(req.sock.sun_path));
-	sprintf(&req.sock.sun_path[1], "%5d%1d", getpid(), intnum);
-#endif
-	
-	if(bind(fddata, (struct sockaddr *) &req.sock, sizeof(req.sock)) < 0){
-		sprintf(strbuf,"bind: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	if (send(fdctl,&req,sizeof(req),0) < 0) {
-		sprintf(strbuf,"send: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	if (recv(fdctl,(struct sockaddr *)&datasock,sizeof(datasock),0)<0) {
-		sprintf(strbuf,"recv: %s",strerror(errno));
-		Panic(strbuf);
-	}
-	polldata.fd=fddata;
+	polldata.fd=vdepluglib.vde_datafd(vdeconn);
 	polldata.events=POLLIN|POLLOUT|POLLERR|POLLHUP|POLLNVAL;
 	if (addr != NULL) {
 		int i;
@@ -248,12 +206,7 @@ netinterface::netinterface(const char *name, const char *addr, int intnum)
 
 netinterface::~netinterface(void)
 {
-	close(fddata);
-	close(fdctl);
-#ifndef LINUX
-	if((BSD_SUN_PATH != NULL) && (unlink(BSD_SUN_PATH) < 0))
-		sprintf(strbuf,"Unlinking socket: %s",strerror(errno));
-#endif
+	vdepluglib.vde_close(vdeconn);
 	if (queue != NULL) delete queue;
 }
 
@@ -278,7 +231,7 @@ unsigned int netinterface::writedata(char *buf, int len)
 		else {
 			if (len >= 12 && (mode & NAMED) != 0)
 				memcpy(buf+6,ethaddr,6);
-			retval=sendto(fddata,buf,len,0,(struct sockaddr *)&datasock,sizeof(datasock));
+			retval=vdepluglib.vde_send(vdeconn,buf,len,0);
 		}
 	}
 	return retval;
@@ -297,7 +250,7 @@ unsigned int netinterface::polling()
 		} else 
 			if (polldata.revents & POLLIN) {
 				/* We don't store sender address to avoid EINVAL in recvfrom */
-				len=recvfrom(fddata,packbuf,MAXPACKETLEN,0, NULL, NULL);
+				len=vdepluglib.vde_recv(vdeconn,packbuf,MAXPACKETLEN,0);
 				if (mode & PROMISQ //promiquous mode: receive everything
 						|| (len > 12 // header okay and
 							&& (memcmp(packbuf,ethaddr,6)==0 //it is sent to this interface

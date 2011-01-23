@@ -1541,13 +1541,13 @@ EthDevice::EthDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line
     sprintf(statStr, "Idle");
 
     /* open the net */
-#if 0 // TODO
-    netint = new netinterface(setup->getDevFileName(intL, devNum), setup->getEthAddr(devNum), devNum);
+    netint = new netinterface(config->getDeviceFile(intL, devNum).c_str(),
+                              (const char*) config->getMACId(devNum),
+                              devNum);
     if ((netint->getmode() & INTERRUPT)!= 0)
-        polltime = bus->EventReq(intL, devNum, POLLNETTIME * setup->getSpeed());
+        polltime = bus->EventReq(intL, devNum, POLLNETTIME * config->getClockRate());
     else
         polltime = NULL;
-#endif
 }
 
 EthDevice::~EthDevice()
