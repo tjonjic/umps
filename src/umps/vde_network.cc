@@ -19,14 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-/****************************************************************************
- *
- * This module contains definitions for the vde_Network class.  
- * It is an implementation of the netinterface class
- *
- ****************************************************************************/
-
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -91,7 +83,6 @@ HIDDEN char *BSD_SUN_PATH;
 #define PROMISQ  0x4
 #define INTERRUPT  0x2
 #define NAMED  0x1
-
 
 unsigned int testnetinterface(const char *name);
 
