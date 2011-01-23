@@ -1,3 +1,12 @@
+1.9.4
+=====
+
+* Add a reset command
+* Try to relocate breakpoints/suspects/etc. on boot
+* Add network device-specific configuration UI
+* Improve keyboard navigation
+* Add a TLB dockable display to the cpu window (View->TLB)
+
 1.9.3
 =====
 
