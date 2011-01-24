@@ -45,7 +45,8 @@ libumps_a_SOURCES = \
 	utility.h		\
 	utility.cc		\
 	vde_network.h		\
-	vde_network.cc
+	vde_network.cc		\
+	libvdeplug_dyn.h
 
 libumps_a_CPPFLAGS = \
 	$(AM_CPPFLAGS) $(SIGCPP_CFLAGS)	\
