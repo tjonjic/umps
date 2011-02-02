@@ -32,12 +32,6 @@
 #define COREFILETYPE	".core.umps"
 #define STABFILETYPE	".stab.umps"
 
-// run stepping parameters (number of instructions): default, min and
-// max values for MainForm window
-#define STARTSTEP	10
-#define MINSTEP	1
-#define MAXSTEP	1000
-
 // maximum area size for trace ranges: a little more than 4KB
 // to avoid troubles in browser refresh if area is too large
 #define MAXTRACESIZE	(FRAMESIZE + 1)
