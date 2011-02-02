@@ -55,14 +55,6 @@
 #define BIGENDIANCPU	0
 #endif
 
-// Setup ROM files number and index
-#define ROMSNUM 	4
-#define BOOTINDEX	0
-#define COREINDEX	1
-#define BIOSINDEX	2
-#define STABINDEX	3
-
-
 // hardware constants 
 
 // physical memory page frame size (in words)
@@ -184,9 +176,6 @@
 #define CPUGPRNUM	32
 #define CP0REGNUM	9
 
-// nextPC, succPC, ToDLO, ToDHI, Timer, physPrevPC, physPC registers number
-#define OTHERREGNUM	7
-
 // device type codes
 #define NULLDEV	0
 #define DISKDEV	1
@@ -207,13 +196,6 @@
 #define WRITE	0x2
 #define EXEC	0x1
 #define EMPTY 	0x0
-
-// X interface stop mask 
-#define DFLSTOPMASK	0xF
-#define BRKPTBIT	1
-#define SUSPECTBIT	2						
-#define EXCBIT	3
-
 
 // some useful macros
 
