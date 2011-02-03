@@ -333,7 +333,6 @@ void Processor::getPrevStatus(Word * pc, Word * instr)
     *instr = prevInstr; 
 }
 
-
 // This method allows to get a human-readable mnemonic expression for the last
 // exception happened (thanks to excName[] array)
 const char* Processor::getExcCauseStr()
@@ -344,7 +343,6 @@ const char* Processor::getExcCauseStr()
     else
         return (EMPTYSTR);
 }
-
 
 // This method allows to get the physical location of instruction executed
 // in the previous Processor Cycle()
@@ -1000,14 +998,14 @@ bool Processor::execInstr(Word instr)
 	
                 // valid instruction has SHAMT and FUNCT fields
                 // set to 0, and refers to a valid CP0 register
-                if (ValidCP0Reg(RD(instr), &cp0Num) && !SHAMT(instr) && !FUNCT(instr))
+                if (ValidCP0Reg(RD(instr), &cp0Num) && !SHAMT(instr) && !FUNCT(instr)) {
                     setLoad(LOAD_TARGET_GPREG, RT(instr), (SWord) cpreg[cp0Num]);
-                else
-                {
+                } else {
                     // invalid instruction format or CP0 reg 
                     SignalExc(CPUEXCEPTION, 0);
                     error = true;
-                }		
+                }
+                break;
 						
             case MTC0:
                 // delayed load is completed _before_ istruction
