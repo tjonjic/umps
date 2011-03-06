@@ -164,51 +164,20 @@ void SystemBus::ClockTick()
     timeOfDay->Increase();
 
     // both registers signal "change" because they are conceptually one
-#if 0
-    watch->SignalBusAccess(BUS_REG_TOD_HI, WRITE);
-    watch->SignalBusAccess(BUS_REG_TOD_LO, WRITE);
-#endif
+    machine->HandleBusAccess(BUS_REG_TOD_HI, WRITE, NULL);
+    machine->HandleBusAccess(BUS_REG_TOD_LO, WRITE, NULL);
 
-#if BE_SLOW
-    // temp
-    SignalAccess(BUS_REG_TOD_HI, WRITE, NULL);
-    SignalAccess(BUS_REG_TOD_LO, WRITE, NULL);
-#else
-    machine->busAccessHandler(BUS_REG_TOD_HI, WRITE, NULL);
-    machine->busAccessHandler(BUS_REG_TOD_LO, WRITE, NULL);
-#endif
-
+    // Update interval timer
     if (UnsSub(&timer, timer, 1))
-        // timer interrupt is now pending
         intPendMask = SetBit(intPendMask, TIMERINT + IPMASKBASE);
-
-#if 0
-    watch->SignalBusAccess(BUS_REG_TIMER, WRITE);
-#endif
-
-#if BE_SLOW
-    SignalAccess(BUS_REG_TIMER, WRITE, NULL);
-#else
-    machine->busAccessHandler(BUS_REG_TIMER, WRITE, NULL);
-#endif
+    machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
 
     // scans the event queue
-    while (!eventQ->IsEmptyQ() && (eventQ->getHTS())->LessEq(timeOfDay)) {
-        // a device operation need to be completed and that event removed
-        uint intl = eventQ->getHIntLine();
-        uint dnum = eventQ->getHDevNum();
-        uint devAddr = (devTable[intl][dnum])->CompleteDevOp();
+    while (!eventQ->IsEmpty() && (eventQ->getHTS())->LessEq(timeOfDay)) {
+        (eventQ->getHCallback())();
         eventQ->RemoveHead();
-
-        // a device op completion changes device registers: memory is altered
-        DeviceAreaAddress da(intl, dnum, devAddr);
-#if 0
-        watch->SignalBusAccess(da.address(), WRITE);
-#endif
-        SignalAccess(da.address(), WRITE, NULL);
     }
 }
-
 
 //
 // The following methods allow to inspect or modify  TimeofDay Clock and
@@ -245,22 +214,13 @@ void SystemBus::setTimer(Word time)
     timer = time;
 }
 
-
 // This method reads a data word from memory at address addr, returning it
 // thru datap pointer. It also returns TRUE if the address was invalid and
 // an exception was caused, FALSE otherwise, and signals memory access to
 // Watch control object
 bool SystemBus::DataRead(Word addr, Word* datap, Processor* cpu)
 {
-#if 0
-    watch->SignalBusAccess(addr, READ);
-#endif
-
-#if BE_SLOW
-    SignalAccess.emit(addr, READ, cpu);
-#else
-    machine->busAccessHandler(addr, READ, cpu);
-#endif
+    machine->HandleBusAccess(addr, READ, cpu);
 
     if (busRead(addr, datap, cpu)) {
         // address invalid: signal exception to processor
@@ -295,15 +255,7 @@ bool SystemBus::WatchWrite(Word addr, Word data)
 // otherwise, and notifies access to Watch control object
 bool SystemBus::DataWrite(Word addr, Word data, Processor* proc)
 {
-#if 0
-    watch->SignalBusAccess(addr, WRITE);
-#endif
-
-#if BE_SLOW
-    SignalAccess.emit(addr, WRITE, proc);
-#else
-    machine->busAccessHandler(addr, WRITE, proc);
-#endif
+    machine->HandleBusAccess(addr, WRITE, proc);
 
     if (busWrite(addr, data, proc)) {
         // data write is out of valid write bounds
@@ -312,7 +264,6 @@ bool SystemBus::DataWrite(Word addr, Word data, Processor* proc)
     } else
         return false;
 }
-
 
 // This method transfers a block from or to memory, starting with address
 // startAddr; it returns TRUE is transfer was not successful (non-existent
@@ -328,17 +279,13 @@ bool SystemBus::DMATransfer(Block * blk, Word startAddr, bool toMemory)
     if (toMemory) {
         for (Word ofs = 0; ofs < BLOCKSIZE && !error; ofs++) {
             error = busWrite(startAddr + (ofs * WORDLEN), blk->getWord(ofs));  
-#if 0
-            watch->SignalBusAccess(startAddr + (ofs * WORDLEN), WRITE);
-#endif
+            machine->HandleBusAccess(startAddr + (ofs * WORDLEN), WRITE, NULL);
         }
     } else {
         Word val;
         for (Word ofs = 0; ofs < BLOCKSIZE && !error; ofs++) {
             error = busRead(startAddr + (ofs * WORDLEN), &val);
-#if 0
-            watch->SignalBusAccess(startAddr + (ofs * WORDLEN), READ);
-#endif
+            machine->HandleBusAccess(startAddr + (ofs * WORDLEN), READ, NULL);
             blk->setWord(ofs, val);
         }
     }
@@ -368,17 +315,13 @@ bool SystemBus::DMAVarTransfer(Block* blk, Word startAddr, Word byteLength, bool
     if (toMemory) {
         for (Word ofs = 0; ofs < length && !error; ofs++) {
             error = busWrite(startAddr + (ofs * WORDLEN), blk->getWord(ofs));
-#if 0
-            watch->SignalBusAccess(startAddr + (ofs * WORDLEN), WRITE);
-#endif
+            machine->HandleBusAccess(startAddr + (ofs * WORDLEN), WRITE, NULL);
         }
     } else {
         Word val;
         for (Word ofs = 0; ofs < length && !error; ofs++) {
             error = busRead(startAddr + (ofs * WORDLEN), &val);
-#if 0
-            watch->SignalBusAccess(startAddr + (ofs * WORDLEN), READ);
-#endif
+            machine->HandleBusAccess(startAddr + (ofs * WORDLEN), READ, NULL);
             blk->setWord(ofs, val);
         }
     }
@@ -392,15 +335,7 @@ bool SystemBus::DMAVarTransfer(Block* blk, Word startAddr, Word byteLength, bool
 // an exception was caused, FALSE otherwise, and notifies Watch
 bool SystemBus::InstrRead(Word addr, Word* instrp, Processor* proc)
 {
-#if 0
-    watch->SignalBusAccess(addr, EXEC);
-#endif
-
-#if BE_SLOW
-    SignalAccess.emit(addr, EXEC, proc);
-#else
-    machine->busAccessHandler(addr, EXEC, proc);
-#endif
+    machine->HandleBusAccess(addr, EXEC, proc);
 
     if (busRead(addr, instrp)) {
         // address invalid: signal exception to processor
@@ -412,14 +347,12 @@ bool SystemBus::InstrRead(Word addr, Word* instrp, Processor* proc)
     }
 }
 
-
 // This method inserts in the eventQ a event that must happen
-// at (current system time) + (increment)
-TimeStamp* SystemBus::EventReq(unsigned int intNum, unsigned int devNum, Word inc)
+// at (current system time) + delay
+TimeStamp* SystemBus::ScheduleEvent(Word delay, Event::Callback callback)
 {
-    return eventQ->InsertQ(timeOfDay, inc, intNum, devNum);
+    return eventQ->InsertQ(timeOfDay, delay, callback);
 }
-
 
 // This method sets the appropriate bits into intCauseDev[] and
 // IntPendMask to signal device interrupt pending; it notifies memory
@@ -572,10 +505,7 @@ Device* SystemBus::makeDev(unsigned int intl, unsigned int dnum)
 
     devt = config->getDeviceType(intl, dnum);
 
-#define CREATE_DEV(type) (setup ? new type(this, setup, intl, dnum) : new type(this, config, intl, dnum))
-
-    switch(devt)
-    {
+    switch(devt) {
     case PRNTDEV:
         dev = new PrinterDevice(this, config, intl, dnum);
         break;

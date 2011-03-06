@@ -24,12 +24,13 @@
 
 #include <sigc++/sigc++.h>
 
+#include "umps/event.h"
+
 class Machine;
 class MachineConfig;
 class Device;
 class Processor;
 class TimeStamp;
-class EventQueue;
 class RamSpace;
 class BiosSpace;
 class Block;
@@ -89,6 +90,8 @@ public:
     // at (current system time) + (increment)
     TimeStamp * EventReq(unsigned int intNum, unsigned int devNum, Word inc);
 
+    TimeStamp* ScheduleEvent(Word delay, Event::Callback callback);
+
     // This method sets the appropriate bits into intCauseDev[] and
     // IntPendMask to signal device interrupt pending; it notifies
     // memory changes to Watch too
@@ -102,9 +105,10 @@ public:
     // This method returns the current interrupt line status
     Word getPendingInt(void);
 		
+    Machine* getMachine() { return machine; }
+
     // This method returns the Device object with given "coordinates"
     Device * getDev(unsigned int intL, unsigned int dNum);
-
 
     // These methods allow to inspect or modify  TimeofDay Clock and
     // Interval Timer (typically for simulation reasons)
@@ -122,8 +126,6 @@ public:
 
     bool WatchRead(Word addr, Word * datap);
     bool WatchWrite(Word addr, Word data);
-
-    Processor* processor(Word cpuId);
 
 private:
     const MachineConfig* const config;

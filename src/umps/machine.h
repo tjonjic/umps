@@ -72,7 +72,7 @@ public:
     bool ReadMemory(Word physAddr, Word* data);
     bool WriteMemory(Word paddr, Word data);
 
-    void busAccessHandler(Word pAddr, Word access, Processor* cpu);
+    void HandleBusAccess(Word pAddr, Word access, Processor* cpu);
 
 private:
     struct ProcessorData {

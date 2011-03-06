@@ -36,6 +36,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <boost/bind.hpp>
+
 #include <umps/const.h>
 #include "umps/types.h"
 #include "umps/blockdev_params.h"
@@ -46,10 +48,11 @@
 
 #include "umps/device.h"
 
-#include "machine_config.h"
+#include "umps/machine_config.h"
 #include "umps/time_stamp.h"
 #include "umps/error.h"
 #include "umps/vde_network.h"
+#include "umps/machine.h"
 
 
 // last operation result description
@@ -351,7 +354,11 @@ bool Device::TapeLoad(const char * tFName)
     return(false);
 }
 
-                        
+TimeStamp* Device::scheduleIOEvent(Word delay)
+{
+    return bus->ScheduleEvent(delay, boost::bind(&Device::CompleteDevOp, this));
+}
+
 /****************************************************************************/
 
 // PrinterDevice class allows to emulate parallel character printer
@@ -409,7 +416,7 @@ void PrinterDevice::WriteDevReg(unsigned int regnum, Word data)
         switch (data) {
         case RESET:
             bus->IntAck(intL, devNum);
-            complTime = bus->EventReq(intL, devNum, PRNTRESETTIME * config->getClockRate());
+            complTime = scheduleIOEvent(PRNTRESETTIME * config->getClockRate());
             sprintf(statStr, "Resetting (last op: %s)", isSuccess(dType, reg[STATUS]));
             reg[STATUS] = BUSY;
             break;
@@ -424,7 +431,7 @@ void PrinterDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntAck(intL, devNum);
             sprintf(statStr, "Printing char 0x%.2X (last op: %s)", 
                     (unsigned char) reg[DATA0], isSuccess(dType, reg[STATUS]));
-            complTime = bus->EventReq(intL, devNum, PRNTCHRTIME * config->getClockRate());
+            complTime = scheduleIOEvent(PRNTCHRTIME * config->getClockRate());
             reg[STATUS] = BUSY;
             break;
 
@@ -568,7 +575,7 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
                 if (!tranIntPend)
                     bus->IntAck(intL, devNum);
                 recvIntPend = false;
-                recvCTime = bus->EventReq(intL, devNum, TERMRESETTIME * config->getClockRate());
+                recvCTime = scheduleIOEvent(TERMRESETTIME * config->getClockRate());
                 sprintf(recvStatStr, "Resetting (last op: %s)",
                         isSuccess(dType, reg[RECVSTATUS] & BYTEMASK));
                 reg[RECVSTATUS] = BUSY;
@@ -589,7 +596,7 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
                 recvIntPend = false;
                 sprintf(recvStatStr, "Receiving (last op: %s)",
                         isSuccess(dType, reg[RECVSTATUS] & BYTEMASK));
-                recvCTime = bus->EventReq(intL, devNum, RECVCHRTIME * config->getClockRate());
+                recvCTime = scheduleIOEvent(RECVCHRTIME * config->getClockRate());
                 reg[RECVSTATUS] = BUSY;
                 break;
 
@@ -619,7 +626,7 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
                 if (!recvIntPend)
                     bus->IntAck(intL, devNum);
                 tranIntPend = false;
-                tranCTime = bus->EventReq(intL, devNum, TERMRESETTIME * config->getClockRate());
+                tranCTime = scheduleIOEvent(TERMRESETTIME * config->getClockRate());
                 sprintf(tranStatStr, "Resetting (last op: %s)",
                         isSuccess(dType, reg[TRANSTATUS] & BYTEMASK));
                 reg[TRANSTATUS] = BUSY;
@@ -642,7 +649,7 @@ void TerminalDevice::WriteDevReg(unsigned int regnum, Word data)
                         (unsigned char) ((data >> BYTELEN) & BYTEMASK),
                         isSuccess(dType, reg[TRANSTATUS] & BYTEMASK));
 
-                tranCTime = bus->EventReq(intL, devNum, TRANCHRTIME * config->getClockRate());
+                tranCTime = scheduleIOEvent(TRANCHRTIME * config->getClockRate());
                 reg[TRANSTATUS] = BUSY;
                 break;
 
@@ -770,7 +777,7 @@ unsigned int TerminalDevice::CompleteDevOp()
         case RECVCHR:
             if (recvBuf == NULL || recvBuf[recvBp] == EOS) {
                 // no char in input: wait another receiver cycle
-                recvCTime = bus->EventReq(intL, devNum, RECVCHRTIME * config->getClockRate());
+                recvCTime = scheduleIOEvent(RECVCHRTIME * config->getClockRate());
             } else {
                 // buffer is not empty
                 if (isWorking) {
@@ -840,6 +847,7 @@ unsigned int TerminalDevice::CompleteDevOp()
         devMod = TRANSTATUS;
     }
     SignalStatusChanged.emit(getDevSStr());
+    bus->getMachine()->HandleBusAccess(DEV_REG_ADDR(intL, devNum) + devMod * WS, WRITE, NULL);
     return devMod;
 }
 
@@ -961,7 +969,7 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntAck(intL, devNum);
             // controller reset & cylinder recalibration
             timeOfs = (DISKRESETTIME + (diskP->getSeekTime() * currCyl)) * config->getClockRate();
-            complTime = bus->EventReq(intL, devNum, timeOfs);
+            complTime = scheduleIOEvent(timeOfs);
             sprintf(statStr, "Resetting (last op: %s)", isSuccess(dType, reg[STATUS]));
             reg[STATUS] = BUSY;
             break;
@@ -983,7 +991,7 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
                     cyl = currCyl - cyl;
                 else
                     cyl = cyl - currCyl;
-                complTime = bus->EventReq(intL, devNum, (diskP->getSeekTime() * cyl * config->getClockRate()) + 1);
+                complTime = scheduleIOEvent((diskP->getSeekTime() * cyl * config->getClockRate()) + 1);
                 reg[STATUS] = BUSY;
             } else {
                 // cyl out of range
@@ -1027,7 +1035,7 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
                     // DMA transfer time
                     timeOfs += (sectTicks * sect) + ((sectTicks * diskP->getDataSect()) / 100) + DMATICKS; 
                 }
-                complTime = bus->EventReq(intL, devNum, timeOfs);
+                complTime = scheduleIOEvent(timeOfs);
                 reg[STATUS] = BUSY;
             } else {
                 // head/sector out of range 
@@ -1075,7 +1083,7 @@ void DiskDevice::WriteDevReg(unsigned int regnum, Word data)
                     //   sectors-in-between time + sector data write
                     timeOfs += (sectTicks * sect) + ((sectTicks * diskP->getDataSect()) / 100);
                 }
-                complTime = bus->EventReq(intL, devNum, timeOfs);
+                complTime = scheduleIOEvent(timeOfs);
                 reg[STATUS] = BUSY;
             } else {
                 // head/sector out of range 
@@ -1327,7 +1335,7 @@ void TapeDevice::WriteDevReg(unsigned int regnum, Word data)
         case RESET:
             // it rewinds the tape too
             bus->IntAck(intL, devNum);
-            complTime = bus->EventReq(intL, devNum, (TAPERESETTIME + (REWBLKTIME * tapeBp)) * config->getClockRate());
+            complTime = scheduleIOEvent((TAPERESETTIME + (REWBLKTIME * tapeBp)) * config->getClockRate());
             sprintf(statStr, "Rewinding the tape (last op: %s)", isSuccess(dType, reg[STATUS]));
             reg[STATUS] = BUSY;
             break;
@@ -1342,7 +1350,7 @@ void TapeDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntAck(intL, devNum);
             if (reg[DATA1] != TAPEEOT) {
                 sprintf(statStr, "Skipping block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
-                complTime = bus->EventReq(intL, devNum, SKIPBLKTIME * config->getClockRate());
+                complTime = scheduleIOEvent(SKIPBLKTIME * config->getClockRate());
                 reg[STATUS] = BUSY;
             } else {
                 sprintf(statStr, "Cannot skip beyond EOT : waiting for ACK");
@@ -1355,7 +1363,7 @@ void TapeDevice::WriteDevReg(unsigned int regnum, Word data)
             bus->IntAck(intL, devNum);
             if (reg[DATA1] != TAPEEOT) {
                 sprintf(statStr, "Reading block %u (last op: %s)", tapeBp, isSuccess(dType, reg[STATUS]));
-                complTime = bus->EventReq(intL, devNum, READBLKTIME * config->getClockRate() + DMATICKS);
+                complTime = scheduleIOEvent(READBLKTIME * config->getClockRate() + DMATICKS);
                 reg[STATUS] = BUSY;
             } else {
                 sprintf(statStr, "Cannot read beyond EOT : waiting for ACK");
@@ -1369,7 +1377,7 @@ void TapeDevice::WriteDevReg(unsigned int regnum, Word data)
             // overkill test
             if (reg[DATA1] != TAPESTART && tapeBp != 0) {
                 sprintf(statStr, "Rewinding to block %u (last op: %s)", tapeBp - 1, isSuccess(dType, reg[STATUS]));
-                complTime = bus->EventReq(intL, devNum, REWBLKTIME * config->getClockRate());
+                complTime = scheduleIOEvent(REWBLKTIME * config->getClockRate());
                 reg[STATUS] = BUSY;
             } else {
                 sprintf(statStr, "Cannot rewind beyond tape start : waiting for ACK");
@@ -1549,7 +1557,7 @@ EthDevice::EthDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line
                               (const char*) config->getMACId(devNum),
                               devNum);
     if ((netint->getmode() & INTERRUPT)!= 0)
-        polltime = bus->EventReq(intL, devNum, POLLNETTIME * config->getClockRate());
+        polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
     else
         polltime = NULL;
 }
@@ -1580,7 +1588,7 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
                 bus->IntAck(intL, devNum);
                 sprintf(statStr, "Reset requested : waiting for ACK");
                 reg[STATUS] = BUSY;
-                complTime = bus->EventReq(intL, devNum, ETHRESETTIME * config->getClockRate());
+                complTime = scheduleIOEvent(ETHRESETTIME * config->getClockRate());
                 break;
             case ACK:
                 bus->IntAck(intL, devNum);
@@ -1591,18 +1599,18 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
                 bus->IntAck(intL, devNum);                                      
                 reg[STATUS] = BUSY;
                 sprintf(statStr, "Reading Interface Configuration");
-                complTime = bus->EventReq(intL, devNum, CONFNETTIME * config->getClockRate());
+                complTime = scheduleIOEvent(CONFNETTIME * config->getClockRate());
                 break;
             case CONFIGURE:
                 bus->IntAck(intL, devNum);
                 reg[STATUS] = BUSY;
                 sprintf(statStr, "Writing Interface Configuration");
-                complTime = bus->EventReq(intL, devNum, CONFNETTIME * config->getClockRate());
+                complTime = scheduleIOEvent(CONFNETTIME * config->getClockRate());
                 break;
             case READNET:
                 bus->IntAck(intL, devNum);
                 reg[STATUS] = BUSY;
-                complTime = bus->EventReq(intL, devNum, READNETTIME * config->getClockRate());
+                complTime = scheduleIOEvent(READNETTIME * config->getClockRate());
                 sprintf(statStr, "Receiving Data");
                 break;
             case WRITENET:
@@ -1612,7 +1620,7 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
                     sprintf(statStr, "DMA error on netwrite: waiting for ACK");
                     err=1;
                 } else {
-                    complTime = bus->EventReq(intL, devNum, WRITENETTIME * config->getClockRate());
+                    complTime = scheduleIOEvent(WRITENETTIME * config->getClockRate());
                     reg[STATUS] = BUSY;
                     sprintf(statStr, "Sending Data");
                 }
@@ -1662,7 +1670,7 @@ unsigned int EthDevice::CompleteDevOp()
             } else                   /* there are not waiting packets */
                 if ((netint->getmode() & INTERRUPT)!= 0)        /*continue polling if the user
                                                                   hasn't changed her mind*/
-                    polltime=bus->EventReq(intL, devNum, POLLNETTIME* config->getClockRate());
+                    polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
         }
     }
     else
@@ -1765,7 +1773,7 @@ unsigned int EthDevice::CompleteDevOp()
             && polltime==NULL /* no polling in place */
             && !rp)        /* no already read pending requests */
         {
-            polltime=bus->EventReq(intL, devNum, POLLNETTIME * config->getClockRate());
+            polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
         }
     }
     return(STATUS);

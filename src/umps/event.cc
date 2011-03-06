@@ -38,31 +38,15 @@
 #include "umps/utility.h"
 #include "umps/time_stamp.h"
 
-// This method creates a new Event object and initalizes it
-Event::Event(TimeStamp * ts, Word inc, unsigned int il, unsigned int dev)
-{
-    time = new TimeStamp(ts, inc);
-    intL = il;
-    devNum = dev;
-    next = NULL;
-}
+Event::Event(TimeStamp* ts, Word inc, Callback callback)
+    : time(new TimeStamp(ts, inc)),
+      callback(callback),
+      next(NULL)
+{}
 
-// This method deletes a Event object and its internal structures
 Event::~Event()
 {
     delete time;
-}
-
-// This method returns the interrupt line of the device requiring the Event
-unsigned int Event::getIntLine()
-{
-    return (intL);
-}
-
-// This method returns the device number of the device requiring the Event
-unsigned int Event::getDevNum()
-{
-    return (devNum);
 }
 
 // This method returns the TimeStamp access pointer
@@ -113,57 +97,31 @@ EventQueue::~EventQueue()
     }
 }
 
-// This method returns TRUE if the queue is empty, FALSE otherwise
-bool EventQueue::IsEmptyQ()
-{
-    if (head == NULL)
-        return (true);
-    else
-        return (false);
-}
-
 // This method returns a pointer to the timestamp of the EventQueue head, 
 // if queue is not empty, and NULL otherwise
 TimeStamp *EventQueue::getHTS()
 {
-    if (!IsEmptyQ())
+    if (!IsEmpty())
         return (head->getTS());
     else
         return (NULL);
 }
 
-
-// This method returns the interrupt line of the EventQueue head, 
-// if not empty (0 otherwise)
-unsigned int EventQueue::getHIntLine()
+Event::Callback EventQueue::getHCallback() const
 {
-    if (!IsEmptyQ())
-        return (head->getIntLine());
-    else
-        return (0);
+    assert(!IsEmpty());
+    return head->getCallback();
 }
-
-
-// This method returns the device number of the EventQueue head, 
-// if not empty (0 otherwise)
-unsigned int EventQueue::getHDevNum()
-{
-    if (!IsEmptyQ())
-        return (head->getDevNum());
-    else
-        return (0);
-}
-
 
 // This method creates a new Event object and inserts it in the
 // EventQueue; EventQueue is sorted on ascending time order
-TimeStamp *EventQueue::InsertQ(TimeStamp * ts, Word inc, unsigned int il,
-                               unsigned int dev)
+
+TimeStamp* EventQueue::InsertQ(TimeStamp* ts, Word delay, Event::Callback callback)
 {
     Event *ins, *p, *q;
 
-    ins = new Event(ts, inc, il, dev);
-    if (IsEmptyQ()) {
+    ins = new Event(ts, delay, callback);
+    if (IsEmpty()) {
         head = ins;
     } else if ((ins->getTS())->LessEq(head->getTS())) {
         // "ins" has to happen before that at the head of the queue;
@@ -189,7 +147,7 @@ TimeStamp *EventQueue::InsertQ(TimeStamp * ts, Word inc, unsigned int il,
         ins->InsAfter(q);
     }
     lastIns = ins;
-    return (ins->getTS());
+    return ins->getTS();
 }
 
 // This method removes the head of a (not empty) queue and sets it to the
@@ -198,7 +156,7 @@ void EventQueue::RemoveHead()
 {
     Event *p;
 
-    if (!IsEmptyQ()) {
+    if (!IsEmpty()) {
         p = head;
         head = head->Next();
 

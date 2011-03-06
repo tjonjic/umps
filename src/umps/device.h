@@ -125,6 +125,8 @@ public:
     sigc::signal<void, bool> SignalConditionChanged;
 
 protected:
+    TimeStamp* scheduleIOEvent(Word delay);
+
     unsigned int intL;
     unsigned int devNum;
 

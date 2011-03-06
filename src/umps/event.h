@@ -22,6 +22,8 @@
 #ifndef UMPS_EVENT_H
 #define UMPS_EVENT_H
 
+#include <boost/function.hpp>
+
 #include "umps/types.h"
 
 class TimeStamp;
@@ -35,21 +37,18 @@ class TimeStamp;
 
 class Event {
 public:
+    typedef boost::function<void ()> Callback;
+
     // This method creates a new Event object and initalizes it
     Event(TimeStamp * ts, Word inc, unsigned int il, unsigned int dev);
+    Event(TimeStamp* ts, Word inc, Callback callback);
 
     ~Event();
 
-    // This method returns the interrupt line of the device requiring
-    // the Event
-    unsigned int getIntLine();
-
-    // This method returns the device number of the device requiring
-    // the Event
-    unsigned int getDevNum();
-
     // This method returns the TimeStamp access pointer
     TimeStamp *getTS();
+
+    Callback getCallback() const { return callback; }
 
     // This method links an Event to its successor in a structure
     void AddBefore(Event * ev);
@@ -62,12 +61,11 @@ public:
     Event *Next();
 
 private:
-    // Interrupt line and device number of associated dev.
-    unsigned int intL;
-    unsigned int devNum;
-
     // Event verification time
     TimeStamp *time;
+
+    // Event handler
+    Callback callback;
 
     Event *next;
 };
@@ -87,23 +85,17 @@ public:
     ~EventQueue();
 
     // This method returns TRUE if the queue is empty, FALSE otherwise
-    bool IsEmptyQ();
+    bool IsEmpty() const { return head == NULL; }
 
     // This method returns the TimeStamp in the EventQueue
     // head, if queue is not empty, and NULL otherwise
     TimeStamp *getHTS();
 
-    // This method returns the interrupt line of the EventQueue head, if
-    // not empty (0 otherwise)
-    unsigned int getHIntLine();
-
-    // This method returns the device number of the EventQueue head, if
-    // not empty (0 otherwise)
-    unsigned int getHDevNum();
+    Event::Callback getHCallback() const;
 
     // This method creates a new Event object and inserts it in the
     // EventQueue; EventQueue is sorted on ascending time order
-    TimeStamp* InsertQ(TimeStamp* ts, Word inc, unsigned int il, unsigned int dev);
+    TimeStamp* InsertQ(TimeStamp* ts, Word delay, Event::Callback callback);
 
     // This method removes the head of a (not empty) queue and sets it to the
     // following Event          

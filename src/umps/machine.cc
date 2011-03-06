@@ -46,7 +46,7 @@ Machine::Machine(const MachineConfig* config,
     assert(config->Validate(NULL));
 
     bus.reset(new SystemBus(config, this));
-    bus->SignalAccess.connect(sigc::mem_fun(this, &Machine::busAccessHandler));
+    bus->SignalAccess.connect(sigc::mem_fun(this, &Machine::HandleBusAccess));
 
     for (unsigned int i = 0; i < config->getNumProcessors(); i++) {
         Processor* cpu = new Processor(config, i, this, bus.get());
@@ -124,7 +124,7 @@ void Machine::onCpuStatusChanged(Processor* cpu)
     }
 }
 
-void Machine::busAccessHandler(Word pAddr, Word access, Processor* cpu)
+void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)
 {
     // Check for breakpoints and suspects
     switch (access) {
