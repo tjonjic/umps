@@ -26,6 +26,8 @@
  *
  ****************************************************************************/
 
+#include "umps/utility.h"
+
 #include <umps/const.h>
 #include "umps/types.h"
 
@@ -35,88 +37,61 @@
 #include <ctype.h>
 #include <algorithm>
 
-#include "umps/utility.h"
 
 // This function sets to 1 the (bitPos % 32) bit of the word w
 Word SetBit (Word w, unsigned bitPos)
 {
-	return (w | (1 << bitPos));
+    return (w | (1 << bitPos));
 }
 
 
 // This function resets to 0 the (bitPos % 32) bit of the word w
 Word ResetBit (Word w, unsigned bitPos)
 {
-	return(w & ((~0) ^ SetBit(0, bitPos)));
+    return(w & ((~0) ^ SetBit(0, bitPos)));
 }
-
 
 // This function returns the bitPos bit value in w
 bool BitVal(Word w, unsigned int bitPos)
 {
-	return((w >> bitPos) & 1UL);
+    return (w >> bitPos) & 1UL;
 }
-
 
 // This function adds the _unsigned_ quantities a1 and a2,
 // puts result into dest, and returns TRUE if a overflow occurred,
 // FALSE otherwise
 bool UnsAdd(Word *dest, Word a1, Word a2)
 {
-	*dest = a1 + a2;
-
-	if (~(a1) < a2)
-		// overflow has occurred
-		return(true);
-	else
-		return(false);
+    *dest = a1 + a2;
+    return ~a1 < a2;
 }
-
 
 // This function subtacts the _unsigned_ quantity s2 from s1,
 // puts result into dest, and returns TRUE if a underflow occurred,
 // FALSE otherwise
 bool UnsSub(Word *dest, Word s1, Word s2)
 {
-	*dest = s1 - s2;
-
-	if ( s1 < s2)
-		// underflow has occurred
-		return(true);
-	else
-		return(false);
+    *dest = s1 - s2;
+    return s1 < s2;
 }
-
 
 // This function adds the _signed_ quantities a1 and a2, puts result into
 // dest (casting it to unsigned), and returns TRUE if a overflow occurred,
 // FALSE otherwise
 bool SignAdd(Word *dest, SWord a1, SWord a2) 
 {
-	*dest = (Word) (a1 + a2);
-
-	if (SIGNBIT(a1) == SIGNBIT(a2) && SIGNBIT(*dest) != SIGNBIT(a1))
-		// overflow has occurred: result sign is different from operands'
-		return(true); 
-	else 
-		return(false);
+    *dest = (Word) (a1 + a2);
+    return (SIGNBIT(a1) == SIGNBIT(a2) && SIGNBIT(*dest) != SIGNBIT(a1));
 }
-
 
 // This function subtracts the _signed_ quantity s2 from s1, puts result
 // into dest (casting it to unsigned), and returns TRUE if a underflow 
 // occurred, FALSE otherwise
 bool SignSub(Word *dest, SWord s1, SWord s2) 
 {
-	*dest = (Word) (s1 - s2);
-
-	if (SIGNBIT(s1) != SIGNBIT(s2) && SIGNBIT(*dest) != SIGNBIT(s1)) 
-		//underflow has occurred
-		return(true); 
-	else 
-		return(false);
+    *dest = (Word) (s1 - s2);
+    return (SIGNBIT(s1) != SIGNBIT(s2) && SIGNBIT(*dest) != SIGNBIT(s1));
 }
-
 
 // This function multiplies the _unsigned_ quantities m1 and m2,
 // returning back the high and low part of the unsigned 64 bit result via
