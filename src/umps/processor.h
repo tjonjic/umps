@@ -51,6 +51,7 @@ public:
     virtual ~Processor();
 
     Word getId() const { return id; }
+    Word Id() const { return id; }
 
     ProcessorStatus getStatus();
 

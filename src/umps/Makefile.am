@@ -30,6 +30,8 @@ libumps_a_SOURCES = \
 	memspace.cc		\
 	mp_controller.h		\
 	mp_controller.cc	\
+	mpic.h			\
+	mpic.cc			\
 	processor.h		\
 	processor.cc		\
 	processor_defs.h	\

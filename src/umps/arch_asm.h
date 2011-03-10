@@ -58,6 +58,8 @@
 
 #define DEV_IL_START        (N_INTERRUPT_LINES - N_EXT_IL)
 
+#define IL_IPI              0
+#define IL_CPUTIMER         1
 #define IL_TIMER            2
 #define IL_DISK             3
 #define IL_TAPE             4
@@ -125,6 +127,67 @@
 #define MPC_BASE                MPC_NCPUS
 #define MPC_END                 (MPC_BIOS_EV + WS)
 
-#define DEV_END                 MPC_END
+/*
+ * Interrupt Routing Table (IRT)
+ */
+#define IRT_BASE                0x10000300
+#define IRT_END                 0x100003c0  /* (IRT_BASE + (N_EXT_IL + 1) * N_DEV_PER_IL * WS) */
+
+#define IRT_ENTRY(line, dev)    (IRT_BASE + WS * (((line) - IL_TIMER) * N_DEV_PER_IL + dev))
+
+#define     IRT_ENTRY_POLICY_MASK       0x10000000
+#define     IRT_ENTRY_POLICY_BIT        28
+#define     IRT_ENTRY_GET_POLICY(x)     (((x) & IRT_ENTRY_POLICY_MASK) >> IRT_ENTRY_POLICY_BIT)
+
+#define     IRT_ENTRY_DEST_MASK         0x000000ff
+#define     IRT_ENTRY_DEST_BIT          0
+#define     IRT_ENTRY_GET_DEST(x)       (((x) & IRT_ENTRY_DEST_MASK) >> IRT_ENTRY_DEST_BIT)
+
+/* Interrupt routing policies */
+#define IRT_POLICY_FIXED   0
+#define IRT_POLICY_DYNAMIC 1
+
+/*
+ * Int. controller cpu inteface (banked) register set
+ */
+#define CPUCTL_INBOX            0x10000400
+
+#define     CPUCTL_INBOX_MSG_MASK       0x000000ff
+#define     CPUCTL_INBOX_MSG_BIT        0
+#define     CPUCTL_INBOX_GET_MSG(x)     (((x) & CPUCTL_INBOX_MSG_MASK) >> CPUCTL_INBOX_MSG_BIT)
+
+#define     CPUCTL_INBOX_ORIGIN_MASK    0x00000f00
+#define     CPUCTL_INBOX_ORIGIN_BIT     8
+#define     CPUCTL_INBOX_GET_ORIGIN(x)  (((x) & CPUCTL_INBOX_ORIGIN_MASK) >> CPUCTL_INBOX_ORIGIN_BIT)
+
+#define CPUCTL_OUTBOX           0x10000404
+
+#define     CPUCTL_OUTBOX_MSG_MASK      0x000000ff
+#define     CPUCTL_OUTBOX_MSG_BIT       0
+#define     CPUCTL_OUTBOX_GET_MSG(x)    (((x) & CPUCTL_OUTBOX_MSG_MASK) >> CPUCTL_OUTBOX_MSG_BIT)
+
+#define     CPUCTL_OUTBOX_RECIP_MASK    0x0000ff00
+#define     CPUCTL_OUTBOX_RECIP_BIT     8
+#define     CPUCTL_OUTBOX_GET_RECIP(x)  (((x) & CPUCTL_OUTBOX_RECIP_MASK) >> CPUCTL_OUTBOX_RECIP_BIT)
+
+#define CPUCTL_TPR              0x10000408
+
+#define     CPUCTL_TPR_PRIORITY_MASK    0x0000000f
+
+#define CPUCTL_BIOS_RES_0       0x1000040c
+#define CPUCTL_BIOS_RES_1       0x10000410
+
+#define CPUCTL_BASE             CPUCTL_INBOX
+#define CPUCTL_END              (CPUCTL_BIOS_RES_1 + WS)
+
+/*
+ * MP configuration and initialization
+ */
+#define MPCONF_NCPUS            0x10000500
+#define MPCONF_INIT             0x10000504
+#define MPCONF_BOOT_SP          0x10000508
+#define MPCONF_BOOT_ARG         0x1000050c
+
+#define DEV_END                 (MPCONF_BOOT_ARG + WS)
 
 #endif /* !defined(UMPS_ARCH_ASM_H) */

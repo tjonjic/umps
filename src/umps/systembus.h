@@ -24,7 +24,9 @@
 
 #include <sigc++/sigc++.h>
 
+#include "base/lang.h"
 #include "umps/event.h"
+#include "umps/const.h"
 
 class Machine;
 class MachineConfig;
@@ -35,6 +37,7 @@ class RamSpace;
 class BiosSpace;
 class Block;
 class MPController;
+class InterruptController;
 
 class SystemBus {
 public:
@@ -103,7 +106,7 @@ public:
     void IntAck(unsigned int intNum, unsigned int devNum);
 
     // This method returns the current interrupt line status
-    Word getPendingInt(void);
+    Word getPendingInt(const Processor* cpu);
 		
     Machine* getMachine() { return machine; }
 
@@ -131,6 +134,8 @@ private:
     const MachineConfig* const config;
 
     Machine* machine;
+
+    scoped_ptr<InterruptController> pic;
 
     // system clock & interval timer
     TimeStamp* timeOfDay;

@@ -588,7 +588,7 @@ void Processor::popKUIEVMStack()
 bool Processor::checkForInt()
 {
     // computes current IP status bit mask (software and hardware interrupts)
-    Word currIPMask = bus->getPendingInt() | (cpreg[CAUSE] & CAUSEWMASK);
+    Word currIPMask = bus->getPendingInt(this) | (cpreg[CAUSE] & CAUSEWMASK);
 	
     if (BitVal(cpreg[STATUS], IECBITPOS) && (currIPMask & IM(cpreg[STATUS])) != 0UL)
     {

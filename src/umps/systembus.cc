@@ -69,6 +69,7 @@
 #include "umps/error.h"
 #include "umps/memspace.h"
 #include "umps/event.h"
+#include "umps/mpic.h"
 
 // This macro converts a byte address into a word address (minus offset)
 #define CONVERT(ad, bs)	((ad - bs) >> WORDSHIFT)	
@@ -103,7 +104,8 @@ private:
 
 SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
     : config(conf),
-      machine(machine)
+      machine(machine),
+      pic(new InterruptController(conf, this))
 {
     timeOfDay = new TimeStamp();
     timer = MAXWORDVAL;
@@ -169,7 +171,7 @@ void SystemBus::ClockTick()
 
     // Update interval timer
     if (UnsSub(&timer, timer, 1))
-        intPendMask = SetBit(intPendMask, TIMERINT + IPMASKBASE);
+        pic->StartIRQ(IL_TIMER);
     machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
 
     // scans the event queue
@@ -354,40 +356,20 @@ TimeStamp* SystemBus::ScheduleEvent(Word delay, Event::Callback callback)
     return eventQ->InsertQ(timeOfDay, delay, callback);
 }
 
-// This method sets the appropriate bits into intCauseDev[] and
-// IntPendMask to signal device interrupt pending; it notifies memory
-// changes to Watch too
 void SystemBus::IntReq(unsigned int intl, unsigned int devNum)
 {
-    intCauseDev[intl] = SetBit(intCauseDev[intl], devNum);
-    intPendMask = SetBit(intPendMask, intl + DEVINTBASE + IPMASKBASE);
-    // memory address changes
-#if 0
-    watch->SignalBusAccess(CDEV_BITMAP_ADDR(intl + DEV_IL_START), WRITE);
-#endif
+    pic->StartIRQ(DEV_IL_START + intl, devNum);
 }
 
-
-// This method resets the appropriate bits into intCauseDev[] and
-// IntPendMask to signal device interrupt acknowlege; it notifies memory
-// changes to Watch too
 void SystemBus::IntAck(unsigned int intl, unsigned int devNum)
 {
-    intCauseDev[intl] = ResetBit(intCauseDev[intl], devNum);
-    // memory address changes
-#if 0
-    watch->SignalBusAccess(CDEV_BITMAP_ADDR(intl + DEV_IL_START), WRITE);
-#endif
-    if (intCauseDev[intl] == 0UL)
-        // there are no more interrupts pending for that line
-        intPendMask = ResetBit(intPendMask, intl + DEVINTBASE + IPMASKBASE);
+    pic->EndIRQ(DEV_IL_START + intl, devNum);
 }
 
-
 // This method returns the current interrupt line status
-Word SystemBus::getPendingInt(void)
+Word SystemBus::getPendingInt(const Processor* cpu)
 {
-    return(intPendMask);
+    return pic->GetIP(cpu->Id());
 }
 
 
@@ -446,10 +428,11 @@ Word SystemBus::busRegRead(Word addr, Processor* cpu)
         // We're in the "installed-devices bitmap" structure space
         unsigned int wordIndex = CONVERT(addr, IDEV_BITMAP_BASE);
         data = instDevTable[wordIndex];
-    } else if (INBOUNDS(addr, CDEV_BITMAP_BASE, CDEV_BITMAP_END)) {
-        // We're in the "interrupting-devices bitmap" structure space
-        unsigned int wordIndex = CONVERT(addr, CDEV_BITMAP_BASE);
-        data = intCauseDev[wordIndex];
+    } else if (INBOUNDS(addr, CDEV_BITMAP_BASE, CDEV_BITMAP_END) ||
+               INBOUNDS(addr, IRT_BASE, IRT_END) ||
+               INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
+    {
+        data = pic->Read(addr, cpu);
     } else if (MPC_BASE <= addr && addr < MPC_END) {
         data = mpc->Read(addr, cpu);
     } else {
@@ -546,6 +529,10 @@ bool SystemBus::busWrite(Word addr, Word data, Processor* cpu)
             DeviceAreaAddress dva(addr);
             Device* device = devTable[dva.line()][dva.device()];
             device->WriteDevReg(dva.field(), data);
+        } else if (INBOUNDS(addr, IRT_BASE, IRT_END) ||
+                   INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
+        {
+            pic->Write(addr, data, cpu);
         } else if (MPC_BASE <= addr && addr < MPC_END) {
             mpc->Write(addr, data, NULL);
         } else {
@@ -553,8 +540,8 @@ bool SystemBus::busWrite(Word addr, Word data, Processor* cpu)
             if (addr == BUS_REG_TIMER) {
                 // update the interval timer and reset its interrupt line
                 timer = data;
-                intPendMask = ResetBit(intPendMask, TIMERINT + IPMASKBASE);
-            }	
+                pic->EndIRQ(IL_TIMER);
+            }
             // else data write is on a read only bus register, and
             // has no harmful effects
         }
