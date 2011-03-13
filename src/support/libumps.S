@@ -4,6 +4,22 @@
 #include "h/bios_srv.h"
 #include "umps/arch_asm.h"
 
+#if 0
+#define LEAF_FUNC(func)				\
+	.globl	func;				\
+	.type	func, @function;		\
+	.end	func				\
+func:	.frame	$fp, 0, $ra			\
+	.mask   0x00000000,0			\
+	.fmask  0x00000000,0
+
+#define END_LEAF_FUNC(func)			\
+	jr	$ra				\
+	.end	func				\
+	.size	func, . - func
+#endif
+
+	/* Ugh, we don't really want abicalls unconditionally. */
 	.abicalls
 
 	# Code start
@@ -843,14 +859,14 @@ STARTCPU:
 
 	.set	noreorder
 
-	li	$t0, MPC_CPU_BOOT_PC
+	li	$t0, MPCONF_BOOT_PC
 	li	$t1, 0x00000100
 	sw	$t1, 0($t0)
 
-	li	$t0, MPC_CPU_BOOT_ARG
+	li	$t0, MPCONF_BOOT_ARG
 	sw	$a1, 0($t0)
 
-	li	$t0, MPC_CPU_CONTROL
+	li	$t0, MPCONF_RESET
 	sw	$a0, 0($t0)
 
 	jr	$ra
@@ -859,5 +875,4 @@ STARTCPU:
 	.set	reorder
 
 	.end	STARTCPU
-LendSTARTCPU:
-	.size	STARTCPU, LendSTARTCPU - STARTCPU
+	.size	STARTCPU, . - STARTCPU

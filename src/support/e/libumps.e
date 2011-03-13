@@ -151,7 +151,6 @@ extern void HALT(void);
 
 struct cpu_boot_params {
     state_t      *state;
-    unsigned int  bios_scratch_base;
     unsigned int  ev_base;
 };
 

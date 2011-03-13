@@ -77,13 +77,13 @@ void CpuStatusMap::update()
         Processor* cpu = machine->getProcessor(cpuId);
 
         switch (cpu->getStatus()) {
-        case PS_HALTED:
-            statusMap[cpuId].status = "Halted";
+        case PS_OFFLINE:
+            statusMap[cpuId].status = "Offline";
             break;
-        case PS_WAITING:
-            statusMap[cpuId].status = "Waiting";
+        case PS_IDLE:
+            statusMap[cpuId].status = "Idle";
             break;
-        case PS_RUNNING:
+        case PS_ONLINE:
             formatActiveCpuStatus(cpu);
             formatActiveCpuLocation(cpu);
             break;

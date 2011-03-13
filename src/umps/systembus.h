@@ -133,9 +133,11 @@ public:
 private:
     const MachineConfig* const config;
 
-    Machine* machine;
+    Machine* const machine;
 
     scoped_ptr<InterruptController> pic;
+
+    scoped_ptr<MPController> mpController;
 
     // system clock & interval timer
     TimeStamp* timeOfDay;
@@ -157,8 +159,6 @@ private:
     // pending interrupts on lines: this word is packed into MIPS Cause
     // Register IP field format for easy masking
     Word intPendMask;
-
-    MPController* mpc;
 
     // This method read the data at physical address addr, and
     // passes it back thru the datap pointer. It also return FALSE if

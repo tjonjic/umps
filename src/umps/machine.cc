@@ -62,7 +62,7 @@ Machine::Machine(const MachineConfig* config,
         bus->LinkProcessor(cpu);
     }
 
-    cpus[0]->Start();
+    cpus[0]->Reset(MPCONF_DEFAULT_BOOT_PC, MPCONF_DEFAULT_BOOT_SP);
 }
 
 Machine::~Machine()
@@ -117,11 +117,12 @@ void Machine::onCpuException(unsigned int excCode, Processor* cpu)
     }
 }
 
-void Machine::onCpuStatusChanged(Processor* cpu)
+void Machine::onCpuStatusChanged(const Processor* cpu)
 {
-    if (cpu->getStatus() == PS_RUNNING) {
-        activeCpus.push_back(cpu->getId());
-    }
+    if (cpu->getStatus() == PS_ONLINE)
+        activeCpus.push_back(cpu->Id());
+    else
+        activeCpus.remove(cpu->Id());
 }
 
 void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)

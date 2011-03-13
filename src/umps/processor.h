@@ -34,11 +34,9 @@ class SystemBus;
 class TLBEntry;
 
 enum ProcessorStatus {
-    PS_HALTED,
-    PS_RUNNING,
-    PS_PAUSED,
-    PS_WAITING,
-    PS_STOPPED
+    PS_OFFLINE,
+    PS_ONLINE,
+    PS_IDLE
 };
 
 class Processor {
@@ -53,9 +51,11 @@ public:
     Word getId() const { return id; }
     Word Id() const { return id; }
 
-    ProcessorStatus getStatus();
+    ProcessorStatus getStatus() const { return status; }
 
-    void Start();
+    void setStatus(ProcessorStatus newStatus);
+
+    void Reset(Word pc, Word sp);
 
     // This method makes Processor execute a single instruction.  For
     // simulation purposes, it differs from traditional processor cycle:
@@ -200,7 +200,6 @@ private:
 
     // private methods
 
-    void reset(void);
     void handleExc();
     void zapTLB(void);
     bool execInstr(Word instr);

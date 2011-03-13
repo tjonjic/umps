@@ -201,24 +201,71 @@ Processor::Processor(const MachineConfig* config, Word cpuId, Machine* machine, 
     : id(cpuId),
       machine(machine),
       bus(bus),
-      status(PS_HALTED),
+      status(PS_OFFLINE),
       tlbSize(config->getTLBSize()),
       tlb(new TLBEntry[tlbSize])
 {}
 
 Processor::~Processor() {}
 
-ProcessorStatus Processor::getStatus()
+void Processor::setStatus(ProcessorStatus newStatus)
 {
-    return status;
+    if (status != newStatus) {
+        status = newStatus;
+        SignalStatusChanged.emit();
+    }
 }
 
-void Processor::Start()
+// This method puts Processor in startup state. This is done following the
+// MIPS conventions on register fields to be set; it also pre-loads the
+// first instruction since Cycle() goes on with execute-load loop
+void Processor::Reset(Word pc, Word sp)
 {
-    assert(status == PS_HALTED);
-    reset();
-    status = PS_RUNNING;
-    SignalStatusChanged.emit();
+    unsigned int i;
+
+    // first instruction is not in a branch delay slot
+    isBranchD = false;
+
+    // no exception pending at start	
+    excCause = NOEXCEPTION;
+    copENum = 0;
+
+    // no loads pending at start
+    loadPending = LOAD_TARGET_NONE;
+    loadReg = 0;
+    loadVal = MAXWORDVAL;
+
+    // clear general purpose registers
+    for (i = 0; i < CPUREGNUM; i++)
+        gpr[i] = 0;
+    gpr[29] = sp;
+
+    // no previous instruction is available
+    prevPC = MAXWORDVAL;
+    prevPhysPC = MAXWORDVAL;
+    prevInstr = NOP;
+
+    // clears CP0 registers and then sets them
+    for (i = 0; i < CP0REGNUM; i++)
+        cpreg[i] = 0UL;
+
+    // first instruction is already loaded
+    cpreg[RANDOM] =  ((tlbSize - 1UL) << RNDIDXOFFS) - RANDOMSTEP;
+    cpreg[STATUS] = STATUSRESET;
+    cpreg[PRID] = id;
+
+    currPC = pc;
+
+    // maps PC to physical address space and fetches first instruction
+    // mapVirtual and SystemBus cannot signal TRUE on this call
+    if (mapVirtual(currPC, &currPhysPC, EXEC) || bus->InstrRead(currPhysPC, &currInstr, this))
+        Panic("Illegal memory access in Processor::Reset");
+
+    // sets values for following PCs
+    nextPC = currPC + WORDLEN;
+    succPC = nextPC + WORDLEN;
+
+    setStatus(PS_ONLINE);
 }
 
 // This method makes Processor execute a single instruction.
@@ -238,7 +285,8 @@ void Processor::Start()
 // Other MIPS-specific minor tasks are performed at proper points.
 void Processor::Cycle()
 {
-    assert(status == PS_RUNNING);
+    if (status != PS_ONLINE)
+        return;
 
     // decode & exec instruction
     if (execInstr(currInstr))
@@ -467,59 +515,6 @@ void Processor::setTLBLo(unsigned int index, Word value)
 // Processor private methods start here
 //
 
-// This method puts Processor in startup state. This is done following the
-// MIPS conventions on register fields to be set; it also pre-loads the
-// first instruction since Cycle() goes on with execute-load loop
-void Processor::reset()
-{
-    unsigned int i;
-
-    // first instruction is not in a branch delay slot
-    isBranchD = false;
-
-    // no exception pending at start	
-    excCause = NOEXCEPTION;
-    copENum = 0;
-
-    // no loads pending at start
-    loadPending = LOAD_TARGET_NONE;
-    loadReg = 0;
-    loadVal = MAXWORDVAL;
-
-    // clear general purpose registers
-    for (i = 0; i < CPUREGNUM; i++)
-        gpr[i] = 0;
-
-    // no previous instruction is available
-    prevPC = MAXWORDVAL;
-    prevPhysPC = MAXWORDVAL;
-    prevInstr = NOP;
-
-    // clears CP0 registers and then sets them
-    for (i = 0; i < CP0REGNUM; i++)
-        cpreg[i] = 0UL;
-
-    // first instruction is already loaded
-    cpreg[RANDOM] =  ((tlbSize - 1UL) << RNDIDXOFFS) - RANDOMSTEP;
-    cpreg[STATUS] = STATUSRESET;
-    cpreg[PRID] = PRIDREGVAL;
-
-#if 0
-    // execution starts from specific reset vector in kseg0 segment	
-    currPC = BOOTBASE;
-#endif
-    if (bus->DataRead(MPC_CPU_BOOT_PC, &currPC, this))
-        Panic("FIXME");
-
-    // maps PC to physical address space and fetches first instruction
-    // mapVirtual and SystemBus cannot signal TRUE on this call
-    if (mapVirtual(currPC, &currPhysPC, EXEC) || bus->InstrRead(currPhysPC, &currInstr, this))
-        Panic("Illegal memory access in Processor::Reset");
-
-    // sets values for following PCs
-    nextPC = currPC + WORDLEN;
-    succPC = nextPC + WORDLEN;
-}
 
 
 // This method advances CP0 RANDOM register, following MIPS conventions; it
@@ -588,23 +583,23 @@ void Processor::popKUIEVMStack()
 bool Processor::checkForInt()
 {
     // computes current IP status bit mask (software and hardware interrupts)
+#if 0
     Word currIPMask = bus->getPendingInt(this) | (cpreg[CAUSE] & CAUSEWMASK);
-	
-    if (BitVal(cpreg[STATUS], IECBITPOS) && (currIPMask & IM(cpreg[STATUS])) != 0UL)
-    {
+#endif
+    Word ipMask = bus->getPendingInt(this);
+
+    if (BitVal(cpreg[STATUS], IECBITPOS) && (ipMask & IM(cpreg[STATUS])) != 0UL) {
         // interrupts are enabled and at least one pending request is unmasked:
         // set the IP field of CAUSE reg, clear other fields
         // leaving the software interrupt bits unchanged, and signal for
         // exception 
         SignalExc(INTEXCEPTION);
-        cpreg[CAUSE] = currIPMask;
+        cpreg[CAUSE] = ipMask;
         return true;
-    }
-    else
-    {
+    } else {
         // set current interrupt pending bits into CAUSE register but do not
         // raise any exception nor clear other fields
-        cpreg[CAUSE] = (cpreg[CAUSE] & ~(INTMASK)) | currIPMask;
+        cpreg[CAUSE] = (cpreg[CAUSE] & ~(INTMASK)) | ipMask;
         return false;
     }
 }

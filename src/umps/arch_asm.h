@@ -108,26 +108,6 @@
 #define DEV_REG_END             (DEV_REG_START + N_EXT_IL * N_DEV_PER_IL * DEV_REG_SIZE)
 
 /*
- * Multiprocessor (MP) controller register space
- * Unfinished and/or unimplemented garbage - don't rely on this yet!
- */
-#define MPC_NCPUS               0x100002D0
-#define MPC_CPU_CONTROL         0x100002D4
-#define MPC_CPU_BOOT_PC         0x100002D8
-#define MPC_CPU_BOOT_ARG        0x100002DC
-
-#define MPC_CPUID               0x100002E0
-#define MPC_IPI_IN              0x100002E4
-#define MPC_IPI_OUT             0x100002E8
-#define MPC_SHADOW_0            0x100002EC
-#define MPC_SHADOW_1            0x100002F0
-#define MPC_BIOS_SP             0x100002F4
-#define MPC_BIOS_EV             0x100002F8
-
-#define MPC_BASE                MPC_NCPUS
-#define MPC_END                 (MPC_BIOS_EV + WS)
-
-/*
  * Interrupt Routing Table (IRT)
  */
 #define IRT_BASE                0x10000300
@@ -184,10 +164,18 @@
  * MP configuration and initialization
  */
 #define MPCONF_NCPUS            0x10000500
-#define MPCONF_INIT             0x10000504
-#define MPCONF_BOOT_SP          0x10000508
-#define MPCONF_BOOT_ARG         0x1000050c
+#define MPCONF_RESET            0x10000504
+#define     MPCONF_RESET_CPUID_MASK     0x0000000f
+#define MPCONF_BOOT_PC          0x10000508
+#define MPCONF_BOOT_SP          0x1000050c
+#define MPCONF_BOOT_ARG         0x10000510
 
-#define DEV_END                 (MPCONF_BOOT_ARG + WS)
+#define MPCONF_BASE             MPCONF_NCPUS
+#define MPCONF_END              (MPCONF_BOOT_ARG + WS)
+
+#define MPCONF_DEFAULT_BOOT_PC  0x1fc00000
+#define MPCONF_DEFAULT_BOOT_SP  0x00000000
+
+#define DEV_END                 MPCONF_END
 
 #endif /* !defined(UMPS_ARCH_ASM_H) */

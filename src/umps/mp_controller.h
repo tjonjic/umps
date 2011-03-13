@@ -5,21 +5,27 @@
 
 #include "umps/types.h"
 
+class MachineConfig;
+class Machine;
 class SystemBus;
 class Processor;
 
 class MPController {
 public:
-    MPController(SystemBus* bus);
-    Word Read(Word addr, Processor* cpu);
-    void Write(Word addr, Word data, Processor* cpu);
+    MPController(const MachineConfig* config, Machine* machine);
+
+    Word Read(Word addr, const Processor* cpu) const;
+    void Write(Word addr, Word data, const Processor* cpu);
 
 private:
-    SystemBus* bus;
+    static const unsigned int kCpuResetDelay = 20;
+
+    const MachineConfig* const config;
+    Machine* const machine;
+
     Word bootPC;
+    Word bootSP;
     Word bootArg;
-    Word* shadow0;
-    Word* shadow1;
 };
 
 #endif // UMPS_MP_CONTROLLER_H

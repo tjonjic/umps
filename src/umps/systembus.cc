@@ -105,7 +105,8 @@ private:
 SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
     : config(conf),
       machine(machine),
-      pic(new InterruptController(conf, this))
+      pic(new InterruptController(conf, this)),
+      mpController(new MPController(conf, machine))
 {
     timeOfDay = new TimeStamp();
     timer = MAXWORDVAL;
@@ -118,8 +119,6 @@ SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
 
     bios = new BiosSpace(config->getROM(ROM_TYPE_BIOS).c_str());
     boot = new BiosSpace(config->getROM(ROM_TYPE_BOOT).c_str());
-
-    mpc = new MPController(this);
 
     // Create devices and initialize registers used for interrupt
     // handling.
@@ -433,8 +432,8 @@ Word SystemBus::busRegRead(Word addr, Processor* cpu)
                INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
     {
         data = pic->Read(addr, cpu);
-    } else if (MPC_BASE <= addr && addr < MPC_END) {
-        data = mpc->Read(addr, cpu);
+    } else if (MPCONF_BASE <= addr && addr < MPCONF_END) {
+        data = mpController->Read(addr, cpu);
     } else {
         // We're in the low "bus register area" space
         switch (addr) {
@@ -533,8 +532,8 @@ bool SystemBus::busWrite(Word addr, Word data, Processor* cpu)
                    INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
         {
             pic->Write(addr, data, cpu);
-        } else if (MPC_BASE <= addr && addr < MPC_END) {
-            mpc->Write(addr, data, NULL);
+        } else if (MPCONF_BASE <= addr && addr < MPCONF_END) {
+            mpController->Write(addr, data, NULL);
         } else {
             // data write is in bus registers area
             if (addr == BUS_REG_TIMER) {

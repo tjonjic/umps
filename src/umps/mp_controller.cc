@@ -2,47 +2,73 @@
 
 #include "umps/mp_controller.h"
 
-#include <umps/const.h>
-#include "umps/types.h"
+#include <boost/bind.hpp>
 
+#include "base/lang.h"
+#include "umps/machine_config.h"
+#include "umps/machine.h"
 #include "umps/processor.h"
 #include "umps/systembus.h"
-
 #include "umps/arch.h"
 
-MPController::MPController(SystemBus* bus)
-    : bus(bus),
-      bootPC(BSP_BOOT_PC),
-      bootArg(0UL)
+MPController::MPController(const MachineConfig* config, Machine* machine)
+    : config(config),
+      machine(machine),
+      bootPC(MPCONF_DEFAULT_BOOT_PC),
+      bootSP(MPCONF_DEFAULT_BOOT_SP),
+      bootArg(0)
 {}
 
-Word MPController::Read(Word addr, Processor* cpu)
+Word MPController::Read(Word addr, const Processor* cpu) const
 {
-    switch (addr) {
-    case MPC_NCPUS:
-        return 0;
+    UNUSED_ARG(cpu);
 
-    case MPC_CPU_BOOT_PC:
+    switch (addr) {
+    case MPCONF_NCPUS:
+        return config->getNumProcessors();
+
+    case MPCONF_BOOT_PC:
         return bootPC;
 
-    case MPC_CPU_BOOT_ARG:
-        return 0;
+    case MPCONF_BOOT_SP:
+        return bootSP;
 
-    case MPC_CPUID:
-        return 0;
+    case MPCONF_BOOT_ARG:
+        return bootArg;
 
-    case MPC_SHADOW_0:
+    default:
         return 0;
+    }
+}
 
-    case MPC_SHADOW_1:
-        return 0;
+void MPController::Write(Word addr, Word data, const Processor* cpu)
+{
+    UNUSED_ARG(cpu);
+
+    Word cpuId;
+
+    switch (addr) {
+    case MPCONF_RESET:
+        cpuId = data & MPCONF_RESET_CPUID_MASK;
+        if (cpuId < config->getNumProcessors())
+            machine->getBus()->ScheduleEvent(kCpuResetDelay * config->getClockRate(),
+                                             boost::bind(&Processor::Reset, machine->getProcessor(cpuId),
+                                                         bootPC, bootSP));
+        break;
+
+    case MPCONF_BOOT_PC:
+        bootPC = data;
+        break;
+
+    case MPCONF_BOOT_SP:
+        bootSP = data;
+        break;
+
+    case MPCONF_BOOT_ARG:
+        bootArg = data;
+        break;
 
     default:
         break;
     }
 }
-
-void MPController::Write(Word addr, Word data, Processor* cpu)
-{
-}
-
