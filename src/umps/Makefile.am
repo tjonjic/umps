@@ -4,7 +4,8 @@ umpsincludedir = $(includedir)/umps2/umps
 
 umpsinclude_HEADERS = \
 	arch.h			\
-	arch_asm.h
+	arch_asm.h		\
+	cp0.h
 
 noinst_LIBRARIES = libumps.a
 
@@ -15,6 +16,7 @@ libumps_a_SOURCES = \
 	blockdev.cc		\
 	blockdev_params.h	\
 	const.h			\
+	cp0.h			\
 	device.h		\
 	device.cc		\
 	disassemble.h		\
