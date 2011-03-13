@@ -2,6 +2,9 @@
 
 #include "regdef.h"
 #include "umps/arch_asm.h"
+#include "umps/cp0.h"
+#include "bios_defs.h"
+
 
 	.abicalls
 
@@ -13,7 +16,6 @@
 	ASIDSTEP	= 0x00000040
 	GBITONMASK	= 0x00000100
 	VPNMASK		= 0xFFFFF000
-	BIOSVECTPAGE 	= 0x20000000
 	VECTSIZE	= 140
 
 	# NOP padding: 30 nops - string length (32 bytes) 
@@ -39,12 +41,9 @@
 	BADPTE		= 13
 	PTEMISS		= 14
 	
-	CAUSESTART	= 2
-	CAUSEMASK	= 0x1F
 	CAUSENEGMASK	= 0xFFFFFF83
 	KUPSTATUSMASK	= 0x00000008
 	SAFESTATUSMASK	= 0xFEFFFFFC
-	CPU0BITPOS	= 28
 
 
 	/*
@@ -60,6 +59,10 @@ bios:
 	.frame	$fp,0,$k1
 	.mask	0x00000000,0
 	.fmask	0x00000000,0
+
+	/*
+	 * Tell gas not to use $at in pseudoop expansions
+	 */
 	.set noat
 
 	/*
@@ -88,16 +91,20 @@ PanicStr:
 	.space	0x80 - 0x8
 	/*
 	 * 0x00000100 address
-	 * AP processor startup routine
+	 * Secondary processor startup routine
 	 */
-	j	LBootAP
+	j	LInitSecondaryProcessor
 	nop
+
+	/*
+	 * 0x00000108: panic()
+	 * Print a message on terminal 0 and loop forever 
+	 */
 
 	.set	reorder
 	.set	macro
 
 LPanic:
-	# this call prints a message on terminal 0 and loops forever 
 	li	$a0, PANICSTRADDR - 1
 
 LTermOp:
@@ -130,61 +137,84 @@ LHalt:
 	li	$a0, ENDSTRADDR - 1
 	j 	LTermOp
 
-LBootAP:
-	li	$t0, MPC_CPU_BOOT_ARG
+/*
+ * Get a cpu up and runing: initialize BIOS related structures and
+ * load the supplied processor state.
+ */
+LInitSecondaryProcessor:
+	/* Set up a convenient pointer to some scratch RAM space */
+	li	$t0, BIOS_CPU_SCRATCH_RAM_SIZE
+	mfc0	$t1, $CP0_PRID
+	mult	$t0, $t1
+	mflo	$t0
+	li	$t1, BIOS_LEGACY_SCRATCH_BASE
+	subu	$t0, $t1, $t0
+	li	$t1, BIOS_SCRATCH_BASE
+	sw	$t0, 0($t1)
+
+	li	$t0, MPCONF_BOOT_ARG
 	lw	$t0, 0($t0)
+
+	/* Initialize the exception vector */
+	lw	$t1, 4($t0)
+	li	$t2, BIOS_EXCVEC_BASE
+	sw	$t1, 0($t2)
+
+	/* Load a new state */
 	lw	$k0, 0($t0)
 	j	LLoadStart
 
-LUTLBHandler:	
-	# this routine handles TLBL/TLBS refill misses
+/*
+ * Handle TLBL/TLBS refill misses
+ */
+LUTLBHandler:
+	/* clear PTEBUGFLAG for extra exceptions signaling */
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
+	sw	$0, BIOS_SCRATCH_TLBEXC($k0)
 
-	# clears PTEBUGFLAG for extra exceptions signaling
-	li	$k0, PTEBUGFLAG
-	sw	$0, 0($k0)
+	/* gets some register work space using bottom of BIOS page frame */
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
+	sw	$a0, BIOS_SCRATCH_a0($k0)
+	sw	$a1, BIOS_SCRATCH_a1($k0)
+	sw	$a2, BIOS_SCRATCH_a2($k0)
+	sw	$a3, BIOS_SCRATCH_a3($k0)
 
-	# gets some register work space using bottom of BIOS page frame
-	li	$k0, UTLBSTACK 
-	sw	$a0, 0($k0)
-	sw	$a1, -4($k0)
-	sw	$a2, -8($k0)
-	sw	$a3, -12($k0)
-
-	# save failed VPN + ASID into register $k1
+	/* save failed VPN + ASID into register $k1 */
 	mfc0	$k1, $CP0_EntryHi
-	
-	#computes ASID in $a3
+
+	/* compute ASID in $a3 */
 	move $a3, $k1
 	andi $a3, ASIDMASK
-	
-	# gets PTE segment starting address in $a2
+
+	/* gets PTE segment starting address in $a2 */
 	li	$a2, PTESTART
 
 LPTEScanLoop:
-	blez $a3, LPTEStartFound
-	addi $a2, PTESEGSIZE
-	addi $a3, -ASIDSTEP	 
-	j LPTEScanLoop
+	blez	$a3, LPTEStartFound
+	addi	$a2, PTESEGSIZE
+	addi	$a3, -ASIDSTEP
+	j	LPTEScanLoop
 	
 LPTEStartFound:
-	# PTE segment table for ASID is in $a2
-	# now looks for correct segment
-	
-	#using $a1 for segment computation
+	/* PTE segment table for ASID is in $a2; look for correct segment */
+
+	/* using $a1 for segment computation */
 	move	$a1, $k1
 	srl	$a1, PTESEGOFFS
 
-	#segments 0 and 1 address is in $a2 already
+	/* segments 0 and 1 address is in $a2 already */
 	beq	$0, $a1, LPTESegmentFound
 	addi	$a1, -1
 	beq	$0, $a1, LPTESegmentFound
 
-	# increment $a2 for segment 2
+	/* increment $a2 for segment 2 */
 	addi	$a2, 4
 	addi    $a1, -1
 	beq	$0, $a1, LPTESegmentFound
 
-	# then it's segment 3    
+	/* then it's segment 3 */
 	addi    $a2, 4
 
 LPTESegmentFound:	
@@ -265,7 +295,7 @@ LPTESegmentFound:
 	move 	$k0, $a2
 	addiu 	$k0, 4
 
-	# set $a2 to VPNMASK and $a0 to match VPN without ASID
+	/* set $a2 to VPNMASK and $a0 to match VPN without ASID */
 	li	$a2, VPNMASK
 	and	$a0, $k1, $a2
 
@@ -298,9 +328,9 @@ LTLBFound:
 	lw	$a1, 4($k0)
 	mtc0	$a1, $CP0_EntryLo
 
-	# this is needed to assure that tlbwr works correctly, since
-	# assembler does not see the data dependency between mtc0 and tlb
-	# operations
+	/* this is needed to assure that tlbwr works correctly, since
+	   assembler does not see the data dependency between mtc0 and tlb
+	   operations */
 	.set noreorder
 	.set nomacro
 	nop
@@ -309,16 +339,17 @@ LTLBFound:
 	.set reorder
 	.set macro
 
-	# restore ENTRYHI after TLB write (ASID could be different) 
+	/* restore ENTRYHI after TLB write (ASID could be different) */
 	mtc0	$k1, $CP0_EntryHi
 	
-	# reload registers from stack
-	li      $k0, UTLBSTACK
-	lw	$a0, 0($k0)
-	lw	$a1, -4($k0)
-	lw	$a2, -8($k0)
-	lw	$a3, -12($k0)
-	
+	/* reload registers from stack */
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
+	lw	$a0, BIOS_SCRATCH_a0($k0)
+	lw	$a1, BIOS_SCRATCH_a1($k0)
+	lw	$a2, BIOS_SCRATCH_a2($k0)
+	lw	$a3, BIOS_SCRATCH_a3($k0)
+
 	/* get EPC from CP0 */
 	mfc0	$k0, $CP0_EPC
 
@@ -330,61 +361,65 @@ LTLBFound:
 	.set macro
 
 LBadPTE:
-	# set PTEBUGFLAG to signal TLB exc handler the problem
-	li  	$k0, PTEBUGFLAG
+	/* set PTEBUGFLAG to signal TLB exc handler the problem */
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
 	li	$a0, BADPTE
-	sw  	$a0,  0($k0)
+	sw	$a0, BIOS_SCRATCH_TLBEXC($k0)
 	j 	LTLBNotFound
 
 LPTEMiss:
-	# set PTEBUGFLAG to signal TLB exc handler the problem and fall through
-	li  	$k0, PTEBUGFLAG
+	/* set PTEBUGFLAG to signal TLB exc handler the problem and fall through */
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
 	li	$a0, PTEMISS
-	sw  	$a0,  0($k0)
+	sw	$a0, BIOS_SCRATCH_TLBEXC($k0)
 
 LTLBNotFound:
-	# table exausted and match not found; reload registers,
-	# ENTRYHI (which is still in $k1), and fall thru to default exc handler
+	/* table exausted and match not found; reload registers,
+	   ENTRYHI (which is still in $k1), and fall thru to default exc handler */
 	mtc0	$k1, $CP0_EntryHi
-	li	$k0, UTLBSTACK
-	lw	$a0, 0($k0)
-	lw	$a1, -4($k0)
-	lw	$a2, -8($k0)
-	lw	$a3, -12($k0)
+	li	$k0, BIOS_SCRATCH_BASE
+	lw	$k0, 0($k0)
+	lw	$a0, BIOS_SCRATCH_a0($k0)
+	lw	$a1, BIOS_SCRATCH_a1($k0)
+	lw	$a2, BIOS_SCRATCH_a2($k0)
+	lw	$a3, BIOS_SCRATCH_a3($k0)
 
+
+/*
+ * General exception handler
+ *
+ * k0 and k1 registers are always available (never have live
+ * values outside BIOS)
+ */
 LEXCHandler:
-	# here starts the general exception handler
-	# k0 and k1 registers are always available (never have live
-	# values outside BIOS)
-
-	# it must discover the cause of BIOS call, inspecting 
-	# the cause register: this is done copying it to $k0 and computing
-	# the needed value
+	/* Copy Cause.ExcCode to k0 and dispatch accordingly */
 	mfc0	$k0, $CP0_Cause
-	srl	$k0, CAUSESTART
-	andi	$k0, $k0, CAUSEMASK
+	andi	$k0, $k0, CAUSE_EXCCODE_MASK
+	srl	$k0, CAUSE_EXCCODE_BIT
 
-	# cause == 0 is interrupt
+	/* cause == 0 is interrupt */
 	beq	$0, $k0, LIntHandler
 	
-	# cause 1-3 is a TLB exception (cause = 2 or 3 and EPC in user
-	# space means UTLBHandler has failed)
+	/* cause 1-3 is a TLB exception (cause = 2 or 3 and EPC in user
+	   space means UTLBHandler has failed) */
 	addi	$k0, -3
 	blez	$k0, LTLBHandler
 	
-	#cause 4-7 is a program trap
+	/* cause 4-7 is a program trap */
 	addi	$k0, -4
 	blez	$k0, LPRGHandler
 
-	#cause 8 is syscall
+	/* cause 8 is syscall */
 	addi	$k0, -1
 	beq	$0, $k0, LSYSHandler
 
-	#cause 9 is break
+	/* cause 9 is break */
 	addi 	$k0, -1
 	beq	$0, $k0, LBreakHandler
 	
-	# other causes are program trap
+	/* other causes are program trap */
 	j	LPRGHandler
 
 LIntHandler:
@@ -392,7 +427,7 @@ LIntHandler:
 	 * gone horribly wrong: eg. BIOS running with int unmasked (a big
 	 * bug for BIOS). */
 	mfc0	$k0, $CP0_EPC
-	li	$k1, BIOSVECTPAGE
+	li	$k1, BIOS_LEGACY_EXCVEC_BASE
 	subu	$k0, $k0, $k1
 	bltz	$k0, LPanic
 	/* Else:
@@ -406,7 +441,7 @@ LTLBHandler:
 	 * gone horribly wrong: eg. page table area corrupted and
 	 * consequent UTLB handler error (or bug in BIOS). */
 	mfc0	$k0, $CP0_EPC
-	li	$k1, BIOSVECTPAGE
+	li	$k1, BIOS_LEGACY_EXCVEC_BASE
 	subu	$k0, $k0, $k1
 	bltz	$k0, LPanic	
 
@@ -417,7 +452,7 @@ LPRGHandler:
 	/* If EPC address is in BIOS area, something in kernel or in BIOS
 	 * has gone horribly wrong (a BIOS bug probably). */
 	mfc0	$k0, $CP0_EPC
-	li	$k1, BIOSVECTPAGE
+	li	$k1, BIOS_LEGACY_EXCVEC_BASE
 	subu	$k0, $k0, $k1
 	bltz	$k0, LPanic
 
@@ -429,7 +464,7 @@ LSYSHandler:
 	/* If EPC address is in BIOS area, something in kernel or in BIOS
 	 * has gone orribly wrong (a BIOS bug probably). */
 	mfc0	$k0, $CP0_EPC
-	li	$k1, BIOSVECTPAGE
+	li	$k1, BIOS_LEGACY_EXCVEC_BASE	
 	subu	$k0, $k0, $k1
 	bltz	$k0, LPanic
 
@@ -440,7 +475,7 @@ LBreakHandler:
 	/* If EPC address is in BIOS area, something in kernel or in BIOS
 	 * has gone horribly wrong (a BIOS bug probably). */
 	mfc0	$k0, $CP0_EPC
-	li	$k1, BIOSVECTPAGE
+	li	$k1, BIOS_LEGACY_EXCVEC_BASE
 	subu	$k0, $k0, $k1
 	bltz	$k0, LPanic
 
@@ -452,34 +487,33 @@ LBreakHandler:
 
 	move	$k1, $a0
 
-	# any BREAK may be executed only in kernel mode
-	# kernel mode of caller is set when KUP bit in STATUS mask is 0
+	/* any BREAK may be executed only in kernel mode
+	   kernel mode of caller is set when KUP bit in STATUS mask is 0 */
 	mfc0	$k0, $CP0_Status
 	andi	$k0, $k0, KUPSTATUSMASK
 	beq	$0, $k0, LisKernel
-	j 	LSYSHandler	
+	j 	LSYSHandler
 
 LisKernel:
-	# 0  is FORK(STATUS, EntryHI, PC, CAUSE)
+	/* 0  is FORK(STATUS, EntryHI, PC, CAUSE) */
 	beq 	$0, $k1, LFORK
 	
 	addi    $k1, -1
 	
-	# 1 is LDST
+	/* 1 is LDST */
 	beq 	$0, $k1, LLDST
 	
 	addi    $k1, -1
 
-	# 2 is PANIC routine
+	/* 2 is PANIC routine */
 	beq	$0, $k1, LPanic
 
 	addi	$k1, -1
 	
-	# 3 is HALT routine
+	/* 3 is HALT routine */
 	beq     $0, $k1, LHalt
 
-	
-	# any other break is passed up to SYS handler
+	/* any other break is passed up to SYS handler */
 	j	LSYSHandler
 
 
@@ -518,10 +552,15 @@ LLDST:
 	j	LLoadStart
 
 
+/*
+ * Save cpu state into the Old Area #k1 and load state from the
+ * corresponding New Area.
+ */
 LSOldLNewArea:
-	# this first locates the needed area using $k0, then saves the
-	# registers and other info
-	li	$k0, BIOSVECTPAGE
+	/* locate the needed area using $k0, then save the
+	   registers and other info */
+	li	$k0, BIOS_EXCVEC_BASE
+	lw	$k0, 0($k0)
 
 LComputeArea:
 	blez	$k1, LSave
@@ -556,7 +595,7 @@ LSave:
 	sw	$t8, 108($k0)
 	sw	$t9, 112($k0)
 
-	# $k0 and $k1 are not saved
+	/* $k0 and $k1 are not saved */
 
 	sw	$gp, 116($k0)
 	sw	$sp, 120($k0)
@@ -566,60 +605,63 @@ LSave:
 	sw	$k1, 132($k0)
 	mflo	$k1
 	sw	$k1, 136($k0)
-	# all processor registers saved
-	
-	# gets EntryHI and stores it
+	/* all processor registers saved */
+
+	/* gets EntryHI and stores it */
 	mfc0	$k1, $CP0_EntryHi
 	sw	$k1, 0($k0)
 	
-	# gets CAUSE register and stores it
+	/* gets CAUSE register and stores it */
 	mfc0    $k1, $CP0_Cause
 	sw      $k1, 4($k0)
 	
-	# and now save STATUS and EPC registers
+	/* and now save STATUS and EPC registers */
 	mfc0	$k1, $CP0_Status
 	sw	$k1, 8($k0)
 	mfc0    $k1, $CP0_EPC
 	sw      $k1, 12($k0)
 
-	# processor state saved: any register except $k0 and $k1 is available
-	
-	# BadPTE and PTEMiss handling
-	
-	li	$a3, PTEBUGFLAG
-	lw 	$a3, 0($a3)
-	
+	/* processor state saved: any register except $k0 and $k1 is available */
+
+	/*
+	 * BadPTE and PTEMiss handling
+	 */
+
+	li	$a3, BIOS_SCRATCH_BASE
+	lw	$a3, 0($a3)
+	lw	$a3, BIOS_SCRATCH_TLBEXC($a3)
+
 	/* if $a3 == 0 => no special case */
-	beq	$0, $a3,	LEndPTEMgmt
+	beq	$0, $a3, LEndPTEMgmt
 	
-	/* else overwrite CAUSE with correct value */
+	/* else overwrite Cause.ExcCode with correct value */
 	
-	# load old CAUSE in $a2
+	/* load old CAUSE in $a2 */
 	lw	$a2, 4($k0)
-	#clear it
+	/* clear it */
 	li	$a1, CAUSENEGMASK
 	and	$a2, $a2, $a1
 	
-	# shift, add correct value, and re-shift CAUSE
-	srl	$a2, CAUSESTART
+	/* shift, add correct value, and re-shift CAUSE */
+	srl	$a2, CAUSE_EXCCODE_BIT
 	addu	$a2, $a2, $a3
-	sll	$a2, CAUSESTART
+	sll	$a2, CAUSE_EXCCODE_BIT
 	
-	#store it back
+	/* store it back */
 	sw	$a2, 4($k0)
 
-	# clears PTEBUGFLAG 
-	li	$a3, PTEBUGFLAG
-	sw 	$0, 0($a3)
+	/* Clear PTEBUGFLAG */
+	li	$a3, BIOS_SCRATCH_BASE
+	lw	$a3, 0($a3)
+	sw	$0, BIOS_SCRATCH_TLBEXC($a3)
 
-	
-LEndPTEMgmt:	
-	# start loading 
+LEndPTEMgmt:
+	/* start loading */
 	addiu	$k0, VECTSIZE
 
-	/*
-	 * Load CPU/CP0 registers from (state_t*) $k0
-	 */
+/*
+ * Load CPU/CP0 registers from (state_t*) $k0
+ */
 LLoadStart:
 	lw	$1, 16($k0)
 	lw	$v0, 20($k0)
@@ -647,7 +689,7 @@ LLoadStart:
 	lw	$t8, 108($k0)
 	lw	$t9, 112($k0)
 
-	# $k0 and $k1 are not saved so they are not loaded too
+	/* $k0 and $k1 are not saved so they are not loaded too */
 
 	lw	$gp, 116($k0)
 	lw	$sp, 120($k0)
@@ -659,30 +701,28 @@ LLoadStart:
 	lw	$k1, 136($k0)
 	mtlo	$k1
 
-	# all processor registers loaded (almost)
+	/* all processor registers loaded (almost) */
 
-	# storing new EntryHI into CP0 register
+	/* storing new EntryHI into CP0 register */
 	lw	$k1, 0($k0)
 	mtc0	$k1, $CP0_EntryHi
 	
-	# storing new CAUSE into CP0 register
+	/* storing new CAUSE into CP0 register */
 	lw	$k1, 4($k0)
 	mtc0	$k1, $CP0_Cause
 
-	# now load STATUS register
+	/* now load STATUS register */
 	lw	$k1, 8($k0)
-
 	/* This is for avoiding trouble if STATUS has (erroneously)
 	 * set bit 0/1. It would cause an immediate EXC trap or expose
 	 * BIOS to interrupts. */
 	srl 	$k1, 2
 	sll	$k1, 2
-
 	mtc0	$k1, $CP0_Status
-	
+
 	lw	$k1, 12($k0)
 
-	# load new PC and jump
+	/* load new PC and jump */
 	.set noreorder
 	.set nomacro
 	jr	$k1
