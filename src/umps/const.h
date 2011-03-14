@@ -147,30 +147,6 @@
 #define BOOTBASE	0x1FC00000UL
 #define RAMBASE		0x20000000UL
 
-
-// bus registers addresses (word index from DEVBASE address)
-#define	RAMBASEADR	0
-#define RAMSIZEADDR	1
-#define BIOSBASEAD	2
-#define BIOSSIZEADR	3
-#define BOOTBASEAD	4
-#define BOOTSIZEADR	5
-#define	TODHIADDR	6
-#define TODLOADDR	7
-#define TIMERADDR	8
-#define TIMESCALEA	9
-#define IDEVBASEAD	10
-#define IDEVENDADR	(IDEVBASEAD + DEVINTUSED)
-#define CDEVBASEAD	IDEVENDADR
-#define CDEVENDADR	(CDEVBASEAD + DEVINTUSED)
-#define DEVREGBADR	CDEVENDADR
-
-// start of "proper" device register area 
-#define DEVSTART	(DEVBASE + (DEVREGBADR * WORDLEN))
-
-// first invalid physical address in device registers area
-#define DEVEND	 	(DEVSTART + (DEVINTUSED * DEVPERINT * DEVREGLEN * WORDLEN))
-
 // Processor structure register numbers
 #define CPUREGNUM	34
 #define CPUGPRNUM	32
