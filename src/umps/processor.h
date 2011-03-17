@@ -118,8 +118,6 @@ public:
     void setTLBHi(unsigned int index, Word value);
     void setTLBLo(unsigned int index, Word value);
 
-    void handleBusWrite(Word pa, Word cpuId);
-
     // Signals
     sigc::signal<void> SignalStatusChanged;
     sigc::signal<void, unsigned int> SignalException;
