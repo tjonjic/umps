@@ -17,19 +17,6 @@
 #define DEV_BASE 0x10000000
 #define RAM_BASE 0x20000000
 
-/*
- * CPU Control registers
- */
-#define CP0_Index      0
-#define CP0_Random     1
-#define CP0_EntryLo    2
-#define CP0_BadVAddr   8
-#define CP0_EntryHi   10
-#define CP0_Status    12
-#define CP0_Cause     13
-#define CP0_EPC       14
-#define CP0_PRID      15
-
 /* Segment-related constants */
 #define KSEGOS_BASE        0x00000000
 #define KSEGOS_TOP         0x20000000
