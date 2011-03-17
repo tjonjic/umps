@@ -41,13 +41,15 @@ public:
     TimeStamp(const TimeStamp* ts, Word inc = 0);
 
     // Increase the timestamp by 1
-    void Increase();
+    void Increase(Word amount = 1U);
 
     // This method returns the current value of hiTS part
     Word getHiTS() const { return hiTS; }
 
     // This method returns the current value of loTS part
     Word getLoTS() const { return loTS; }
+
+    uint64_t getHiLo() const { (uint64_t) hiTS << 32 + (uint64_t) loTS; }
 
     // This method sets hiTS value
     void setHiTS(Word hi) { hiTS = hi; }

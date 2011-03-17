@@ -70,6 +70,8 @@ void InterruptController::StartIRQ(unsigned int il, unsigned int devNo)
     // interrupting devices bitmap
     if (il >= kSharedILBase)
         cpuData[target].idb[il - kSharedILBase] |= 1U << devNo;
+
+    bus->AssertIRQ(kBaseIL + il, target);
 }
 
 void InterruptController::EndIRQ(unsigned int il, unsigned int devNo)
@@ -86,10 +88,13 @@ void InterruptController::EndIRQ(unsigned int il, unsigned int devNo)
     // Deassert IP signals and IDB bits
     if (il >= kSharedILBase) {
         cpuData[target].idb[il - kSharedILBase] &= ~(1U << devNo);
-        if (!cpuData[target].idb[il - kSharedILBase])
+        if (!cpuData[target].idb[il - kSharedILBase]) {
             cpuData[target].ipMask &= ~(1U << (kBaseIL + il));
+            bus->DeassertIRQ(kBaseIL + il, target);
+        }
     } else {
         cpuData[target].ipMask &= ~(1U << (kBaseIL + il));
+        bus->DeassertIRQ(kBaseIL + il, target);
     }
 
     sources[il][devNo].lastTarget = kInvalidCpuId;
@@ -202,6 +207,7 @@ void InterruptController::deliverIPI(unsigned int origin, Word outbox)
                 ipi.msg = CPUCTL_OUTBOX_GET_MSG(outbox);
                 cpuData[i].ipiInbox.push_back(ipi);
                 cpuData[i].ipMask |= 1U << IL_IPI;
+                bus->AssertIRQ(IL_IPI, i);
             }
         }
     }

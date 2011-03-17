@@ -52,8 +52,10 @@ public:
     Word Id() const { return id; }
 
     ProcessorStatus getStatus() const { return status; }
-
     void setStatus(ProcessorStatus newStatus);
+
+    bool IsOnline() const { return status == PS_ONLINE; }
+    bool IsIdle() const { return status == PS_IDLE; }
 
     void Reset(Word pc, Word sp);
 
@@ -69,7 +71,10 @@ public:
     // Processor when an exception happens. SystemBus signal IBE/DBE
     // exceptions; Processor itself signal all other kinds of exception.
     void SignalExc(unsigned int exc, Word cpuNum = 0UL);
-		
+
+    void AssertIRQ(unsigned int il);
+    void DeassertIRQ(unsigned int il);
+
     // The following methods allow inspection of Processor internal
     // status. Name & parameters are self-explanatory: remember that
     // all addresses are _virtual_ when not marked Phys/P/phys (for
@@ -218,6 +223,7 @@ private:
     void popKUIEVMStack(void);
     void setTLBRegs(Word vaddr);
     bool checkForInt();
+    void suspend();
     bool cp0Usable(void);
     void setLoad(LoadTargetType loadCode, unsigned int regNum, SWord regVal);
     SWord signExtByte(Word val, unsigned int bytep);

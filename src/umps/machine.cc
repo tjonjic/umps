@@ -53,9 +53,6 @@ Machine::Machine(const MachineConfig* config,
         cpu->SignalException.connect(
             sigc::bind(sigc::mem_fun(this, &Machine::onCpuException), cpu)
         );
-        cpu->SignalStatusChanged.connect(
-            sigc::bind(sigc::mem_fun(this, &Machine::onCpuStatusChanged), cpu)
-        );
         pd[i].stopCause = 0;
         cpus.push_back(cpu);
 
@@ -74,14 +71,14 @@ Machine::~Machine()
 void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
 {
     stopPointsReached = false;
-    foreach (unsigned int cpuId, activeCpus)
-        pd[cpuId].stopCause = 0;
+    foreach (Processor* cpu, cpus)
+        pd[cpu->Id()].stopCause = 0;
 
     unsigned int i;
     for (i = 0; i < steps && !stopPointsReached; ++i) {
         bus->ClockTick();
-        foreach (unsigned int cpuId, activeCpus)
-            cpus[cpuId]->Cycle();
+        foreach (Processor* cpu, cpus)
+            cpu->Cycle();
     }
     if (stepped)
         *stepped = i;
@@ -95,13 +92,41 @@ void Machine::Step(bool* stopped)
 
     bus->ClockTick();
 
-    foreach (unsigned int cpuId, activeCpus) {
-        pd[cpuId].stopCause = 0;
-        cpus[cpuId]->Cycle();
+    foreach (Processor* cpu, cpus) {
+        pd[cpu->Id()].stopCause = 0;
+        cpu->Cycle();
     }
 
     if (stopped != NULL)
         *stopped = stopPointsReached;
+}
+
+bool Machine::IsIdle() const
+{
+    foreach (Processor* cpu, cpus)
+        if (!cpu->IsIdle())
+            return false;
+
+    return bus->IsIdle();
+}
+
+unsigned int Machine::IdleCycles() const
+{
+    unsigned int idle = bus->IdleCycles();
+#if 0
+    foreach (Processor* cpu, cpus)
+        idle = std::min(idle, cpu->IdleCycles());
+#endif
+    return idle;
+}
+
+void Machine::Skip(unsigned int cycles)
+{
+    bus->Skip(cycles);
+#if 0
+    foreach (Processor* cpu, cpus)
+        cpu->Skip(cycles);
+#endif
 }
 
 void Machine::onCpuException(unsigned int excCode, Processor* cpu)
@@ -115,14 +140,6 @@ void Machine::onCpuException(unsigned int excCode, Processor* cpu)
         pd[cpu->getId()].stopCause |= SC_EXCEPTION;
         stopPointsReached = true;
     }
-}
-
-void Machine::onCpuStatusChanged(const Processor* cpu)
-{
-    if (cpu->getStatus() == PS_ONLINE)
-        activeCpus.push_back(cpu->Id());
-    else
-        activeCpus.remove(cpu->Id());
 }
 
 void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)

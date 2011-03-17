@@ -296,15 +296,18 @@ void DebugSession::onContinue()
     assert(status == MS_STOPPED);
 
     stepping = false;
+    skipIdle = false;
     stoppedByUser = false;
     Q_EMIT MachineRan();
     setStatus(MS_RUNNING);
 
+    timer->setInterval(iterationTimeoutInterval[speed]);
     timer->start();
 }
 
 void DebugSession::onStep()
 {
+    timer->setInterval(iterationTimeoutInterval[speed]);
     step(1);
 }
 
@@ -377,16 +380,26 @@ void DebugSession::runStepIteration()
 
 void DebugSession::runContIteration()
 {
-    bool stopped;
-    unsigned int stepped;
-    machine->Step(cyclesPerIteration[speed], &stepped, &stopped);
-
-    if (stopped) {
-        setStatus(MS_STOPPED);
-        Q_EMIT MachineStopped();
-        timer->stop();
-    } else {
+    if (skipIdle) {
+        skipIdle = false;
+        machine->Skip(idleSteps);
+        timer->setInterval(iterationTimeoutInterval[speed]);
         Q_EMIT DebugIterationCompleted();
+    } else if (machine->IsIdle()) {
+        skipIdle = true;
+        idleSteps = std::min(machine->IdleCycles(), (uint32_t) cyclesPerIteration[kMaxSpeed]);
+        timer->start(idleSteps / 1000);
+    } else {
+        bool stopped;
+        unsigned int stepped;
+        machine->Step(cyclesPerIteration[speed], &stepped, &stopped);
+        if (stopped) {
+            setStatus(MS_STOPPED);
+            Q_EMIT MachineStopped();
+            timer->stop();
+        } else {
+            Q_EMIT DebugIterationCompleted();
+        }
     }
 }
 

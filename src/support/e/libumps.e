@@ -69,6 +69,8 @@ extern void TLBR(void);
 
 extern void TLBCLR(void);
 
+extern void WAIT(void);
+
 
 /* This function requires BIOS intervention, and is valid _only_ in kernel
  * mode: otherwise it causes a program trap. It may be used to start

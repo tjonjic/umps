@@ -58,6 +58,10 @@ public:
     void Step(bool* stopped = NULL);
     void Step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
 
+    bool IsIdle() const;
+    unsigned int IdleCycles() const;
+    void Skip(unsigned int cycles);
+
     Processor* getProcessor(unsigned int cpuId);
     Device* getDevice(unsigned int line, unsigned int devNo);
     SystemBus* getBus();
@@ -94,9 +98,6 @@ private:
     std::vector<Processor*> cpus;
 
     ProcessorData pd[MachineConfig::MAX_CPUS];
-
-    typedef std::list<unsigned int> CpuIdList;
-    CpuIdList activeCpus;
 
     bool stopPointsReached;
 

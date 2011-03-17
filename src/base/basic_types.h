@@ -32,6 +32,7 @@
 using boost::uint8_t;
 using boost::uint32_t;
 using boost::int32_t;
+using boost::uint64_t;
 #endif
 
 #include <cstddef>

@@ -180,6 +180,34 @@ void SystemBus::ClockTick()
     }
 }
 
+bool SystemBus::IsIdle() const
+{
+    return ((eventQ->IsEmpty() || eventQ->getHTS()->getHiLo() > timeOfDay->getHiLo() + 1) &&
+            timer > 0);
+}
+
+uint32_t SystemBus::IdleCycles() const
+{
+    if (eventQ->IsEmpty())
+        return timer;
+
+    uint64_t tod = timeOfDay->getHiLo(), et = eventQ->getHTS()->getHiLo();
+    if (et > tod)
+        return std::min(timer, (uint32_t) (et - tod - 1));
+    else
+        return 0;
+}
+
+void SystemBus::Skip(unsigned int cycles)
+{
+    timeOfDay->Increase(cycles);
+    machine->HandleBusAccess(BUS_REG_TOD_HI, WRITE, NULL);
+    machine->HandleBusAccess(BUS_REG_TOD_LO, WRITE, NULL);
+
+    UnsSub(&timer, timer, cycles);
+    machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
+}
+
 //
 // The following methods allow to inspect or modify  TimeofDay Clock and
 // Interval Timer (typically for simulation reasons); they are self-explanatory
@@ -371,6 +399,15 @@ Word SystemBus::getPendingInt(const Processor* cpu)
     return pic->GetIP(cpu->Id());
 }
 
+void SystemBus::AssertIRQ(unsigned int il, unsigned int target)
+{
+    machine->getProcessor(target)->AssertIRQ(il);
+}
+
+void SystemBus::DeassertIRQ(unsigned int il, unsigned int target)
+{
+    machine->getProcessor(target)->DeassertIRQ(il);
+}
 
 // This method returns the Device object with given "coordinates"
 Device * SystemBus::getDev(unsigned int intL, unsigned int dNum)

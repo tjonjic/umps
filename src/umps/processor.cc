@@ -37,12 +37,11 @@
 #include <cassert>
 #include <iostream>
 
-#include <umps/const.h>
+#include "umps/const.h"
+#include "umps/cp0.h"
 #include "umps/processor_defs.h"
-
 #include "umps/systembus.h"
 #include "umps/utility.h"
-
 #include "umps/machine_config.h"
 #include "umps/error.h"
 #include "umps/disassemble.h"
@@ -285,15 +284,19 @@ void Processor::Reset(Word pc, Word sp)
 // Other MIPS-specific minor tasks are performed at proper points.
 void Processor::Cycle()
 {
-    if (status != PS_ONLINE)
+    if (!IsOnline())
         return;
 
-    // decode & exec instruction
+    // Instruction decode & exec
     if (execInstr(currInstr))
-        // exception caused from instruction execution
         handleExc();
 
-    // PC saving for book-keeping purposes	
+    // Check if we entered sleep mode as a result of the last
+    // instruction exec
+    if (IsIdle())
+        return;
+
+    // PC saving for book-keeping purposes
     prevPC = currPC;
     prevPhysPC = currPhysPC;
     prevInstr = currInstr;
@@ -307,14 +310,15 @@ void Processor::Cycle()
     nextPC = succPC;
     succPC += WORDLEN;
 
-    // check for interrupt exception
+    // Check for interrupt exception; note that this will _not_
+    // trigger another exception if we're already in "exception mode".
     if (checkForInt())
         handleExc();
 
     // processor cycle fetch part
     if (mapVirtual(currPC, &currPhysPC, EXEC)) {
         // TLB or Address exception caused: current instruction is nullified
-        currInstr = NOP;		
+        currInstr = NOP;
         handleExc();
     } else if (bus->InstrRead(currPhysPC, &currInstr, this)) {
         // IBE exception caused: current instruction is nullified
@@ -338,6 +342,20 @@ void Processor::SignalExc(unsigned int exc, Word cpuNum)
     SignalException.emit(excCause);
     // used only for CPUEXCEPTION handling
     copENum = cpuNum;
+}
+
+void Processor::AssertIRQ(unsigned int il)
+{
+    cpreg[CAUSE] |= CAUSE_IP(il);
+
+    // If in standby mode, go back to being a power hog.
+    if (IsIdle())
+        setStatus(PS_ONLINE);
+}
+
+void Processor::DeassertIRQ(unsigned int il)
+{
+    cpreg[CAUSE] &= ~CAUSE_IP(il);
 }
 
 // This method allows to get critical information on Processor current
@@ -516,7 +534,6 @@ void Processor::setTLBLo(unsigned int index, Word value)
 //
 
 
-
 // This method advances CP0 RANDOM register, following MIPS conventions; it
 // cycles from RANDOMTOP to RANDOMBASE, one STEP less for each clock tick
 void Processor::randomRegTick()
@@ -585,9 +602,18 @@ bool Processor::checkForInt()
     // computes current IP status bit mask (software and hardware interrupts)
 #if 0
     Word currIPMask = bus->getPendingInt(this) | (cpreg[CAUSE] & CAUSEWMASK);
-#endif
     Word ipMask = bus->getPendingInt(this);
+#endif
 
+    if ((cpreg[STATUS] & STATUS_IEc) && (cpreg[CAUSE] & CAUSE_IP_MASK)) {
+        SignalExc(INTEXCEPTION);
+        cpreg[CAUSE] &= CAUSE_IP_MASK;
+        return true;
+    } else {
+        return false;
+    }
+
+#if 0
     if (BitVal(cpreg[STATUS], IECBITPOS) && (ipMask & IM(cpreg[STATUS])) != 0UL) {
         // interrupts are enabled and at least one pending request is unmasked:
         // set the IP field of CAUSE reg, clear other fields
@@ -602,8 +628,17 @@ bool Processor::checkForInt()
         cpreg[CAUSE] = (cpreg[CAUSE] & ~(INTMASK)) | ipMask;
         return false;
     }
+#endif
 }
 
+/**
+ * Try to enter standby mode
+ */
+void Processor::suspend()
+{
+    if (!(cpreg[CAUSE] & CAUSE_IP_MASK))
+        setStatus(PS_IDLE);
+}
 
 // This method sets the appropriate registers in Processor CP0 at exception
 // raising, following the MIPS conventions; it also set the PC value to
@@ -615,11 +650,11 @@ void Processor::handleExc()
     completeLoad();
 
     // set the excCode into CAUSE reg
-    cpreg[CAUSE] = IM(cpreg[CAUSE]) | (excCode[excCause] << EXCCODEOFFS);
+    cpreg[CAUSE] = IM(cpreg[CAUSE]) | (excCode[excCause] << CAUSE_EXCCODE_BIT);
 
     if (isBranchD) {
         // previous instr. is branch/jump: must restart from it
-        cpreg[CAUSE] = SetBit(cpreg[CAUSE], BDBITPOS);
+        cpreg[CAUSE] = SetBit(cpreg[CAUSE], CAUSE_BD_BIT);
         cpreg[EPC] = prevPC;
         // first instruction in exception handler itself is not in a BD slot
         isBranchD = false;
@@ -635,7 +670,7 @@ void Processor::handleExc()
 
     // Set PC to the right handler
     Word excVector;
-    if (BitVal(cpreg[STATUS], BEVBITPOS)) {
+    if (BitVal(cpreg[STATUS], STATUS_BEV_BIT)) {
         // Machine bootstrap exception handler
         excVector = BOOTEXCBASE;
     } else {
@@ -861,8 +896,8 @@ bool Processor::execInstr(Word instr)
     unsigned int i, cp0Num;
     bool error = false;
     bool isValidBranch = false;
-	
-    switch(OpType(instr)) {
+
+    switch (OpType(instr)) {
     case REGTYPE:
         // MIPS register-type instruction execution
         error = execRegInstr(&temp, instr, &isValidBranch);
@@ -897,7 +932,7 @@ bool Processor::execInstr(Word instr)
 
         // delayed load is completed just after instruction execution
         completeLoad();
-        break;					
+        break;
 
     case COPTYPE:
         // MIPS coprocessor-type instruction
@@ -949,6 +984,10 @@ bool Processor::execInstr(Word instr)
                         SignalTLBChanged(RNDIDX(cpreg[INDEX]));
                         break;
 
+                    case COFUN_WAIT:
+                        suspend();
+                        break;
+
                     default:
                         // unknown coprocessor 0 operation requested
                         SignalExc(CPUEXCEPTION, 0);
@@ -968,23 +1007,23 @@ bool Processor::execInstr(Word instr)
                     succPC = nextPC + (SignExtImm(instr) << WORDSHIFT);
                     isValidBranch = true;
                     break;
-						
+
                 case BC0T:
                     // condition line for CP0 is always FALSE
                     // so this is a nop instruction
                     isValidBranch = true;
                     break;
-								
+
                 default:
                     // traps BC0FL R4000 instructions
                     // and the like...
                     SignalExc(CPUEXCEPTION, 0);
                     error = true;
                     break;
-                }	
+                }
                 completeLoad();
-                break;		
-						
+                break;
+
             case MFC0:
                 // delayed load is completed _before_ istruction
                 // execution since instruction itself produces a
@@ -1001,7 +1040,7 @@ bool Processor::execInstr(Word instr)
                     error = true;
                 }
                 break;
-						
+
             case MTC0:
                 // delayed load is completed _before_ istruction
                 // execution since instruction itself produces a
@@ -1025,7 +1064,7 @@ bool Processor::execInstr(Word instr)
                     }
                 }
                 break;
-							 
+
             default:
                 // unknown and CFC0, CTC0, COP0, LWC0 generic instructions
                 SignalExc(CPUEXCEPTION, 0);
@@ -1038,22 +1077,22 @@ bool Processor::execInstr(Word instr)
             error = true;
         }	
         break;
-			
+
     case LOADTYPE:
 
         // MIPS load instruction
-			
+
         // delayed load is completed _before_ istruction execution since
         // instruction itself produces a delayed load
         completeLoad();
-			
+
         error = execLoadInstr(instr);
         break;
 			
     case STORETYPE:
-			
+
         // MIPS store instruction
-			
+
         // delayed load is completed _before_ istruction execution
         // since it happens "logically" so in the pipeline
         completeLoad();
@@ -1092,22 +1131,21 @@ bool Processor::execInstr(Word instr)
         SignalExc(RIEXCEPTION);
         error = true;
         break;
-    }		
-	
-    if (!error)
-    {
+    }
+
+    if (!error) {
         // a correct instruction has been executed
         if (isValidBranch)
             // next instr. is in a branch delay slot
             isBranchD = true;
         else
             isBranchD = false;
-    } 
+    }
     // else instr. execution has generated an exception: 
     // isBranchD is not modified because exception handler
     // will need it
 	
-    return(error);
+    return error;
 }
 
 // This method tests for CP0 availability (as set in STATUS register and in
@@ -1283,8 +1321,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
     *isBD = false;
 
     error = InvalidRegInstr(instr);
-    if (!error)
-    {
+    if (!error) {
         // instruction format is correct		
         switch(FUNCT(instr))
         {
@@ -1375,7 +1412,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
             break;
 				
         case NOR:
-            *res = ~(gpr[RS(instr)]	| gpr[RT(instr)]);
+            *res = ~(gpr[RS(instr)] | gpr[RT(instr)]);
             break;
 				
         case OR:
@@ -1440,7 +1477,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
         case XOR:
             *res = gpr[RS(instr)] ^ gpr[RT(instr)];
             break;
-													
+
         default:
             // unknown instruction
             SignalExc(RIEXCEPTION);			
@@ -1507,6 +1544,7 @@ bool Processor::execImmInstr(Word * res, Word instr)
         else
             *res = 0UL;
         break;
+
     case XORI:
         *res = gpr[RS(instr)] ^ ZEXTIMM(instr);
         break;
@@ -1524,7 +1562,7 @@ bool Processor::execImmInstr(Word * res, Word instr)
 // guidelines; returns instruction result thru res pointer, and branch delay
 // slot indication if needed. It also returns TRUE if an exception occurred,
 // FALSE otherwise
-bool Processor::execBranchInstr(Word instr, bool * isBD)
+bool Processor::execBranchInstr(Word instr, bool* isBD)
 {
     bool error = false;
 	
@@ -1534,7 +1572,7 @@ bool Processor::execBranchInstr(Word instr, bool * isBD)
         if (gpr[RS(instr)] == gpr[RT(instr)])
             succPC = nextPC + (SignExtImm(instr) << WORDSHIFT);
         break;
-		
+
     case BGL:
         // uses RT field to choose which branch type is requested
         switch (RT(instr))

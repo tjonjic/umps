@@ -30,6 +30,7 @@
  ****************************************************************************/
 
 #include <stdio.h>
+#include <cstring>
 
 #include <umps/const.h>
 #include "umps/types.h"
@@ -721,6 +722,10 @@ HIDDEN void strCopInstr(Word instr)
                 case TLBWI:
                 case TLBWR:
                     sprintf(strbuf, "%s", cp0IName[FUNCT(instr)]);
+                    break;
+
+                case COFUN_WAIT:
+                    std::strcpy(strbuf, "wait");
                     break;
 
                 default:

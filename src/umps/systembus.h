@@ -57,6 +57,12 @@ public:
     // changes are notified to Watch control object
     void ClockTick();
 
+    bool IsIdle() const;
+
+    uint32_t IdleCycles() const;
+
+    void Skip(unsigned int cycles);
+
     // This method reads a data word from memory at physical address
     // addr, returning it thru datap pointer. It also returns TRUE if
     // the address was invalid and an exception was caused, FALSE
@@ -107,7 +113,10 @@ public:
 
     // This method returns the current interrupt line status
     Word getPendingInt(const Processor* cpu);
-		
+
+    void AssertIRQ(unsigned int il, unsigned int target);
+    void DeassertIRQ(unsigned int il, unsigned int target);
+
     Machine* getMachine() { return machine; }
 
     // This method returns the Device object with given "coordinates"

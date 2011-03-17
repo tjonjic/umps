@@ -66,8 +66,6 @@
 
 // CAUSE reg handling mask and constants
 #define CAUSEWMASK	0x00000300UL
-#define EXCCODEOFFS	2
-#define BDBITPOS	31
 
 // TLB EntryHI handling masks and constants 
 #define VPNMASK	0xFFFFF000UL
@@ -219,6 +217,7 @@
 #define TLBR	001
 #define TLBWI	002
 #define TLBWR	006
+#define COFUN_WAIT 040
 
 #define BC0	010
 #define BC0F	0400

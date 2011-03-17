@@ -38,9 +38,9 @@ TimeStamp::TimeStamp(const TimeStamp* ts, Word inc)
 }
 
 // Increase the timestamp by 1
-void TimeStamp::Increase()
+void TimeStamp::Increase(Word amount)
 {
-    if (UnsAdd(&loTS, loTS, 1UL))
+    if (UnsAdd(&loTS, loTS, amount))
         // unsigned overflow occurred: need to increase HiTS
         hiTS++;
 }

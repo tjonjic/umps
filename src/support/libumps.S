@@ -4,18 +4,18 @@
 #include "h/bios_srv.h"
 #include "umps/arch_asm.h"
 
-#if 0
+#if 1
 #define LEAF_FUNC(func)				\
 	.globl	func;				\
 	.type	func, @function;		\
-	.end	func				\
-func:	.frame	$fp, 0, $ra			\
-	.mask   0x00000000,0			\
+	.ent	func;                           \
+func:	.frame	$fp, 0, $ra	; \
+	.mask   0x00000000,0	;\
 	.fmask  0x00000000,0
 
 #define END_LEAF_FUNC(func)			\
-	jr	$ra				\
-	.end	func				\
+	jr	$ra		;\
+	.end	func		;\
 	.size	func, . - func
 #endif
 
@@ -601,6 +601,17 @@ LendTLBCLR:
  	.size	TLBCLR, LendTLBCLR - TLBCLR
  
 
+LEAF_FUNC(WAIT)
+	.set	noreorder
+	.set	nomacro
+	nop
+	.set	mips32
+	wait
+	.set	mips0
+	nop
+	.set	reorder
+	.set	macro
+END_LEAF_FUNC(WAIT)
 
 	# This function loads a processor state from memory and start 
 	# executing it. It changes processor state completely, and it is
