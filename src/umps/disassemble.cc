@@ -385,12 +385,6 @@ bool ValidCP0Reg(unsigned int regnum, unsigned int* cpnum)
         *cpnum = ENTRYLO;
         break;
 
-#if 0
-    case CONTEXTREG:	
-        *cpnum = CONTEXT;
-        break;
-#endif
-
     case CP0_BadVAddr:
         *cpnum = BADVADDR;
         break;
