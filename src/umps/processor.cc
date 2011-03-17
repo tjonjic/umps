@@ -284,7 +284,21 @@ void Processor::Reset(Word pc, Word sp)
 // Other MIPS-specific minor tasks are performed at proper points.
 void Processor::Cycle()
 {
-    if (!IsOnline())
+    // Nothing to do if the cpu is halted
+    if (IsOffline())
+        return;
+
+    // Update internal timer
+    if (cpreg[STATUS] & STATUS_TE) {
+        if (cpreg[CP0REG_TIMER] == 0)
+            AssertIRQ(IL_CPUTIMER);
+        cpreg[CP0REG_TIMER]--;
+    } else {
+        DeassertIRQ(IL_CPUTIMER);
+    }
+
+    // In low-power state, only the per-cpu timer keeps running
+    if (IsIdle())
         return;
 
     // Instruction decode & exec
@@ -292,7 +306,7 @@ void Processor::Cycle()
         handleExc();
 
     // Check if we entered sleep mode as a result of the last
-    // instruction exec
+    // instruction; if so, we effectively stall the pipeline.
     if (IsIdle())
         return;
 
@@ -325,6 +339,20 @@ void Processor::Cycle()
         currInstr = NOP;
         handleExc();
     }
+}
+
+uint32_t Processor::IdleCycles() const
+{
+    if (IsIdle())
+        return (cpreg[STATUS] & STATUS_TE) ? cpreg[CP0REG_TIMER] : (uint32_t) -1;
+    else
+        return 0;
+}
+
+void Processor::Skip(uint32_t cycles)
+{
+    assert(IsIdle() && cycles <= IdleCycles());
+    cpreg[CP0REG_TIMER] -= cycles;
 }
 
 // This method allows SystemBus and Processor itself to signal Processor
@@ -543,7 +571,6 @@ void Processor::randomRegTick()
         cpreg[RANDOM] =  ((tlbSize - 1UL) << RNDIDXOFFS);
 }
 
-
 // This method pushes the KU/IE and VM bit stacks in CP0 STATUS register to start
 // exception handling
 void Processor::pushKUIEVMStack()
@@ -739,6 +766,11 @@ void Processor::completeLoad()
             cpreg[ENTRYLO] = ((Word) loadVal) & ENTRYLOMASK;
             break;
 
+        case CP0REG_TIMER:
+            cpreg[CP0REG_TIMER] = (Word) loadVal;
+            DeassertIRQ(IL_CPUTIMER);
+            break;
+
         case ENTRYHI:
             // loadable parts are VPN and ASID fields
             cpreg[ENTRYHI] = ((Word) loadVal) & (VPNMASK | ASIDMASK);
@@ -750,12 +782,6 @@ void Processor::completeLoad()
             cpreg[STATUS] = ((Word) loadVal) & STATUSMASK;
             break;
 
-        case CAUSE:
-            // loadable parts are interrupt pending bits 1 and 0 only
-            // ExcCode, hardware IP, BD and CE fields remain unchanged
-            cpreg[CAUSE] = (cpreg[CAUSE] & ~(CAUSEWMASK)) | (((Word) loadVal) & CAUSEWMASK);
-            break;
-					
         case EPC:
         case PRID:
         case RANDOM:

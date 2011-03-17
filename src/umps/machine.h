@@ -59,8 +59,8 @@ public:
     void Step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
 
     bool IsIdle() const;
-    unsigned int IdleCycles() const;
-    void Skip(unsigned int cycles);
+    uint32_t IdleCycles() const;
+    void Skip(uint32_t cycles);
 
     Processor* getProcessor(unsigned int cpuId);
     Device* getDevice(unsigned int line, unsigned int devNo);

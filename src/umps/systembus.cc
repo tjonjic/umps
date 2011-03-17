@@ -198,13 +198,13 @@ uint32_t SystemBus::IdleCycles() const
         return 0;
 }
 
-void SystemBus::Skip(unsigned int cycles)
+void SystemBus::Skip(uint32_t cycles)
 {
     timeOfDay->Increase(cycles);
     machine->HandleBusAccess(BUS_REG_TOD_HI, WRITE, NULL);
     machine->HandleBusAccess(BUS_REG_TOD_LO, WRITE, NULL);
 
-    UnsSub(&timer, timer, cycles);
+    timer -= cycles;
     machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
 }
 

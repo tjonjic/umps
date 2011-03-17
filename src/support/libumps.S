@@ -3,6 +3,7 @@
 #include "regdef.h"
 #include "h/bios_srv.h"
 #include "umps/arch_asm.h"
+#include "umps/cp0.h"
 
 #if 1
 #define LEAF_FUNC(func)				\
@@ -308,6 +309,17 @@ LendgetPRID:
 	.size	getPRID, LendgetPRID - getPRID
 
 
+LEAF_FUNC(getTIMER)
+	.set	noreorder
+	.set	nomacro
+	nop
+	mfc0	$v0, $CP0_Timer
+	nop
+	.set	reorder
+	.set	macro
+END_LEAF_FUNC(getTIMER)
+
+
 	# This function returns the CP0 INDEX register after write 
 	# argument comes thru register $a0 (a0)
 	# return value goes back  thru register $v0 (v0)
@@ -458,6 +470,19 @@ setCAUSE:
 
 LendsetCAUSE:
 	.size	setCAUSE, LendsetCAUSE - setCAUSE
+
+
+LEAF_FUNC(setTIMER)
+	.set	noreorder
+	.set	nomacro
+	nop
+	mtc0	$a0, $CP0_Timer
+	nop
+	mfc0	$v0, $CP0_Timer
+	nop
+	.set	reorder
+	.set	macro
+END_LEAF_FUNC(setTIMER)
 
 
 	# This function write in a random TLB position

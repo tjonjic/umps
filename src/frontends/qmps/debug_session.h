@@ -145,7 +145,7 @@ private:
     QTimer* timer;
 
     bool skipIdle;
-    unsigned int idleSteps;
+    uint32_t idleSteps;
 
 private Q_SLOTS:
     void onMachineConfigChanged();

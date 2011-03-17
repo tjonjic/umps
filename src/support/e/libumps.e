@@ -39,6 +39,8 @@ extern unsigned int getEPC(void);
 
 extern unsigned int getPRID(void);
 
+extern unsigned int getTIMER(void);
+
 
 /* Only some of CP0 register are R/W: handling requires care.
  * All functions return the value in register after write
@@ -53,6 +55,8 @@ extern unsigned int setENTRYHI(unsigned int entry);
 extern unsigned int setSTATUS(unsigned int entry);
 
 extern unsigned int setCAUSE(unsigned int cause);
+
+extern unsigned int setTIMER(unsigned int timer);
 
 
 /* these functions produce a program trap if executed in user mode 

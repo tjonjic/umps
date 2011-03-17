@@ -47,15 +47,19 @@
 #define CONTEXTREG    4
 
 // and corresponding register index in Processor structure
-#define	INDEX	0
-#define RANDOM	1
-#define	ENTRYLO	2
-#define BADVADDR	3
-#define ENTRYHI	4 
-#define STATUS	5 
-#define CAUSE	6 
-#define EPC		7 
-#define PRID	8 
+enum {
+    INDEX,
+    RANDOM,
+    ENTRYLO,
+    BADVADDR,
+    CP0REG_TIMER,
+    ENTRYHI,
+    STATUS,
+    CAUSE,
+    EPC,
+    PRID
+};
+
 
 // PRID revision value: R2000 CPU, rev. 6.6
 #define PRIDREGVAL 0x00000166UL
@@ -94,7 +98,7 @@
 
 // this mask forbids changes to some bits (CU3->1 usable bits, all DS field
 // except BEV bit, 0 fixed parts)
-#define STATUSMASK	0x1740FF3FUL
+#define STATUSMASK      0x1F40FF3FUL
 
 // STATUS kernel/user, interrupt enable, VM bit positions
 #define KUOBITPOS	5

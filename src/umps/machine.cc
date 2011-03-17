@@ -106,27 +106,26 @@ bool Machine::IsIdle() const
     foreach (Processor* cpu, cpus)
         if (!cpu->IsIdle())
             return false;
-
+    // All cpus are idle; check for external activity
     return bus->IsIdle();
 }
 
-unsigned int Machine::IdleCycles() const
+uint32_t Machine::IdleCycles() const
 {
-    unsigned int idle = bus->IdleCycles();
-#if 0
+    uint32_t c = bus->IdleCycles();
+
     foreach (Processor* cpu, cpus)
-        idle = std::min(idle, cpu->IdleCycles());
-#endif
-    return idle;
+        c = std::min(c, cpu->IdleCycles());
+
+    return c;
 }
 
-void Machine::Skip(unsigned int cycles)
+void Machine::Skip(uint32_t cycles)
 {
     bus->Skip(cycles);
-#if 0
+
     foreach (Processor* cpu, cpus)
         cpu->Skip(cycles);
-#endif
 }
 
 void Machine::onCpuException(unsigned int excCode, Processor* cpu)

@@ -54,6 +54,7 @@ public:
     ProcessorStatus getStatus() const { return status; }
     void setStatus(ProcessorStatus newStatus);
 
+    bool IsOffline() const { return status == PS_OFFLINE; }
     bool IsOnline() const { return status == PS_ONLINE; }
     bool IsIdle() const { return status == PS_IDLE; }
 
@@ -66,6 +67,10 @@ public:
     // possible to know what instruction will be executed before its
     // execution happens
     void Cycle();
+
+    uint32_t IdleCycles() const;
+
+    void Skip(uint32_t cycles);
 
     // This method allows SystemBus and Processor itself to signal
     // Processor when an exception happens. SystemBus signal IBE/DBE
@@ -205,6 +210,7 @@ private:
 
     void handleExc();
     void zapTLB(void);
+
     bool execInstr(Word instr);
     bool execRegInstr(Word * res, Word instr, bool * isBD);
     bool execImmInstr(Word * res, Word instr);
@@ -213,12 +219,16 @@ private:
     bool execStoreInstr(Word instr);
     bool execLoadCopInstr(Word instr);
     bool execStoreCopInstr(Word instr);
+
     bool mapVirtual(Word vaddr, Word * paddr, Word accType);
     bool probeTLB(unsigned int * index, Word asid, Word vpn);
     void completeLoad(void);
+
     void randomRegTick(void);
+
     void pushKUIEVMStack(void);
     void popKUIEVMStack(void);
+
     void setTLBRegs(Word vaddr);
     bool checkForInt();
     void suspend();

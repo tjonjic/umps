@@ -133,9 +133,6 @@
 // devices per interrupt line
 #define DEVPERINT	8
 
-// CAUSE register IP field starting bit  
-#define IPMASKBASE	8
-
 // segments base addresses
 #define KSEG0BASE	0x00000000UL
 #define KSEG0TOP	0x20000000UL
@@ -150,7 +147,7 @@
 // Processor structure register numbers
 #define CPUREGNUM	34
 #define CPUGPRNUM	32
-#define CP0REGNUM	9
+#define CP0REGNUM	10
 
 // device type codes
 #define NULLDEV	0

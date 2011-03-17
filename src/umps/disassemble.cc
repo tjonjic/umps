@@ -32,10 +32,10 @@
 #include <stdio.h>
 #include <cstring>
 
-#include <umps/const.h>
+#include "umps/const.h"
 #include "umps/types.h"
+#include "umps/cp0.h"
 #include "umps/processor_defs.h"
-
 #include "umps/arch.h"
 
 // register names
@@ -82,6 +82,7 @@ HIDDEN const char* const cp0RegName[CP0REGNUM] = {
     "Random",
     "EntryLo",
     "BadVAddr",
+    "Timer",
     "EntryHi",
     "Status",
     "Cause",
@@ -387,6 +388,10 @@ bool ValidCP0Reg(unsigned int regnum, unsigned int* cpnum)
 
     case CP0_BadVAddr:
         *cpnum = BADVADDR;
+        break;
+
+    case CP0_Timer:
+        *cpnum = CP0REG_TIMER;
         break;
 
     case CP0_EntryHi:

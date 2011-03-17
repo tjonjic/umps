@@ -61,7 +61,7 @@ public:
 
     uint32_t IdleCycles() const;
 
-    void Skip(unsigned int cycles);
+    void Skip(uint32_t cycles);
 
     // This method reads a data word from memory at physical address
     // addr, returning it thru datap pointer. It also returns TRUE if

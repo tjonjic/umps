@@ -8,12 +8,12 @@
 #define CP0_Random     1
 #define CP0_EntryLo    2
 #define CP0_BadVAddr   8
+#define CP0_Timer      9
 #define CP0_EntryHi   10
 #define CP0_Status    12
 #define CP0_Cause     13
 #define CP0_EPC       14
 #define CP0_PRID      15
-#define CP0_Timer     16
 #define CP0_LLAddr    17
 
 /*
@@ -47,6 +47,9 @@
 #define STATUS_VMp_BIT   25
 #define STATUS_VMo       0x04000000
 #define STATUS_VMo_BIT   26
+
+#define STATUS_TE        0x08000000
+#define STATUS_TE_BIT    27
 
 #define STATUS_CU0       0x10000000
 #define STATUS_CU0_BIT   28
