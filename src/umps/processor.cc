@@ -93,9 +93,7 @@ HIDDEN const Word excCode[] = {
 // Each TLBEntry object represents a single entry in the TLB contained in
 // the CP0 coprocessor part of a real MIPS processor.
 // Each one is a 64-bit field split in two parts (HI and LO), with special
-// fields and control bits (see external documentation for more details)
-// This class is local to this module, but must be defined before Processor, 
-// for compiling reasons
+// fields and control bits (see external documentation for more details).
 
 class TLBEntry {
 public:
@@ -521,7 +519,6 @@ void Processor::setNextPC(Word npc)
     nextPC = npc;
 }
 
-
 // This method allows to modify the current value of succPC to force sudden
 // branch: it does not violate branch slot conventions, if used to change
 // the target of a branch already taken
@@ -626,36 +623,17 @@ void Processor::popKUIEVMStack()
 // otherwise, and sets CP0 registers if needed
 bool Processor::checkForInt()
 {
-    // computes current IP status bit mask (software and hardware interrupts)
-#if 0
-    Word currIPMask = bus->getPendingInt(this) | (cpreg[CAUSE] & CAUSEWMASK);
-    Word ipMask = bus->getPendingInt(this);
-#endif
-
-    if ((cpreg[STATUS] & STATUS_IEc) && (cpreg[CAUSE] & CAUSE_IP_MASK)) {
+    if ((cpreg[STATUS] & STATUS_IEc) &&
+        (cpreg[CAUSE] & cpreg[STATUS] & CAUSE_IP_MASK))
+    {
         SignalExc(INTEXCEPTION);
+        // Clear all Cause fields except IP
         cpreg[CAUSE] &= CAUSE_IP_MASK;
         return true;
     } else {
+        // No interrupt on this cycle
         return false;
     }
-
-#if 0
-    if (BitVal(cpreg[STATUS], IECBITPOS) && (ipMask & IM(cpreg[STATUS])) != 0UL) {
-        // interrupts are enabled and at least one pending request is unmasked:
-        // set the IP field of CAUSE reg, clear other fields
-        // leaving the software interrupt bits unchanged, and signal for
-        // exception 
-        SignalExc(INTEXCEPTION);
-        cpreg[CAUSE] = ipMask;
-        return true;
-    } else {
-        // set current interrupt pending bits into CAUSE register but do not
-        // raise any exception nor clear other fields
-        cpreg[CAUSE] = (cpreg[CAUSE] & ~(INTMASK)) | ipMask;
-        return false;
-    }
-#endif
 }
 
 /**
@@ -667,9 +645,9 @@ void Processor::suspend()
         setStatus(PS_IDLE);
 }
 
-// This method sets the appropriate registers in Processor CP0 at exception
-// raising, following the MIPS conventions; it also set the PC value to
-// point the appropriate exception handler vector
+// This method sets the appropriate CP0 registers at exception
+// raising, following the MIPS conventions; it also set the PC value
+// to point the appropriate exception handler vector.
 void Processor::handleExc()
 {
     // If there is a load pending, it is completed while the processor
@@ -744,10 +722,10 @@ void Processor::completeLoad()
 {
     // loadPending tells whether a general purpose or a CP0 special register
     // is the target
-    switch(loadPending)
-    {
+    switch (loadPending) {
     case LOAD_TARGET_GPREG:
-        setGPR(loadReg, loadVal);
+        if (loadReg != 0)
+            gpr[loadReg] = loadVal;
         loadPending = LOAD_TARGET_NONE;
         break;
 
@@ -777,7 +755,7 @@ void Processor::completeLoad()
             break;
 
         case STATUS:
-            // loadable parts are CU0 bit, BEV bit in DS, IM mask and
+            // loadable parts are CU0 bit, TE bit, BEV bit in DS, IM mask and
             // KUIE bit stack
             cpreg[STATUS] = ((Word) loadVal) & STATUSMASK;
             break;
@@ -807,8 +785,6 @@ void Processor::completeLoad()
 // AccType details memory access type (READ/WRITE/EXECUTE)
 bool Processor::mapVirtual(Word vaddr, Word * paddr, Word accType)
 {
-    //unsigned int i;
-
     if (BitVal(cpreg[STATUS], VMCBITPOS)) {
         // VM is on
 	
@@ -1179,7 +1155,7 @@ bool Processor::execInstr(Word instr)
 bool Processor::cp0Usable()
 {
     // CP0 is usable only when marked in user mode, and always in kernel mode
-    return BitVal(cpreg[STATUS], CP0UBITPOS) || !BitVal(cpreg[STATUS], KUCBITPOS);
+    return BitVal(cpreg[STATUS], STATUS_CU0_BIT) || !BitVal(cpreg[STATUS], STATUS_KUc_BIT);
 }
 
 // This method scans the TLB looking for a entry that matches ASID/VPN pair;
@@ -1199,7 +1175,6 @@ bool Processor::probeTLB(unsigned int* index, Word asid, Word vpn)
     return found;
 }		
 
-
 // This method sets delayed load handling variables when needed by
 // instruction execution
 void Processor::setLoad(LoadTargetType loadCode, unsigned int regNum, SWord regVal)
@@ -1208,7 +1183,6 @@ void Processor::setLoad(LoadTargetType loadCode, unsigned int regNum, SWord regV
     loadReg = regNum;
     loadVal = regVal;
 }
-
 
 // This method returns a sign-extended byte from inside a word following
 // MIPS conventions about big and little endianness; it is requested by LB
