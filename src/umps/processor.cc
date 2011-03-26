@@ -1755,7 +1755,7 @@ bool Processor::execLoadInstr(Word instr)
     return(error);
 }
 
-// This method executes a MIPS load-type instruction, following MIPS
+// This method executes a MIPS store-type instruction, following MIPS
 // guidelines; It returns TRUE if an exception occurred, FALSE
 // otherwise.
 bool Processor::execStoreInstr(Word instr)
