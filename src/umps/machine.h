@@ -77,6 +77,7 @@ public:
     bool WriteMemory(Word paddr, Word data);
 
     void HandleBusAccess(Word pAddr, Word access, Processor* cpu);
+    void HandleVMAccess(Word asid, Word vaddr, Word access, Processor* cpu);
 
 private:
     struct ProcessorData {

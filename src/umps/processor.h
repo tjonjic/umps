@@ -126,8 +126,6 @@ public:
     // Signals
     sigc::signal<void> SignalStatusChanged;
     sigc::signal<void, unsigned int> SignalException;
-    // arguments: ASID, virtual address, access
-    sigc::signal<void, Word, Word, Word> SignalVAMappingRequested;
     sigc::signal<void, unsigned int> SignalTLBChanged;
 
 private:

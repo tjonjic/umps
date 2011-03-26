@@ -40,6 +40,7 @@
 #include "umps/const.h"
 #include "umps/cp0.h"
 #include "umps/processor_defs.h"
+#include "umps/machine.h"
 #include "umps/systembus.h"
 #include "umps/utility.h"
 #include "umps/machine_config.h"
@@ -790,7 +791,7 @@ bool Processor::mapVirtual(Word vaddr, Word * paddr, Word accType)
 	
         // SignalProcVAccess() is always done so it is possible 
         // to track accesses which produce exceptions
-        SignalVAMappingRequested.emit(ASID(cpreg[ENTRYHI]) >> ASIDOFFS, vaddr, accType);
+        machine->HandleVMAccess(ENTRYHI_GET_ASID(cpreg[ENTRYHI]), vaddr, accType, this);
 
         // address validity and bounds check
         if (BADADDR(vaddr) || (InUserMode() && (vaddr < KUSEG2BASE))) {
@@ -858,7 +859,7 @@ bool Processor::mapVirtual(Word vaddr, Word * paddr, Word accType)
 		
         // SignalProcVAccess() is always done so it is possible 
         // to track accesses which produce exceptions
-        SignalVAMappingRequested.emit(MAXASID, vaddr, accType);
+        machine->HandleVMAccess(MAXASID, vaddr, accType, this);
 
         // address validity and bounds check
         if (BADADDR(vaddr) || (InUserMode() && (vaddr < KSEG0TOP))) {
@@ -1135,18 +1136,13 @@ bool Processor::execInstr(Word instr)
         break;
     }
 
-    if (!error) {
-        // a correct instruction has been executed
-        if (isValidBranch)
-            // next instr. is in a branch delay slot
-            isBranchD = true;
-        else
-            isBranchD = false;
-    }
-    // else instr. execution has generated an exception: 
-    // isBranchD is not modified because exception handler
-    // will need it
-	
+    // Branch delay slot handling: if the instruction generated an
+    // exception, isBranchD is _not_ modified, since the exception
+    // handler needs it; otherwise, the next instruction is a BD slot
+    // if the current instruction is a valid branch.
+    if (!error)
+        isBranchD = isValidBranch;
+
     return error;
 }
 
@@ -1323,8 +1319,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
     error = InvalidRegInstr(instr);
     if (!error) {
         // instruction format is correct		
-        switch(FUNCT(instr))
-        {
+        switch (FUNCT(instr)) {
         case ADD:
             if (SignAdd(res, gpr[RS(instr)], gpr[RT(instr)]))
             {
@@ -1658,14 +1653,11 @@ bool Processor::execBranchInstr(Word instr, bool* isBD)
         error = true;
         break;
     }
-    if (error)
-        // not a valid branch instruction
-        *isBD = false;
-    else
-        // a correct branch instr. has been executed
-        *isBD = true; 
 
-    return(error);
+    // Next instruction is BD slot, unless an exception occurred
+    *isBD = !error;
+
+    return error;
 }
 
 
@@ -1677,8 +1669,7 @@ bool Processor::execLoadInstr(Word instr)
     Word paddr, vaddr, temp;
     bool error = false;
 	
-    switch(OPCODE(instr))
-    {	
+    switch (OPCODE(instr)) {
     case LB:
         vaddr = gpr[RS(instr)] + SignExtImm(instr);
 

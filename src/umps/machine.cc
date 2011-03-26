@@ -181,6 +181,39 @@ void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)
     }
 }
 
+void Machine::HandleVMAccess(Word asid, Word vaddr, Word access, Processor* cpu)
+{
+    switch (access) {
+    case READ:
+    case WRITE:
+        if (stopMask & SC_SUSPECT) {
+            Stoppoint* suspect = suspects->Probe(asid, vaddr,
+                                                 (access == READ) ? AM_READ : AM_WRITE,
+                                                 cpu);
+            if (suspect != NULL) {
+                pd[cpu->Id()].stopCause |= SC_SUSPECT;
+                pd[cpu->Id()].suspectId = suspect->getId();
+                stopPointsReached = true;
+            }
+        }
+        break;
+
+    case EXEC:
+        if (stopMask & SC_BREAKPOINT) {
+            Stoppoint* breakpoint = breakpoints->Probe(asid, vaddr, AM_EXEC, cpu);
+            if (breakpoint != NULL) {
+                pd[cpu->Id()].stopCause |= SC_BREAKPOINT;
+                pd[cpu->Id()].breakpointId = breakpoint->getId();
+                stopPointsReached = true;
+            }
+        }
+        break;
+
+    default:
+        AssertNotReached();
+    }
+}
+
 Processor* Machine::getProcessor(unsigned int cpuId)
 {
     return cpus[cpuId];
