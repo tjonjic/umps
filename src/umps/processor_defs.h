@@ -68,9 +68,6 @@ enum {
 // STATUS and CAUSE interrupt area mask
 #define INTMASK	0x0000FF00UL
 
-// CAUSE reg handling mask and constants
-#define CAUSEWMASK	0x00000300UL
-
 // TLB EntryHI handling masks and constants 
 #define VPNMASK	0xFFFFF000UL
 #define ASIDMASK	0x00000FC0UL
@@ -107,10 +104,6 @@ enum {
 #define IECBITPOS	0
 #define VMOBITPOS	26
 #define VMCBITPOS	24
-
-// STATUS miscellaneous bit positions 
-#define CP0UBITPOS	28
-#define BEVBITPOS	22
 
 // instruction decode field masks and constants
 
