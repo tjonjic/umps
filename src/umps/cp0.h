@@ -14,7 +14,6 @@
 #define CP0_Cause     13
 #define CP0_EPC       14
 #define CP0_PRID      15
-#define CP0_LLAddr    17
 
 /*
  * CP0 Status fields
@@ -77,5 +76,34 @@
 
 #define CAUSE_BD               0x80000000
 #define CAUSE_BD_BIT           31
+
+/*
+ * CP0 EntryHi fields
+ */
+#define ENTRYHI_SEGNO_MASK     0xc0000000
+#define ENTRYHI_SEGNO_BIT      30
+#define ENTRYHI_GET_SEGNO(x)   (((x) & ENTRYHI_SEGNO_MASK) >> ENTRYHI_SEGNO_BIT)
+
+#define ENTRYHI_VPN_MASK       0x3ffff000
+#define ENTRYHI_VPN_BIT        12
+#define ENTRYHI_GET_VPN(x)     (((x) & ENTRYHI_VPN_MASK) >> ENTRYHI_VPN_BIT)
+
+#define ENTRYHI_ASID_MASK      0x00000fc0
+#define ENTRYHI_ASID_BIT       6
+#define ENTRYHI_GET_ASID(x)    (((x) & ENTRYHI_ASID_MASK) >> ENTRYHI_ASID_BIT)
+
+/*
+ * CP0 EntryLo fields
+ */
+#define ENTRYLO_PFN_MASK       0xfffff000
+#define ENTRYLO_PFN_BIT        12
+#define ENTRYLO_GET_PFN(x)     (((x) & ENTRYLO_PFN_MASK) >> ENTRYLO_PFN_BIT)
+
+#define ENTRYLO_DIRTY          0x00000400
+#define ENTRYLO_DIRTY_BIT      10
+#define ENTRYLO_VALID          0x00000200
+#define ENTRYLO_VALID_BIT      9
+#define ENTRYLO_GLOBAL         0x00000100
+#define ENTRYLO_GLOBAL_BIT     8
 
 #endif /* !defined(UMPS_CP0_H) */
