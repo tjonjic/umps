@@ -1104,29 +1104,13 @@ bool Processor::execInstr(Word instr)
         break;					
 
     case LOADCOPTYPE:
-        if (BitVal(instr, DWCOPBITPOS)) {
-            // LDC, SDC reserved instructions handling
-            SignalExc(RIEXCEPTION);
-            error = true;
-        } else {
-            // delayed load is completed _before_ istruction execution since
-            // instruction itself produces a delayed load
-            completeLoad();
-            error = execLoadCopInstr(instr);
-        }
-        break;
-
     case STORECOPTYPE:
-        if (BitVal(instr, DWCOPBITPOS)) {
+        if (BitVal(instr, DWCOPBITPOS))
             // LDC, SDC reserved instructions handling
             SignalExc(RIEXCEPTION);
-            error = true;
-        } else {
-            // delayed load is completed _before_ istruction execution
-            // since it happens "logically" so in the pipeline
-            completeLoad();
-            error = execStoreCopInstr(instr);
-        }
+        else
+            SignalExc(CPUEXCEPTION, COPNUM(instr));
+        error = true;
         break;
 
     default:
@@ -1864,65 +1848,4 @@ bool Processor::execStoreInstr(Word instr)
         break;
     }
     return(error);
-}
-
-
-bool Processor::execLoadCopInstr(Word instr)
-{
-    Word vaddr;
-    Word paddr;
-    Word word;
-
-    bool error = false;
-
-    switch(OPCODE(instr)) {
-    case LWC0:
-        // Load-linked (LL)
-        vaddr = gpr[RS(instr)] + SignExtImm(instr);
-        if (!mapVirtual(vaddr, &paddr, READ) && !bus->DataRead(paddr, &word, this)) {
-            setLoad(LOAD_TARGET_GPREG, RT(instr), (SWord) word);
-            LLAddr = paddr;
-            llscAtomic = true;
-        } else
-            error = true;
-        break;
-
-    default:
-        SignalExc(CPUEXCEPTION, COPNUM(instr));
-        error = true;
-        break;
-    }
-
-    return error;
-}
-
-
-bool Processor::execStoreCopInstr(Word instr)
-{
-    Word vaddr;
-    Word paddr;
-
-    bool error = false;
-
-    switch(OPCODE(instr)) {
-    case SWC0:
-        // Store-conditional (SC)
-        if (LLAddr == MAXWORDVAL || !llscAtomic) {
-            setGPR(RT(instr), 0);
-        } else {
-            vaddr = gpr[RS(instr)] + SignExtImm(instr);
-            if (mapVirtual(vaddr, &paddr, WRITE) || bus->DataWrite(paddr, (Word) gpr[RT(instr)], 0))
-                error = true;
-            else
-                setGPR(RT(instr), 1);
-        }
-        break;
-
-    default:
-        SignalExc(CPUEXCEPTION, COPNUM(instr));
-        error = true;
-        break;
-    }
-
-    return error;
 }

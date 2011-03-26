@@ -200,10 +200,6 @@ private:
     size_t tlbSize;
     scoped_array<TLBEntry> tlb;
 
-    // Argument of the last load-linked operation
-    Word LLAddr;
-    bool llscAtomic;
-
     // private methods
 
     void handleExc();
