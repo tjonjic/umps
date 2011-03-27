@@ -5,20 +5,48 @@
 #include "umps/arch_asm.h"
 #include "umps/cp0.h"
 
-#if 1
+/*
+ * Helper macros
+ */
+
 #define LEAF_FUNC(func)				\
 	.globl	func;				\
 	.type	func, @function;		\
 	.ent	func;                           \
-func:	.frame	$fp, 0, $ra	; \
-	.mask   0x00000000,0	;\
+func:	.frame	$sp, 0, $ra;                    \
+	.mask   0x00000000,0;                   \
 	.fmask  0x00000000,0
 
 #define END_LEAF_FUNC(func)			\
-	jr	$ra		;\
-	.end	func		;\
+	.end	func;				\
 	.size	func, . - func
-#endif
+
+#define DEFINE_CP0_GETTER(suffix, reg)          \
+LEAF_FUNC(get ## suffix);                       \
+	.set noreorder;                         \
+	.set nomacro;                           \
+	nop;                                    \
+	mfc0	$v0, reg;                       \
+	nop;                                    \
+	.set reorder;                           \
+	.set macro;                             \
+	jr	$ra;                            \
+END_LEAF_FUNC(get ## suffix)
+
+#define DEFINE_CP0_SETTER(suffix, reg)          \
+LEAF_FUNC(set ## suffix);                       \
+	.set	noreorder;                      \
+	.set	nomacro;                        \
+	nop;                                    \
+	mtc0	$a0, reg;                       \
+	nop;                                    \
+	mfc0	$v0, reg;                       \
+	nop;                                    \
+	.set	reorder;                        \
+	.set	macro;                          \
+	jr	$ra;                            \
+END_LEAF_FUNC(set ## suffix)
+
 
 	/* Ugh, we don't really want abicalls unconditionally. */
 	.abicalls
@@ -30,22 +58,14 @@ func:	.frame	$fp, 0, $ra	; \
 	.align 2
 
 
-	# this function cause a system call trap
-	# system call code is in $a0 (a0) register
-	# return value in $v0 (v0) register
-	# it is programmer's task to load the return value into 
- 	# state register, and to set PC correctly for returning _after_
-	# syscall
-
-	.globl	SYSCALL
-	.type	SYSCALL, @function
-	.ent 	SYSCALL
-
-SYSCALL:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * This function cause a system call trap.
+ * System call code is in $a0, return value in $v0.
+ * It is programmer's task to load the return value into
+ * register, and to set PC correctly for returning _after_
+ * syscall
+ */
+LEAF_FUNC(SYSCALL)
 	.set noreorder
 	.set nomacro
 	nop
@@ -54,450 +74,40 @@ SYSCALL:
 	.set reorder
 	.set macro
 	jr	$ra
-	
-	.end SYSCALL
-
-LendSYSCALL:
-	.size	SYSCALL, LendSYSCALL - SYSCALL
-		
-
-	# This function returns the CP0 INDEX register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getINDEX
-	.type	getINDEX, @function
-	.ent 	getINDEX
-	
-getINDEX:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_Index
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getINDEX
-
-LendgetINDEX:
-	.size	getINDEX, LendgetINDEX - getINDEX
-
-
-	# This function returns the CP0 RANDOM register 
-	# return value goes back thru register $v0
-
-	.globl	getRANDOM
-	.type	getRANDOM, @function
-	.ent 	getRANDOM
-	
-getRANDOM:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_Random
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getRANDOM
-
-LendgetRANDOM:
-	.size	getRANDOM, LendgetRANDOM - getRANDOM
-
-
-
-	# This function returns the CP0 ENTRYLO register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getENTRYLO
-	.type	getENTRYLO, @function
-	.ent 	getENTRYLO
-	
-getENTRYLO:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_EntryLo
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getENTRYLO
-
-LendgetENTRYLO:
-	.size	getENTRYLO, LendgetENTRYLO - getENTRYLO
-
-
-
-	# This function returns the CP0 BADVADDR register 
-	# return value goes back  thru register $v0
-
-	.globl	getBADVADDR
-	.type	getBADVADDR, @function
-	.ent 	getBADVADDR
-	
-getBADVADDR:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_BadVAddr
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getBADVADDR
-
-LendgetBADVADDR:
-	.size	getBADVADDR, LendgetBADVADDR - getBADVADDR
-
-
-
-	# This function returns the CP0 ENTRYHI register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getENTRYHI
-	.type	getENTRYHI, @function
-	.ent 	getENTRYHI
-	
-getENTRYHI:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_EntryHi
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getENTRYHI
-
-LendgetENTRYHI:
-	.size	getENTRYHI, LendgetENTRYHI - getENTRYHI
-
-
-
-	# This function returns the CP0 STATUS register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getSTATUS
-	.type	getSTATUS, @function
-	.ent 	getSTATUS
-	
-getSTATUS:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_Status
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getSTATUS
-
-LendgetSTATUS:
-	.size	getSTATUS, LendgetSTATUS - getSTATUS
-
-
-	# This function returns the CP0 CAUSE register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getCAUSE
-	.type	getCAUSE, @function
-	.ent 	getCAUSE
-	
-getCAUSE:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_Cause
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getCAUSE
-
-LendgetCAUSE:
-	.size	getCAUSE, LendgetCAUSE - getCAUSE
-
-
-
-	# This function returns the CP0 EPC register 
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	getEPC
-	.type	getEPC, @function
-	.ent 	getEPC
-	
-getEPC:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_EPC
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getEPC
-
-LendgetEPC:
-	.size	getEPC, LendgetEPC - getEPC
-
-
-	# This function returns the CP0 PRID register 
-	# return value goes back  thru register $v0
-
-	.globl	getPRID
-	.type	getPRID, @function
-	.ent 	getPRID
-	
-getPRID:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mfc0	$v0, $CP0_PRID
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end getPRID
-
-LendgetPRID:
-	.size	getPRID, LendgetPRID - getPRID
-
-
-LEAF_FUNC(getTIMER)
-	.set	noreorder
-	.set	nomacro
-	nop
-	mfc0	$v0, $CP0_Timer
-	nop
-	.set	reorder
-	.set	macro
-END_LEAF_FUNC(getTIMER)
-
-
-	# This function returns the CP0 INDEX register after write 
-	# argument comes thru register $a0 (a0)
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	setINDEX
-	.type	setINDEX, @function
-	.ent 	setINDEX
-	
-setINDEX:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mtc0	$a0, $CP0_Index
-	nop
-	mfc0	$v0, $CP0_Index
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end setINDEX
-
-LendsetINDEX:
-	.size	setINDEX, LendsetINDEX - setINDEX
-
-
-	# This function returns the CP0 ENTRYLO register after write
-	# argument comes thru register $a0 (a0)
-	# return value goes back  thru register $v0
-
-	.globl	setENTRYLO
-	.type	setENTRYLO, @function
-	.ent 	setENTRYLO
-	
-setENTRYLO:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mtc0	$a0, $CP0_EntryLo
-	nop
-	mfc0	$v0, $CP0_EntryLo
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end setENTRYLO
-
-LendsetENTRYLO:
-	.size	setENTRYLO, LendsetENTRYLO - setENTRYLO
-
-
-
-	# This function returns the CP0 ENTRYHI register after write
-	# argument goes thru register $a0 (a0)
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	setENTRYHI
-	.type	setENTRYHI, @function
-	.ent 	setENTRYHI
-	
-setENTRYHI:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mtc0	$a0, $CP0_EntryHi
-	nop
-	mfc0	$v0, $CP0_EntryHi
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end setENTRYHI
-
-LendsetENTRYHI:
-	.size	setENTRYHI, LendsetENTRYHI - setENTRYHI
-
-
-
-	# This function returns the CP0 STATUS register after write
-	# argument goes thru register $a0 (a0)
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	setSTATUS
-	.type	setSTATUS, @function
-	.ent 	setSTATUS
-	
-setSTATUS:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mtc0	$a0, $CP0_Status
-	nop
-	mfc0	$v0, $CP0_Status
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end setSTATUS
-
-LendsetSTATUS:
-	.size	setSTATUS, LendsetSTATUS - setSTATUS
-
-
-	# This function returns the CP0 CAUSE register after write
-	# argument goes thru register $a0 (a0)
-	# return value goes back  thru register $v0 (v0)
-
-	.globl	setCAUSE
-	.type	setCAUSE, @function
-	.ent 	setCAUSE
-	
-setCAUSE:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
-	.set noreorder
-	.set nomacro
-	nop
-	mtc0	$a0, $CP0_Cause
-	nop
-	mfc0	$v0, $CP0_Cause
-	nop
-	.set reorder
-	.set macro
-	jr	$ra
-
-	.end setCAUSE
-
-LendsetCAUSE:
-	.size	setCAUSE, LendsetCAUSE - setCAUSE
-
-
-LEAF_FUNC(setTIMER)
-	.set	noreorder
-	.set	nomacro
-	nop
-	mtc0	$a0, $CP0_Timer
-	nop
-	mfc0	$v0, $CP0_Timer
-	nop
-	.set	reorder
-	.set	macro
-END_LEAF_FUNC(setTIMER)
-
-
-	# This function write in a random TLB position
-	# actual ENTRYHI, ENTRYLO registers
-
-	.globl	TLBWR
-	.type	TLBWR, @function
-	.ent 	TLBWR
-	
-TLBWR:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-
-	
+END_LEAF_FUNC(SYSCALL)
+
+/*
+ * Define CP0 register accessors.
+ *
+ * Each accessor is of the form: u32 get<REG_NAME>(void)
+ */
+DEFINE_CP0_GETTER(INDEX, $CP0_Index)
+DEFINE_CP0_GETTER(RANDOM, $CP0_Random)
+DEFINE_CP0_GETTER(ENTRYLO, $CP0_EntryLo)
+DEFINE_CP0_GETTER(BADVADDR, $CP0_BadVAddr)
+DEFINE_CP0_GETTER(TIMER, $CP0_Timer)
+DEFINE_CP0_GETTER(ENTRYHI, $CP0_EntryHi)
+DEFINE_CP0_GETTER(STATUS, $CP0_Status)
+DEFINE_CP0_GETTER(CAUSE, $CP0_Cause)
+DEFINE_CP0_GETTER(EPC, $CP0_EPC)
+DEFINE_CP0_GETTER(PRID, $CP0_PRID)
+
+/*
+ * CP0 setter functions
+ * Each setter is of the form: u32 set<REG_NAME>(u32 value)
+ * Each function returns the updated register value.
+ */
+DEFINE_CP0_SETTER(INDEX, $CP0_Index)
+DEFINE_CP0_SETTER(ENTRYLO, $CP0_EntryLo)
+DEFINE_CP0_SETTER(TIMER, $CP0_Timer)
+DEFINE_CP0_SETTER(ENTRYHI, $CP0_EntryHi)
+DEFINE_CP0_SETTER(STATUS, $CP0_Status)
+DEFINE_CP0_SETTER(CAUSE, $CP0_Cause)
+
+/*
+ * TLBWR instruction wrapper
+ */
+LEAF_FUNC(TLBWR)
 	.set noreorder
 	.set nomacro
 	nop
@@ -505,29 +115,13 @@ TLBWR:
 	nop
 	.set reorder
 	.set macro
-
 	jr	$ra
+END_LEAF_FUNC(TLBWR)
 
-	.end TLBWR
-
-LendTLBWR:
-	.size	TLBWR, LendTLBWR - TLBWR
-
-
-	
-	# This function write at INDEX TLB position 
-  	# actual ENTRYHI and ENTRYLO
-
-	.globl	TLBWI
-	.type	TLBWI, @function
-	.ent 	TLBWI
-	
-TLBWI:
-	
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * TLBWI instruction wrapper
+ */
+LEAF_FUNC(TLBWI)
 	.set noreorder
 	.set nomacro
 	nop
@@ -535,27 +129,13 @@ TLBWI:
 	nop
 	.set reorder
 	.set macro
-
 	jr	$ra
+END_LEAF_FUNC(TLBWI)
 
-	.end TLBWI
-
-LendTLBWI:
-	.size	TLBWI, LendTLBWI - TLBWI
-
-
-	# This function probes TLB for matching 
-	# arguments ENTRYHI, ENTRYLO
-
-	.globl	TLBP
-	.type	TLBP, @function
-	.ent 	TLBP
-	
-TLBP:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * TLBP instruction wrapper
+ */
+LEAF_FUNC(TLBP)
 	.set noreorder
 	.set nomacro
 	nop
@@ -563,27 +143,14 @@ TLBP:
 	nop
 	.set reorder
 	.set macro
-
 	jr	$ra
+END_LEAF_FUNC(TLBP)
 
-	.end TLBP
-
-LendTLBP:
-	.size	TLBP, LendTLBP - TLBP
-
-
-
-	# This function reads TLB entry at INDEX and returns in ENTRYHI and ENTRYLO
-
-	.globl	TLBR
-	.type	TLBR, @function
-	.ent 	TLBR
-	
-TLBR:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * TLBR instruction wrapper
+ * Reads TLB entry at INDEX and returns result in ENTRYHI and ENTRYLO
+ */
+LEAF_FUNC(TLBR)
 	.set noreorder
 	.set nomacro
 	nop
@@ -592,25 +159,12 @@ TLBR:
 	.set reorder
 	.set macro
 	jr	$ra
+END_LEAF_FUNC(TLBR)
 
-	.end TLBR
-
-LendTLBR:
-	.size	TLBR, LendTLBR - TLBR
-
-
-	# This function issues a TLBCLR instruction
- 	# no arguments or return values
- 
- 	.globl	TLBCLR
- 	.type	TLBCLR, @function
- 	.ent 	TLBCLR
- 	
-TLBCLR:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
- 	
+/*
+ * TLBCLR instruction wrapper
+ */
+LEAF_FUNC(TLBCLR)
  	.set noreorder
  	.set nomacro
  	nop
@@ -619,13 +173,11 @@ TLBCLR:
  	.set reorder
  	.set macro
  	jr	$ra
- 
- 	.end TLBCLR
- 
-LendTLBCLR:
- 	.size	TLBCLR, LendTLBCLR - TLBCLR
- 
+END_LEAF_FUNC(TLBCLR)
 
+/*
+ * WAIT instruction wrapper
+ */
 LEAF_FUNC(WAIT)
 	.set	noreorder
 	.set	nomacro
@@ -636,22 +188,22 @@ LEAF_FUNC(WAIT)
 	nop
 	.set	reorder
 	.set	macro
+	jr	$ra
 END_LEAF_FUNC(WAIT)
 
-	# This function loads a processor state from memory and start 
-	# executing it. It changes processor state completely, and it is
-	# NOT an atomic operation (see interface for description)
-
-	.globl	FORK
-	.type	FORK, @function
-	.ent 	FORK
-	
-FORK:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-
-	# first registers loaded are HI and LO
+/*
+ * FORK
+ *
+ * SYNOPSIS:
+ * void FORK(unsigned int entryhi, unsigned FORK
+ *           int status, unsigned int pc, state_t *statep)
+ *
+ * This function loads a processor state from memory and start 
+ * executing it. It changes processor state completely, and it is
+ * NOT an atomic operation (see interface for description).
+ */
+LEAF_FUNC(FORK)
+	/* first registers loaded are HI and LO */
 	lw	$1, 132($a3)
 	mthi	$1
 	lw	$1, 136($a3)
@@ -659,11 +211,11 @@ FORK:
 	
 	lw	$1, 16($a3)
 
-	# register $v0 itself is not loaded
+	/* register $v0 itself is not loaded */
 
 	lw	$v1, 24($a3)
 
-	#registers $a0..$a3 are not loaded too
+	/* registers $a0..$a3 are not loaded too */
 
 	lw	$t0, 44($a3)
 	lw	$t1, 48($a3)
@@ -684,18 +236,18 @@ FORK:
 	lw	$t8, 108($a3)
 	lw	$t9, 112($a3)
 
-	# $k0 and $k1 are not saved so they are not loaded too
+	/* $k0 and $k1 are not saved so they are not loaded too */
 
 	lw	$gp, 116($a3)
 	lw	$sp, 120($a3)
 	lw	$fp, 124($a3)
 	lw	$ra, 128($a3)
-	# all processor registers loaded (almost)
+	/* all processor registers loaded (almost) */
 
-	# load CAUSE from memory to $a3 (a3)
+	/* load CAUSE from memory to $a3 (a3) */
 	lw	$a3, 4($a3)
 
-	# move $a0 to $v0 to use $a0 as EXEC call parameter
+	/* move $a0 to $v0 to use $a0 as EXEC call parameter */
 	move 	$v0, $a0
 	
 	.set noreorder
@@ -706,34 +258,26 @@ FORK:
 	.set reorder
 	.set macro
 
-
 	jr	$ra
-	
-	.end FORK
+END_LEAF_FUNC(FORK)
 
-LendFORK:
-	.size	FORK, LendFORK - FORK
-
-
-	# This function will save processor status to memory block pointed by
-	# register $a0 (a0), and return PC value of instruction immediately
-	# following the call as return value in $v0.
-	# PC field itself is intentionally leaved at 0 value
-
-	.globl	STST
-	.type	STST, @function
-	.ent 	STST
-	
-STST:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * STST
+ *
+ * SYNOPSIS:
+ * void STST(state t *statep)
+ *
+ * This function will save processor status to memory block pointed by
+ * register $a0 (a0), and return PC value of instruction immediately
+ * following the call as return value in $v0.
+ * PC field itself is intentionally left at 0 value
+ */
+LEAF_FUNC(STST)
 	.set noat
 	sw	$1, 16($a0)
 	sw	$v0, 20($a0)
 
-	# gets CAUSE register and stores it
+	/* gets CAUSE register and stores it */
 	mfc0	$v0, $CP0_Cause
 	sw 	$v0, 4($a0)
 
@@ -761,7 +305,7 @@ STST:
 	sw	$t8, 108($a0)
 	sw	$t9, 112($a0)
 
-	# $k0 and $k1 are not saved
+	/* $k0 and $k1 are not saved */
 
 	sw	$gp, 116($a0)
 	sw	$sp, 120($a0)
@@ -771,44 +315,31 @@ STST:
 	sw	$a1, 132($a0)
 	mflo	$a1
 	sw	$a1, 136($a0)
-	# all processor registers saved
+	/* all processor registers saved */
 	
-	# gets EntryHI and stores it 
+	/* gets EntryHI and stores it */
 	mfc0	$v0, $CP0_EntryHi
 	sw	$v0, 0($a0)
 	
-
-	# and now saves STATUS register and zeroes PC
+	/* and now saves STATUS register and zeroes PC */
 	mfc0	$v0, $CP0_Status
 	sw	$v0, 8($a0)
 	sw	$0, 12($a0)
 
-	# reloads $v1 and $a1 registers
-
+	/* reloads $v1 and $a1 registers */
 	lw	$v1, 24($a0)
 	lw 	$a1, 32($a0)
 
-	# sets $v0 to return value
-
+	/* sets $v0 to return value */
 	move	$v0, $ra
 
 	jr	$ra
+END_LEAF_FUNC(STST)
 
-	.end STST
-
-LendSTST:
-	.size	STST, LendSTST - STST
-
-
-	.globl	HALT
-	.type	HALT, @function
-	.ent 	HALT
-	
-HALT:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * HALT
+ */
+LEAF_FUNC(HALT)
 	.set noreorder
 	.set nomacro
 	li	$a0, BIOS_SRV_HALT
@@ -816,25 +347,13 @@ HALT:
 	nop
 	.set reorder
 	.set macro
-
-
 	jr	$ra
+END_LEAF_FUNC(HALT)
 
-	.end HALT
-
-LendHALT:
-	.size	HALT, LendHALT - HALT
-
-
-	.globl	PANIC
-	.type	PANIC, @function
-	.ent 	PANIC
-	
-PANIC:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * PANIC
+ */
+LEAF_FUNC(PANIC)
 	.set noreorder
 	.set nomacro
 	li	$a0, BIOS_SRV_PANIC
@@ -842,30 +361,21 @@ PANIC:
 	nop
 	.set reorder
 	.set macro
-
-
 	jr	$ra
+END_LEAF_FUNC(PANIC)
 
-	.end PANIC
-
-LendPANIC:
-	.size	PANIC, LendPANIC - PANIC
-
-
-	# This function forces the complete reload of processor state from
-	# vector state area pointed by argument in $a0 (a0): it works only in
-	# kernel mode. There is  no real return: $a1 is used as BIOS
-	# argument, but it is reloaded too.
-
-	.globl	LDST
-	.type	LDST, @function
-	.ent 	LDST
-	
-LDST:
-	.frame  $fp,0,$ra
-	.mask   0x00000000,0
-	.fmask  0x00000000,0
-	
+/*
+ * LDST
+ *
+ * SYNOPSIS:
+ *     void LDST(state t *statep)
+ *
+ * This function forces the complete reload of processor state from
+ * vector state area pointed by argument in $a0 (a0): it works only in
+ * kernel mode. There is  no real return: $a1 is used as BIOS
+ * argument, but it is reloaded too.
+ */
+LEAF_FUNC(LDST)
 	move	$a1, $a0
 	
 	.set noreorder
@@ -876,23 +386,13 @@ LDST:
 	.set reorder
 	.set macro
 
-
 	jr	$ra
+END_LEAF_FUNC(LDST)
 
-	.end LDST
-
-LendLDST:
-	.size	LDST, LendLDST - LDST
-
-
-	.globl	STARTCPU
-	.type	STARTCPU, @function
-	.ent	STARTCPU
-STARTCPU:
-	.frame	$fp, 0, $ra
-	.mask	0x00000000, 0
-	.fmask	0x00000000, 0
-
+/*
+ * INITCPU
+ */
+LEAF_FUNC(INITCPU)
 	.set	noreorder
 
 	li	$t0, MPCONF_BOOT_PC
@@ -909,6 +409,4 @@ STARTCPU:
 	nop
 
 	.set	reorder
-
-	.end	STARTCPU
-	.size	STARTCPU, . - STARTCPU
+END_LEAF_FUNC(INITCPU)
