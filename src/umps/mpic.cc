@@ -160,8 +160,10 @@ void InterruptController::Write(Word addr, Word data, const Processor* cpu)
         case CPUCTL_INBOX:
             if (!cd.ipiInbox.empty()) {
                 cd.ipiInbox.pop_front();
-                if (cd.ipiInbox.empty())
+                if (cd.ipiInbox.empty()) {
                     cd.ipMask &= ~(1U << IL_IPI);
+                    bus->DeassertIRQ(IL_IPI, cpu->Id());
+                }
             }
             break;
 
