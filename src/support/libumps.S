@@ -4,6 +4,7 @@
 #include "h/bios_srv.h"
 #include "umps/arch_asm.h"
 #include "umps/cp0.h"
+#include "bios_defs.h"
 
 /*
  * Helper macros
@@ -391,22 +392,32 @@ END_LEAF_FUNC(LDST)
 
 /*
  * INITCPU
+ *
+ * SYNOPSIS:
+ *     void INITCPU(u32 cpu_id, state t *start_state, state_t *state_areas)
  */
 LEAF_FUNC(INITCPU)
-	.set	noreorder
-
 	li	$t0, MPCONF_BOOT_PC
 	li	$t1, 0x00000100
 	sw	$t1, 0($t0)
 
-	li	$t0, MPCONF_BOOT_ARG
-	sw	$a1, 0($t0)
+	/* Compute cpu scratch area base address in the ROM reserved
+	   frame ($t0) */
+	li	$t0, BIOS_CPU_SCRATCH_RAM_SIZE
+	mult	$t0, $a0
+	mflo	$t0
+	li	$t1, BIOS_LEGACY_SCRATCH_BASE
+	subu	$t0, $t1, $t0
 
+	/* Stage initial state & old/new state area array addresses at
+	   the beginning of the cpu scratch area in the RRF */
+	sw	$a1, 4($t0)
+	sw	$a2, 8($t0)
+
+	.set	noreorder
 	li	$t0, MPCONF_RESET
 	sw	$a0, 0($t0)
+	.set	reorder
 
 	jr	$ra
-	nop
-
-	.set	reorder
 END_LEAF_FUNC(INITCPU)

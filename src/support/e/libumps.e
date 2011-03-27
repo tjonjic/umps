@@ -154,13 +154,4 @@ extern void PANIC(void);
 
 extern void HALT(void);
 
-
-struct cpu_boot_params {
-    state_t      *state;
-    unsigned int  ev_base;
-};
-
-typedef struct cpu_boot_params cpu_boot_params_t;
-
-extern void STARTCPU(unsigned int cpuid, const cpu_boot_params_t *params);
-
+extern void INITCPU(unsigned int cpuid, state_t *start_state, state_t *state_areas);

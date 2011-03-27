@@ -149,19 +149,17 @@ LInitSecondaryProcessor:
 	mflo	$t0
 	li	$t1, BIOS_LEGACY_SCRATCH_BASE
 	subu	$t0, $t1, $t0
+
 	li	$t1, BIOS_SCRATCH_BASE
 	sw	$t0, 0($t1)
 
-	li	$t0, MPCONF_BOOT_ARG
-	lw	$t0, 0($t0)
-
-	/* Initialize the exception vector */
-	lw	$t1, 4($t0)
+	/* Initialize ptr to new/old areas */
+	lw	$t1, 8($t0)
 	li	$t2, BIOS_EXCVEC_BASE
 	sw	$t1, 0($t2)
 
 	/* Load a new state */
-	lw	$k0, 0($t0)
+	lw	$k0, 4($t0)
 	j	LLoadStart
 
 /*
