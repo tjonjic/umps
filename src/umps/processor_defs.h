@@ -60,11 +60,6 @@ enum {
     PRID
 };
 
-
-// PRID revision value: R2000 CPU, rev. 6.6
-#define PRIDREGVAL 0x00000166UL
-
-
 // STATUS and CAUSE interrupt area mask
 #define INTMASK	0x0000FF00UL
 
