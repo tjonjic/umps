@@ -46,7 +46,6 @@ Machine::Machine(const MachineConfig* config,
     assert(config->Validate(NULL));
 
     bus.reset(new SystemBus(config, this));
-    bus->SignalAccess.connect(sigc::mem_fun(this, &Machine::HandleBusAccess));
 
     for (unsigned int i = 0; i < config->getNumProcessors(); i++) {
         Processor* cpu = new Processor(config, i, this, bus.get());

@@ -41,10 +41,6 @@ class InterruptController;
 
 class SystemBus {
 public:
-    // Signal: (Word pAddr, Word access, Processor*) : void
-    sigc::signal<void, Word, Word, Processor*> SignalAccess;
-
-    // This method builds a SystemBus object and all related structures
     SystemBus(const MachineConfig* config, Machine* machine);
     ~SystemBus();
 
