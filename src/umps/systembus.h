@@ -75,6 +75,8 @@ public:
     // otherwise, and notifies access to Watch control object
     bool DataWrite(Word addr, Word data, Processor* proc);
 
+    bool CompareAndSet(Word addr, Word oldval, Word newval, bool* result, Processor* cpu);
+
     // This method reads a istruction from memory at physical address addr,
     // returning it thru istrp pointer. It also returns TRUE if the
     // address was invalid and an exception was caused, FALSE otherwise,

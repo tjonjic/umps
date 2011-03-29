@@ -86,6 +86,16 @@ void RamSpace::MemWrite(Word ofs, Word data)
     memPtr[ofs] = data;
 }
 
+bool RamSpace::CompareAndSet(Word index, Word oldval, Word newval)
+{
+    if (memPtr[index] == oldval) {
+        memPtr[index] = newval;
+        return true;
+    } else {
+        return false;
+    }
+}
+
 // This method returns RamSpace size in bytes
 Word RamSpace::Size()
 {

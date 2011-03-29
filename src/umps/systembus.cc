@@ -277,7 +277,6 @@ bool SystemBus::WatchWrite(Word addr, Word data)
     return busWrite(addr, data);
 }
 
-
 // This method writes the data word at physical addr in RAM memory or device
 // register area.  Writes to BIOS or BOOT areas cause a DBEXCEPTION (no
 // writes allowed). It returns TRUE if an exception was caused, FALSE
@@ -292,6 +291,17 @@ bool SystemBus::DataWrite(Word addr, Word data, Processor* proc)
         return true;
     } else
         return false;
+}
+
+bool SystemBus::CompareAndSet(Word addr, Word oldval, Word newval, bool* result, Processor* cpu)
+{
+    if (RAMBASE <= addr && addr < RAMBASE + ram->Size()) {
+        *result = ram->CompareAndSet((addr - RAMBASE) >> 2, oldval, newval);
+        return false;
+    } else {
+        cpu->SignalExc(DBEXCEPTION);
+        return true;
+    }
 }
 
 // This method transfers a block from or to memory, starting with address

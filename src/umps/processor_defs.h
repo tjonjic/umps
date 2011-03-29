@@ -144,36 +144,37 @@ enum {
 #define STORECOPTYPE	070
 #define STORETYPE	050
 
-// REGTYPE function opcodes
+// REGTYPE (Special) function opcodes
 
-#define ADD	040
-#define ADDU	041
-#define AND	044
-#define BREAK 015
-#define DIV	032
-#define DIVU	033
-#define JALR	011
-#define JR	010
-#define MFHI	020
-#define MFLO	022
-#define MTHI	021
-#define MTLO	023
-#define MULT	030
-#define MULTU	031
-#define NOR	047
-#define OR	045
-#define SLL	000
-#define SLLV 004
-#define SLT	052
-#define SLTU	053
-#define SRA	003
-#define SRAV	007
-#define SRL	002
-#define SRLV	006
-#define SUB	042
-#define SUBU 043
-#define SYSCALL	014
-#define XOR	046
+#define SFN_ADD       040
+#define SFN_ADDU      041
+#define SFN_AND       044
+#define SFN_BREAK     015
+#define SFN_DIV       032
+#define SFN_DIVU      033
+#define SFN_JALR      011
+#define SFN_JR        010
+#define SFN_MFHI      020
+#define SFN_MFLO      022
+#define SFN_MTHI      021
+#define SFN_MTLO      023
+#define SFN_MULT      030
+#define SFN_MULTU     031
+#define SFN_NOR       047
+#define SFN_OR        045
+#define SFN_SLL       000
+#define SFN_SLLV      004
+#define SFN_SLT       052
+#define SFN_SLTU      053
+#define SFN_SRA       003
+#define SFN_SRAV      007
+#define SFN_SRL       002
+#define SFN_SRLV      006
+#define SFN_SUB       042
+#define SFN_SUBU      043
+#define SFN_SYSCALL   014
+#define SFN_XOR       046
+#define SFN_CAS       013
 
 
 // IMMCOMPTYPE opcodes

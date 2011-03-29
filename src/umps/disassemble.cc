@@ -106,7 +106,7 @@ HIDDEN const char* const regIName[] = {
     "jr",
     "jalr",
     "",
-    "",
+    "cas",
     "syscall",
     "break",
     "",
@@ -308,61 +308,61 @@ SWord SignExtImm(Word instr)
 // Returns FALSE if instruction is valid, and a non-zero value otherwise
 bool InvalidRegInstr(Word instr)
 {
-	bool invalid = false;
+    bool invalid = false;
 	
-	switch (FUNCT(instr))
-	{
-		case ADD:
-		case ADDU:
-		case AND:
-		case NOR:
-		case OR:
-		case SLLV:
-		case SLT:
-		case SLTU:		
-		case SRAV:
-		case SRLV:
-		case SUB:
-		case SUBU:
-		case XOR:
-			invalid = SHAMT(instr);
-			break;
-		
-		case SLL:
-		case SRA:
-		case SRL:
-			invalid = RS(instr);
-			break;
-			
-		case DIV:
-		case DIVU:
-		case MULT:
-		case MULTU:
-			invalid = SHAMT(instr) || RD(instr);
-			break;			
-		
-		case JALR:
-			invalid = SHAMT(instr) || RT(instr);
-			break;
+    switch (FUNCT(instr)) {
+    case SFN_ADD:
+    case SFN_ADDU:
+    case SFN_AND:
+    case SFN_NOR:
+    case SFN_OR:
+    case SFN_SLLV:
+    case SFN_SLT:
+    case SFN_SLTU:
+    case SFN_SRAV:
+    case SFN_SRLV:
+    case SFN_SUB:
+    case SFN_SUBU:
+    case SFN_XOR:
+    case SFN_CAS:
+        invalid = SHAMT(instr);
+        break;
 
-		case MFHI:
-		case MFLO:
-			invalid = SHAMT(instr) || RT(instr) || RS(instr);
-			break;
-			
-		case JR:
-		case MTHI:
-		case MTLO:
-			invalid = SHAMT(instr) || RT(instr) || RD(instr);
-			break;
-			
-		case BREAK:
-		case SYSCALL:
-		default:
-			break;
-	}
-	
-	return(invalid);
+    case SFN_SLL:
+    case SFN_SRA:
+    case SFN_SRL:
+        invalid = RS(instr);
+        break;
+
+    case SFN_DIV:
+    case SFN_DIVU:
+    case SFN_MULT:
+    case SFN_MULTU:
+        invalid = SHAMT(instr) || RD(instr);
+        break;
+
+    case SFN_JALR:
+        invalid = SHAMT(instr) || RT(instr);
+        break;
+
+    case SFN_MFHI:
+    case SFN_MFLO:
+        invalid = SHAMT(instr) || RT(instr) || RS(instr);
+        break;
+
+    case SFN_JR:
+    case SFN_MTHI:
+    case SFN_MTLO:
+        invalid = SHAMT(instr) || RT(instr) || RD(instr);
+        break;
+
+    case SFN_BREAK:
+    case SFN_SYSCALL:
+    default:
+        break;
+    }
+
+    return invalid;
 }
 
 
@@ -494,19 +494,20 @@ HIDDEN void strRegInstr(Word instr)
     else {
         // instruction format is correct		
         switch(FUNCT(instr)) {
-        case ADD:
-        case ADDU:
-        case AND:
-        case NOR:
-        case OR:
-        case SLLV:
-        case SLT:
-        case SLTU:		
-        case SRAV:
-        case SRLV:
-        case SUB:
-        case SUBU:
-        case XOR:
+        case SFN_ADD:
+        case SFN_ADDU:
+        case SFN_AND:
+        case SFN_NOR:
+        case SFN_OR:
+        case SFN_SLLV:
+        case SFN_SLT:
+        case SFN_SLTU:
+        case SFN_SRAV:
+        case SFN_SRLV:
+        case SFN_SUB:
+        case SFN_SUBU:
+        case SFN_XOR:
+        case SFN_CAS:
             sprintf(strbuf, "%s\t$%s, $%s, $%s",
                     regIName[FUNCT(instr)],
                     regName[RD(instr)],
@@ -514,9 +515,9 @@ HIDDEN void strRegInstr(Word instr)
                     regName[RT(instr)]);
             break;
 
-        case SLL:
-        case SRA:
-        case SRL:
+        case SFN_SLL:
+        case SFN_SRA:
+        case SFN_SRL:
             if (instr == NOP)
                 sprintf(strbuf, "%s", regIName[NOPINAME]);
             else
@@ -527,32 +528,32 @@ HIDDEN void strRegInstr(Word instr)
                         SHAMT(instr));
             break;
 
-        case DIV:
-        case DIVU:
-        case MULT:
-        case MULTU:
+        case SFN_DIV:
+        case SFN_DIVU:
+        case SFN_MULT:
+        case SFN_MULTU:
             sprintf(strbuf, "%s\t$%s, $%s",
                     regIName[FUNCT(instr)], regName[RS(instr)], regName[RT(instr)]); 
             break;
 
-        case JALR:
+        case SFN_JALR:
             sprintf(strbuf, "%s\t$%s, $%s",
                     regIName[FUNCT(instr)], regName[RD(instr)], regName[RS(instr)]);
             break;
 
-        case MFHI:
-        case MFLO:
+        case SFN_MFHI:
+        case SFN_MFLO:
             sprintf(strbuf, "%s\t$%s", regIName[FUNCT(instr)], regName[RD(instr)]);
             break;
 
-        case JR:
-        case MTHI:
-        case MTLO:
+        case SFN_JR:
+        case SFN_MTHI:
+        case SFN_MTLO:
             sprintf(strbuf, "%s\t$%s", regIName[FUNCT(instr)], regName[RS(instr)]);
             break;
 
-        case BREAK:
-        case SYSCALL:
+        case SFN_BREAK:
+        case SFN_SYSCALL:
             sprintf(strbuf, "%s\t(%lu)", regIName[FUNCT(instr)], CALLVAL(instr));
             break;
 

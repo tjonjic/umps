@@ -1078,11 +1078,10 @@ bool Processor::execInstr(Word instr)
             // coprocessor 0 (or other) unusable
             SignalExc(CPUEXCEPTION, COPNUM(instr));
             error = true;
-        }	
+        }
         break;
 
     case LOADTYPE:
-
         // MIPS load instruction
 
         // delayed load is completed _before_ istruction execution since
@@ -1091,9 +1090,8 @@ bool Processor::execInstr(Word instr)
 
         error = execLoadInstr(instr);
         break;
-			
-    case STORETYPE:
 
+    case STORETYPE:
         // MIPS store instruction
 
         // delayed load is completed _before_ istruction execution
@@ -1101,7 +1099,7 @@ bool Processor::execInstr(Word instr)
         completeLoad();
 
         error = execStoreInstr(instr);
-        break;					
+        break;
 
     case LOADCOPTYPE:
     case STORECOPTYPE:
@@ -1297,6 +1295,8 @@ Word Processor::merge(Word dest, Word src, unsigned int bytep, bool loadBig, boo
 bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
 {
     bool error = false;
+    Word paddr;
+    bool atomic;
 
     *isBD = false;
 
@@ -1304,28 +1304,28 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
     if (!error) {
         // instruction format is correct		
         switch (FUNCT(instr)) {
-        case ADD:
+        case SFN_ADD:
             if (SignAdd(res, gpr[RS(instr)], gpr[RT(instr)]))
             {
                 SignalExc(OVEXCEPTION);
                 error = true;
             }
             break;
-				
-        case ADDU:
+
+        case SFN_ADDU:
             *res = gpr[RS(instr)] + gpr[RT(instr)];
             break;
 		
-        case AND:
+        case SFN_AND:
             *res = gpr[RS(instr)] & gpr[RT(instr)];
             break;
 			
-        case BREAK:
+        case SFN_BREAK:
             SignalExc(BPEXCEPTION);
             error = true;
             break;
 			
-        case DIV:
+        case SFN_DIV:
             if (gpr[RT(instr)] != 0)
             {
                 gpr[LO] = gpr[RS(instr)] / gpr[RT(instr)];
@@ -1339,7 +1339,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
             }
             break;
 					
-        case DIVU:
+        case SFN_DIVU:
             if (gpr[RT(instr)] != 0)
             {
                 gpr[LO] = ((Word) gpr[RS(instr)]) / ((Word) gpr[RT(instr)]);
@@ -1353,7 +1353,7 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
             }
             break;
 				
-        case JALR:
+        case SFN_JALR:
             // solution "by the book"
             succPC = gpr[RS(instr)];
             *res = currPC + (2 * WORDLEN);
@@ -1361,100 +1361,108 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
             // alternative: *res = succPC; succPC = gpr[RS(instr)]
             break;
 
-        case JR:
+        case SFN_JR:
             succPC = gpr[RS(instr)];
             *isBD = true;
             break;
 				
-        case MFHI:
+        case SFN_MFHI:
             *res = gpr[HI];
             break;
 				
-        case MFLO:
+        case SFN_MFLO:
             *res = gpr[LO];
             break;
 					
-        case MTHI:
+        case SFN_MTHI:
             gpr[HI] = gpr[RS(instr)];
             break;
 				
-        case MTLO:
+        case SFN_MTLO:
             gpr[LO] = gpr[RS(instr)];
             break;	
 				
-        case MULT:
+        case SFN_MULT:
             SignMult(gpr[RS(instr)], gpr[RT(instr)], &(gpr[HI]), &(gpr[LO]));
             break;				
 				
-        case MULTU:
+        case SFN_MULTU:
             UnsMult((Word) gpr[RS(instr)], (Word) gpr[RT(instr)], (Word *)&(gpr[HI]), (Word *)&(gpr[LO]));
             break;
 				
-        case NOR:
+        case SFN_NOR:
             *res = ~(gpr[RS(instr)] | gpr[RT(instr)]);
             break;
 				
-        case OR:
+        case SFN_OR:
             *res = gpr[RS(instr)] | gpr[RT(instr)];
             break;
 				
-        case SLL:
+        case SFN_SLL:
             *res = gpr[RT(instr)] << SHAMT(instr);
             break;
 				
-        case SLLV:
+        case SFN_SLLV:
             *res = gpr[RT(instr)] << REGSHAMT(gpr[RS(instr)]);	
             break;
 					
-        case SLT:
+        case SFN_SLT:
             if (gpr[RS(instr)] < gpr[RT(instr)])
                 *res = 1UL;
             else
                 *res = 0UL;
             break;
 
-        case SLTU:
+        case SFN_SLTU:
             if (((Word) gpr[RS(instr)]) < ((Word) gpr[RT(instr)]))
                 *res = 1UL;
             else
                 *res = 0UL;
             break;
 				
-        case SRA:
+        case SFN_SRA:
             *res = (gpr[RT(instr)] >> SHAMT(instr));
             break;
 				
-        case SRAV:
+        case SFN_SRAV:
             *res = (gpr[RT(instr)] >> REGSHAMT(gpr[RS(instr)]));
             break;
 				
-        case SRL:
+        case SFN_SRL:
             *res = (((Word) gpr[RT(instr)]) >> SHAMT(instr));	
             break;
 					
-        case SRLV:
+        case SFN_SRLV:
             *res = (((Word) gpr[RT(instr)]) >> REGSHAMT(gpr[RS(instr)]));
             break;
-					
-        case SUB:	
+
+        case SFN_SUB:
             if (SignSub(res, gpr[RS(instr)], gpr[RT(instr)]))
             {
                 SignalExc(OVEXCEPTION);
                 error = true;
             }
             break;
-				
-        case SUBU:
+
+        case SFN_SUBU:
             *res = gpr[RS(instr)] - gpr[RT(instr)];
-            break;			
-				
-        case SYSCALL:
+            break;
+
+        case SFN_SYSCALL:
             SignalExc(SYSEXCEPTION);
             error = true;
             break;
-				
-        case XOR:
+
+        case SFN_XOR:
             *res = gpr[RS(instr)] ^ gpr[RT(instr)];
+            break;
+
+        case SFN_CAS:
+            if (mapVirtual(gpr[RS(instr)], &paddr, WRITE) ||
+                bus->CompareAndSet(paddr, gpr[RT(instr)], gpr[RD(instr)], &atomic, this))
+                error = true;
+            else
+                *res = atomic;
             break;
 
         default:
@@ -1462,12 +1470,12 @@ bool Processor::execRegInstr(Word * res, Word instr, bool * isBD)
             SignalExc(RIEXCEPTION);			
             error = true;
         }
-    }
-    else
+    } else {
         // istruction is ill-formed
         SignalExc(RIEXCEPTION);
-		
-    return(error);
+    }
+
+    return error;
 }
 
 // This method executes a MIPS immediate-type instruction, following MIPS

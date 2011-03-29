@@ -45,6 +45,8 @@ public:
     // byte-to-word address conversion)
     void MemWrite(Word ofs, Word data);
 
+    bool CompareAndSet(Word index, Word oldval, Word newval);
+
     // This method returns RamSpace size in bytes
     Word Size();
 

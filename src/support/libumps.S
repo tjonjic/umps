@@ -6,6 +6,8 @@
 #include "umps/cp0.h"
 #include "bios_defs.h"
 
+#define casopc movn
+
 /*
  * Helper macros
  */
@@ -191,6 +193,17 @@ LEAF_FUNC(WAIT)
 	.set	macro
 	jr	$ra
 END_LEAF_FUNC(WAIT)
+
+/*
+ * CAS instruction wrapper
+ */
+LEAF_FUNC(CAS)
+	.set	mips32
+	casopc	$a2, $a0, $a1
+	.set	mips0
+	move	$v0, $a2
+	jr	$ra
+END_LEAF_FUNC(CAS)
 
 /*
  * FORK
