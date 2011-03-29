@@ -34,24 +34,23 @@ class RamSpace {
 public:
     // This method creates a RamSpace object of a given size (in words)
     // and fills it with file contents if needed
-    RamSpace(Word siz, const char* fName);
+    RamSpace(Word size_, const char* fName);
 
-    // This method returns the value of Word at ofs address
-    // (SystemBus must assure that ofs is in range)
-    Word MemRead(Word ofs) const;
+    // This method returns the value of Word at index
+    Word MemRead(Word index) const { return ram[index]; }
 
     // This method allows to write data to a specified address (as word
     // offset). SystemBus must check address validity and make
     // byte-to-word address conversion)
-    void MemWrite(Word ofs, Word data);
+    void MemWrite(Word index, Word data) { ram[index] = data; }
 
     bool CompareAndSet(Word index, Word oldval, Word newval);
 
     // This method returns RamSpace size in bytes
-    Word Size();
+    Word Size() const { return size << 2; }
 
 private:
-    scoped_array<Word> memPtr;
+    scoped_array<Word> ram;
 
     // size of structure in words (C style addressing: [0..size - 1])
     Word size;

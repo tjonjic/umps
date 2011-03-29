@@ -41,9 +41,9 @@
 
 // This method creates a RamSpace object of a given size (in words) and
 // fills it with core file contents if needed
-RamSpace::RamSpace(Word siz, const char* fName)
-    : memPtr(new Word[siz]),
-      size(siz)
+RamSpace::RamSpace(Word size_, const char* fName)
+    : ram(new Word[size_]),
+      size(size_)
 {
     if (fName != NULL && *fName) {
         FILE* cFile;
@@ -59,7 +59,7 @@ RamSpace::RamSpace(Word siz, const char* fName)
             throw InvalidCoreFileError(fName, "Invalid core file");
         }
 
-        fread((void *) memPtr.get(), WORDLEN, size, cFile);
+        fread((void *) ram.get(), WORDLEN, size, cFile);
         if (!feof(cFile)) {
             fclose(cFile);
             throw CoreFileOverflow();
@@ -69,37 +69,14 @@ RamSpace::RamSpace(Word siz, const char* fName)
     }
 }
 
-// This method returns the value of Word at ofs address
-// (SystemBus must assure that ofs is in range)
-Word RamSpace::MemRead(Word ofs) const
-{
-    assert(ofs < size);
-    return memPtr[ofs];
-}
-
-// This method allows to write data to a specified address (as word offset)
-// (SystemBus must check address validity and make byte-to-word
-// address conversion)
-void RamSpace::MemWrite(Word ofs, Word data)
-{
-    assert(ofs < size);
-    memPtr[ofs] = data;
-}
-
 bool RamSpace::CompareAndSet(Word index, Word oldval, Word newval)
 {
-    if (memPtr[index] == oldval) {
-        memPtr[index] = newval;
+    if (ram[index] == oldval) {
+        ram[index] = newval;
         return true;
     } else {
         return false;
     }
-}
-
-// This method returns RamSpace size in bytes
-Word RamSpace::Size()
-{
-    return size * WORDLEN;
 }
 
 
