@@ -76,8 +76,8 @@ void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
     unsigned int i;
     for (i = 0; i < steps && !stopPointsReached; ++i) {
         bus->ClockTick();
-        foreach (Processor* cpu, cpus)
-            cpu->Cycle();
+        for (CpuVector::iterator it = cpus.begin(); it != cpus.end(); ++it)
+            (*it)->Cycle();
     }
     if (stepped)
         *stepped = i;
