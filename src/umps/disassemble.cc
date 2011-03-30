@@ -565,12 +565,11 @@ HIDDEN void strRegInstr(Word instr)
     }
 }
 
-
 // This function decodes and puts into static buffer the human readable form
 // for MIPS immediate type instructions
 HIDDEN void strImmInstr(Word instr)
 {
-    switch(OPCODE(instr)) {
+    switch (OPCODE(instr)) {
     case ADDI:
     case ADDIU:
     case SLTI:
@@ -579,7 +578,7 @@ HIDDEN void strImmInstr(Word instr)
                 iName[OPCODE(instr)],
                 regName[RT(instr)],
                 regName[RS(instr)],
-                SignExtImm(instr));
+                (long int) SignExtImm(instr));
         break;
 
     case ANDI:
@@ -607,7 +606,6 @@ HIDDEN void strImmInstr(Word instr)
     }
 }
 
-
 // This function decodes and puts into static buffer the human readable form
 // for MIPS branch type instructions
 HIDDEN void strBranchInstr(Word instr)
@@ -619,7 +617,7 @@ HIDDEN void strBranchInstr(Word instr)
                 iName[OPCODE(instr)],
                 regName[RS(instr)],
                 regName[RT(instr)],
-                SignExtImm(instr) << WORDSHIFT);
+                (long int) (SignExtImm(instr) << WORDSHIFT));
         break;
 
     case BGL:
@@ -633,8 +631,8 @@ HIDDEN void strBranchInstr(Word instr)
             sprintf(strbuf, "%s\t$%s, %+ld",
                     iName[RT(instr)],
                     regName[RS(instr)],
-                    SignExtImm(instr) << WORDSHIFT);
-            break;			
+                    (long int) (SignExtImm(instr) << WORDSHIFT));
+            break;
 
         default:
             // unknown instruction of this type
@@ -650,7 +648,7 @@ HIDDEN void strBranchInstr(Word instr)
             sprintf(strbuf, "%s\t$%s, %+ld",
                     iName[OPCODE(instr)],
                     regName[RS(instr)],
-                    SignExtImm(instr) << WORDSHIFT);
+                    (long int) (SignExtImm(instr) << WORDSHIFT));
         else
             // istruction is ill-formed
             sprintf(strbuf, "%s", iName[RIBRANCHINAME]);
@@ -685,10 +683,10 @@ HIDDEN void strLSInstr(Word instr)
     case SW:
     case SWL:
     case SWR:
-        sprintf(strbuf, "%s\t$%s, %+ld ($%s)",
-                iName[OPCODE(instr)], regName[RT(instr)], SignExtImm(instr), regName[RS(instr)]);
+        sprintf(strbuf, "%s\t$%s, %+ld($%s)",
+                iName[OPCODE(instr)], regName[RT(instr)], (long int) SignExtImm(instr), regName[RS(instr)]);
         break;
-		
+
     default:
         sprintf(strbuf, "%s", iName[RILSINAME]);
         break;
@@ -736,14 +734,13 @@ HIDDEN void strCopInstr(Word instr)
             break;
 
         case BC0:
-            switch(COPOPCODE(instr))
-            {
+            switch(COPOPCODE(instr)) {
             case BC0F:
-                sprintf(strbuf, "%s\t%+ld", cp0IName[BC0FINAME], SignExtImm(instr) << WORDSHIFT);
+                sprintf(strbuf, "%s\t%+ld", cp0IName[BC0FINAME], (long int) (SignExtImm(instr) << WORDSHIFT));
                 break;
 
             case BC0T:
-                sprintf(strbuf, "%s\t%+ld", cp0IName[BC0TINAME], SignExtImm(instr) << WORDSHIFT);
+                sprintf(strbuf, "%s\t%+ld", cp0IName[BC0TINAME], (long int) (SignExtImm(instr) << WORDSHIFT));
                 break;
 
             default:
