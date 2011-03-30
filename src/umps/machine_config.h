@@ -45,7 +45,7 @@ public:
     static const Word DEFAUlT_RAM_SIZE = 64;
 
     static const unsigned int MIN_CPUS = 1;
-    static const unsigned int MAX_CPUS = 8;
+    static const unsigned int MAX_CPUS = 16;
     static const unsigned int DEFAULT_NUM_CPUS = 1;
 
     static const unsigned int MIN_CLOCK_RATE = 1;

@@ -106,7 +106,7 @@
 #define     IRT_ENTRY_POLICY_BIT        28
 #define     IRT_ENTRY_GET_POLICY(x)     (((x) & IRT_ENTRY_POLICY_MASK) >> IRT_ENTRY_POLICY_BIT)
 
-#define     IRT_ENTRY_DEST_MASK         0x000000ff
+#define     IRT_ENTRY_DEST_MASK         0x0000ffff
 #define     IRT_ENTRY_DEST_BIT          0
 #define     IRT_ENTRY_GET_DEST(x)       (((x) & IRT_ENTRY_DEST_MASK) >> IRT_ENTRY_DEST_BIT)
 
@@ -133,7 +133,7 @@
 #define     CPUCTL_OUTBOX_MSG_BIT       0
 #define     CPUCTL_OUTBOX_GET_MSG(x)    (((x) & CPUCTL_OUTBOX_MSG_MASK) >> CPUCTL_OUTBOX_MSG_BIT)
 
-#define     CPUCTL_OUTBOX_RECIP_MASK    0x0000ff00
+#define     CPUCTL_OUTBOX_RECIP_MASK    0x00ffff00
 #define     CPUCTL_OUTBOX_RECIP_BIT     8
 #define     CPUCTL_OUTBOX_GET_RECIP(x)  (((x) & CPUCTL_OUTBOX_RECIP_MASK) >> CPUCTL_OUTBOX_RECIP_BIT)
 
