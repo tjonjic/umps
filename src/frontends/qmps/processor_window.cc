@@ -207,23 +207,36 @@ void ProcessorWindow::updateStatusInfo()
 {
     QString str;
 
-    Word prevPC, prevInstr;
-    cpu->getPrevStatus(&prevPC, &prevInstr);
-    prevPCLabel->setText(str.sprintf("0x%.8X: %s", prevPC, StrInstr(prevInstr)));
+    if (!cpu->IsOffline()) {
+        Word prevPC, prevInstr;
+        cpu->getPrevStatus(&prevPC, &prevInstr);
+        prevPCLabel->setText(str.sprintf("0x%.8X: %s", prevPC, StrInstr(prevInstr)));
 
-    Word asid, pc, instr;
-    bool isLD, isBD, isVM;
-    cpu->getCurrStatus(&asid, &pc, &instr, &isLD, &isBD, &isVM);
-    pcLabel->setText(str.sprintf("0x%.8X: %s", pc, StrInstr(instr)));
+        Word asid, pc, instr;
+        bool isLD, isBD, isVM;
+        cpu->getCurrStatus(&asid, &pc, &instr, &isLD, &isBD, &isVM);
+        pcLabel->setText(str.sprintf("0x%.8X: %s", pc, StrInstr(instr)));
 
-    vmIndicator->setEnabled(isVM);
-    bdIndicator->setEnabled(isBD);
-    ldIndicator->setEnabled(isLD);
+        vmIndicator->setEnabled(isVM);
+        bdIndicator->setEnabled(isBD);
+        ldIndicator->setEnabled(isLD);
+    } else {
+        prevPCLabel->clear();
+        pcLabel->clear();
 
-    QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpuId);
-    if (dbgSession->IsStopped())
-        newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
-    statusLabel->setText(newStatus);
+        vmIndicator->setEnabled(false);
+        bdIndicator->setEnabled(false);
+        ldIndicator->setEnabled(false);
+    }
+
+    if (!cpu->IsOffline()) {
+        QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpuId);
+        if (dbgSession->IsStopped())
+            newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
+        statusLabel->setText(newStatus);
+    } else {
+        statusLabel->setText("[Offline]");
+    }
 }
 
 void ProcessorWindow::onMachineReset()

@@ -111,6 +111,10 @@ void CodeView::loadCode()
     Machine* machine = dbgSession->getMachine();
 
     codeLoaded = false;
+    clear();
+
+    if (cpu->IsOffline())
+        return;
 
     Word pc = cpu->getPC();
     if (pc >= RAM_BASE) {
@@ -140,7 +144,6 @@ void CodeView::loadCode()
         }
     }
 
-    clear();
     if (codeLoaded) {
         for (Word addr = startPC; addr <= endPC; addr += WS) {
             Word instr;
