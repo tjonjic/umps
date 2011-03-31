@@ -223,7 +223,8 @@ void MonitorWindow::createActions()
 
     for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; ++i) {
         showCpuWindowActions[i] = new QAction(QString("Processor %1").arg(i), this);
-        showCpuWindowActions[i]->setShortcut(QKeySequence(QString("Alt+Shift+%1").arg(i)));
+        if (i < 10)
+            showCpuWindowActions[i]->setShortcut(QKeySequence(QString("Alt+Shift+%1").arg(i)));
         showCpuWindowActions[i]->setData(QVariant(i));
         connect(showCpuWindowActions[i], SIGNAL(triggered()), this, SLOT(showCpuWindow()));
         showCpuWindowActions[i]->setEnabled(false);
