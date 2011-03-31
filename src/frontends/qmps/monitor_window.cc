@@ -26,6 +26,7 @@
 
 #include <QtDebug>
 
+#include <QSignalMapper>
 #include <QWidget>
 #include <QMenu>
 #include <QTabWidget>
@@ -221,12 +222,14 @@ void MonitorWindow::createActions()
     decreaseSpeedAction->setShortcut(QKeySequence("Ctrl+-"));
     decreaseSpeedAction->setEnabled(dbgSession->getSpeed() != 0);
 
+    QSignalMapper* showCpuWindowMapper = new QSignalMapper(this);
+    connect(showCpuWindowMapper, SIGNAL(mapped(int)), this, SLOT(showCpuWindow(int)));
     for (unsigned int i = 0; i < MachineConfig::MAX_CPUS; ++i) {
         showCpuWindowActions[i] = new QAction(QString("Processor %1").arg(i), this);
         if (i < 10)
             showCpuWindowActions[i]->setShortcut(QKeySequence(QString("Alt+Shift+%1").arg(i)));
-        showCpuWindowActions[i]->setData(QVariant(i));
-        connect(showCpuWindowActions[i], SIGNAL(triggered()), this, SLOT(showCpuWindow()));
+        connect(showCpuWindowActions[i], SIGNAL(triggered()), showCpuWindowMapper, SLOT(map()));
+        showCpuWindowMapper->setMapping(showCpuWindowActions[i], i);
         showCpuWindowActions[i]->setEnabled(false);
     }
 
@@ -458,6 +461,8 @@ QWidget* MonitorWindow::createCpuTab()
     cpuListView = new QTreeView;
     cpuListView->setRootIsDecorated(false);
     cpuListView->setAlternatingRowColors(true);
+    connect(cpuListView, SIGNAL(activated(const QModelIndex&)),
+            this, SLOT(onCpuItemActivated(const QModelIndex&)));
 
     breakpointListView = new QTreeView;
     breakpointListView->setRootIsDecorated(false);
@@ -625,10 +630,8 @@ void MonitorWindow::decreaseSpeed()
     dbgSession->setSpeed(dbgSession->getSpeed() - 1);
 }
 
-void MonitorWindow::showCpuWindow()
+void MonitorWindow::showCpuWindow(int cpuId)
 {
-    QAction* action = static_cast<QAction*>(sender());
-    unsigned int cpuId = action->data().toUInt();
     if (cpuWindows[cpuId].isNull()) {
         cpuWindows[cpuId] = new ProcessorWindow(cpuId);
         cpuWindows[cpuId]->setAttribute(Qt::WA_QuitOnClose, false);
@@ -638,6 +641,11 @@ void MonitorWindow::showCpuWindow()
         cpuWindows[cpuId]->activateWindow();
         cpuWindows[cpuId]->raise();
     }
+}
+
+void MonitorWindow::onCpuItemActivated(const QModelIndex& index)
+{
+    showCpuWindow(index.row());
 }
 
 void MonitorWindow::showTerminal()

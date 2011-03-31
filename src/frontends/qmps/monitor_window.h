@@ -47,6 +47,7 @@ class MachineConfigView;
 class ProcessorWindow;
 class TraceBrowser;
 class TerminalWindow;
+class QModelIndex;
 
 class MonitorWindow : public QMainWindow {
     Q_OBJECT
@@ -153,7 +154,8 @@ private Q_SLOTS:
     void increaseSpeed();
     void decreaseSpeed();
 
-    void showCpuWindow();
+    void showCpuWindow(int cpuId);
+    void onCpuItemActivated(const QModelIndex& index);
     void showTerminal();
 
     void onMachineConfigChanged();
