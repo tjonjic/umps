@@ -457,6 +457,7 @@ QWidget* MonitorWindow::createCpuTab()
 {
     cpuListView = new QTreeView;
     cpuListView->setRootIsDecorated(false);
+    cpuListView->setAlternatingRowColors(true);
 
     breakpointListView = new QTreeView;
     breakpointListView->setRootIsDecorated(false);

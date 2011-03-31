@@ -73,26 +73,26 @@ QVariant ProcessorListModel::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    if (role == Qt::DisplayRole) {
-        Processor* cpu;
-
-        switch (index.column()) {
-        case COLUMN_CPU_ID:
+    switch (index.column()) {
+    case COLUMN_CPU_ID:
+        if (role == Qt::DisplayRole)
             return index.row();
+        break;
 
-        case COLUMN_CPU_STATUS:
+    case COLUMN_CPU_STATUS:
+        if (role == Qt::DisplayRole)
             return cpuStatusMap->getStatus(index.row());
+        break;
 
-        case COLUMN_CPU_ADDRESS:
+    case COLUMN_CPU_ADDRESS:
+        if (role == Qt::DisplayRole)
             return cpuStatusMap->getLocation(index.row());
+        if (role == Qt::FontRole)
+            return Appl()->getMonospaceFont();
 
-        default:
-            return QVariant();
-        }
+    default:
+        return QVariant();
     }
-
-    //if (role == Qt::FontRole)
-    //    return Appl()->getMonospaceFont();
 
     return QVariant();
 }
