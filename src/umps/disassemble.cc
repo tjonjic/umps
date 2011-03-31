@@ -447,7 +447,7 @@ const char* CP0RegName(unsigned int index)
 // the instruction translation into readable form 
 const char* StrInstr(Word instr)
 {
-    switch(OpType(instr)) {
+    switch (OpType(instr)) {
     case REGTYPE:
         strRegInstr(instr);
         break;
@@ -793,3 +793,13 @@ HIDDEN void strCopInstr(Word instr)
             sprintf(strbuf, "CP%.1lu %s", COPNUM(instr), cp0IName[CPUILLINAME]);
     }
 }
+
+// FIXME: not _quite_ complete
+const char* InstructionMnemonic(Word ins)
+{
+    if (OpType(ins) == REGTYPE)
+        return regIName[FUNCT(ins)];
+    else
+        return iName[OPCODE(ins)];
+}
+

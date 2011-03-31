@@ -22,6 +22,8 @@
 #ifndef QMPS_CODE_VIEW_H
 #define QMPS_CODE_VIEW_H
 
+#include <map>
+#include <boost/function.hpp>
 #include <sigc++/sigc++.h>
 
 #include <QPlainTextEdit>
@@ -66,6 +68,10 @@ private:
     void onBreakpointInserted();
     void onBreakpointChanged(size_t);
 
+    QString disassemble(Word instr, Word pc) const;
+    QString disasmBranch(Word instr, Word pc) const;
+    QString disasmJump(Word instr, Word pc) const;
+
     CodeViewMargin* codeMargin;
 
     DebugSession* const dbgSession;
@@ -82,6 +88,10 @@ private:
     QPixmap pcMarkerPixmap;
     QPixmap enabledBpMarkerPixmap;
     QPixmap disabledBpMarkerPixmap;
+
+    typedef boost::function<QString (Word, Word)> DisasmFunc;
+    typedef std::map<unsigned int, DisasmFunc> DisasmMap;
+    DisasmMap disasmMap;
 
     friend class CodeViewMargin;
 };

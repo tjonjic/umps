@@ -49,4 +49,6 @@ const char * CP0RegName(unsigned int index);
 
 const char * StrInstr(Word instr);
 
+const char* InstructionMnemonic(Word ins);
+
 #endif // UMPS_DISASSEMBLE_H

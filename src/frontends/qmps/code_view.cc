@@ -23,6 +23,7 @@
 
 #include <list>
 #include <iterator>
+#include <boost/bind.hpp>
 
 #include <QByteArray>
 #include <QFont>
@@ -34,6 +35,7 @@
 #include "base/lang.h"
 #include "umps/machine_config.h"
 #include "umps/processor.h"
+#include "umps/processor_defs.h"
 #include "umps/machine.h"
 #include "umps/symbol_table.h"
 #include "umps/disassemble.h"
@@ -77,6 +79,11 @@ CodeView::CodeView(Word cpuId)
     connect(dbgSession, SIGNAL(MachineStopped()), this, SLOT(onMachineStopped()));
     connect(dbgSession, SIGNAL(MachineRan()), this, SLOT(update()));
     connect(dbgSession, SIGNAL(MachineReset()), this, SLOT(reset()));
+
+    disasmMap[BEQ] = boost::bind(&CodeView::disasmBranch, this, _1, _2);
+    disasmMap[BNE] = boost::bind(&CodeView::disasmBranch, this, _1, _2);
+    disasmMap[JAL] = boost::bind(&CodeView::disasmJump, this, _1, _2);
+    disasmMap[J] = boost::bind(&CodeView::disasmJump, this, _1, _2);
 
     reset();
 }
@@ -138,7 +145,7 @@ void CodeView::loadCode()
         for (Word addr = startPC; addr <= endPC; addr += WS) {
             Word instr;
             machine->ReadMemory(addr, &instr);
-            appendPlainText(StrInstr(instr));
+            appendPlainText(disassemble(instr, addr));
         }
         ensureCurrentInstuctionVisible();
     }
@@ -152,6 +159,42 @@ void CodeView::onBreakpointInserted()
 void CodeView::onBreakpointChanged(size_t)
 {
     update();
+}
+
+QString CodeView::disassemble(Word instr, Word pc) const
+{
+    DisasmMap::const_iterator it = disasmMap.find(OPCODE(instr));
+    if (it != disasmMap.end())
+        return it->second(instr, pc);
+    else
+        return StrInstr(instr);
+}
+
+QString CodeView::disasmBranch(Word instr, Word pc) const
+{
+    Word target = pc + WS + (SignExtImm(instr) << 2);
+
+    // Resolve symbol, if possible
+    SWord offset;
+    const char* symbol = GetSymbolicAddress(symbolTable, MachineConfig::MAX_ASID, target, true, &offset);
+
+    return (QString("%1\t$%2, $%3, %4%5")
+            .arg(InstructionMnemonic(instr))
+            .arg(RegName(RS(instr)))
+            .arg(RegName(RT(instr)))
+            .arg(target, 8, 16, QChar('0'))
+            .arg(symbol ? QString(" <%1+0x%2>").arg(symbol).arg(offset, 0, 16) : QString()));
+}
+
+QString CodeView::disasmJump(Word instr, Word pc) const
+{
+    Word target = JUMPTO(pc, instr);
+    SWord offset;
+    const char* symbol = GetSymbolicAddress(symbolTable, MachineConfig::MAX_ASID, target, true, &offset);
+    return (QString("%1\t%2%3")
+            .arg(InstructionMnemonic(instr))
+            .arg(target, 8, 16, QChar('0'))
+            .arg(symbol ? QString(" <%1+0x%2>").arg(symbol).arg(offset, 0, 16) : QString()));
 }
 
 void CodeView::onMachineStopped()
