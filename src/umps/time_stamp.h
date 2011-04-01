@@ -49,7 +49,7 @@ public:
     // This method returns the current value of loTS part
     Word getLoTS() const { return loTS; }
 
-    uint64_t getHiLo() const { (uint64_t) hiTS << 32 + (uint64_t) loTS; }
+    uint64_t getHiLo() const { return ((uint64_t) hiTS << 32) + ((uint64_t) loTS); }
 
     // This method sets hiTS value
     void setHiTS(Word hi) { hiTS = hi; }
