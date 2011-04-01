@@ -24,14 +24,14 @@
 #include "umps/utility.h"
 
 TimeStamp::TimeStamp(Word hi, Word lo)
-    : loTS(lo), hiTS(hi)
+    : hiTS(hi), loTS(lo)
 {}
 
 // This method creates a new TS and sets it to the value of another,
 // plus an (optional) increment
 TimeStamp::TimeStamp(const TimeStamp* ts, Word inc)
-    : loTS(ts->getLoTS()),
-      hiTS(ts->getHiTS())
+    : hiTS(ts->getHiTS()),
+      loTS(ts->getLoTS())
 {
     if (UnsAdd(&loTS, loTS, inc))
         hiTS++;
