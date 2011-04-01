@@ -42,24 +42,16 @@
  * 
  ****************************************************************************/
 
-#define BE_SLOW 0
-
-#include <iostream>
-#include <stdio.h>
+#include "umps/systembus.h"
 
 #include <assert.h>
 
-#include <umps/const.h>
-
+#include "umps/const.h"
 #include "umps/blockdev_params.h"
-
 #include "umps/utility.h"
-
 #include "umps/device.h"
 #include "umps/blockdev.h"
 #include "umps/processor.h"
-#include "umps/systembus.h"
-
 #include "umps/types.h"
 #include "umps/arch.h"
 #include "umps/machine_config.h"
@@ -295,8 +287,13 @@ bool SystemBus::DataWrite(Word addr, Word data, Processor* proc)
 
 bool SystemBus::CompareAndSet(Word addr, Word oldval, Word newval, bool* result, Processor* cpu)
 {
+    // The CAS read-modify-write operation, as specified by the uMPS
+    // ISA, is required to fail for I/O locations.
     if (RAMBASE <= addr && addr < RAMBASE + ram->Size()) {
         *result = ram->CompareAndSet((addr - RAMBASE) >> 2, oldval, newval);
+        return false;
+    } else if (DEV_BASE <= addr && addr < DEV_END) {
+        *result = false;
         return false;
     } else {
         cpu->SignalExc(DBEXCEPTION);
