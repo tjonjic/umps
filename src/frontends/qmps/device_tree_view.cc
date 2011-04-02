@@ -26,6 +26,7 @@
 #include "qmps/application.h"
 #include "qmps/boolean_item_delegate.h"
 #include "qmps/device_tree_model.h"
+#include "qmps/ui_utils.h"
 
 DeviceTreeView::DeviceTreeView(QWidget* parent)
     : QTreeView(parent)
@@ -45,10 +46,7 @@ void DeviceTreeView::setModel(QAbstractItemModel* model)
     if (model == NULL)
         return;
 
-    QModelIndex root = rootIndex();
-    int rows = model->rowCount(root);
-    for (int i = 0; i < rows; i++)
-        setFirstColumnSpanned(i, root, true);
+    SetFirstColumnSpanned(this, true);
 
     bool resizeCols = true;
     for (unsigned int i = 0; i < DeviceTreeModel::N_COLUMNS; ++i) {
