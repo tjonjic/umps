@@ -71,6 +71,7 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
                                        delegates[currentDelegate()]);
     treeView->setAlternatingRowColors(true);
     treeView->setModel(model);
+    SetFirstColumnSpanned(treeView, true);
     layout->addWidget(treeView);
 
     setAllowedAreas(Qt::AllDockWidgetAreas);

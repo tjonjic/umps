@@ -58,7 +58,6 @@ void TreeView::setModel(QAbstractItemModel* model)
 
     // Not really sure if this should be here, but otoh cannot think
     // of a _single case_ where it would be undesired.
-    SetFirstColumnSpanned(this, true);
     header()->setMovable(false);
 
     bool resizeCols = true;
