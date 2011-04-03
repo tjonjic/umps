@@ -2,7 +2,7 @@
 
 #include "regdef.h"
 #include "h/bios_srv.h"
-#include "umps/arch_asm.h"
+#include "umps/arch.h"
 #include "umps/cp0.h"
 #include "bios_defs.h"
 

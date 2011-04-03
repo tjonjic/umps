@@ -1,7 +1,7 @@
 /* -*- mode: asm; tab-width: 8; indent-tabs-mode: t -*- */
 
 #include "regdef.h"
-#include "umps/arch_asm.h"
+#include "umps/arch.h"
 #include "umps/cp0.h"
 #include "bios_defs.h"
 
