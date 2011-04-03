@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2010, 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,6 +22,8 @@
 #ifndef QMPS_REGISTER_SET_WIDGET_H
 #define QMPS_REGISTER_SET_WIDGET_H
 
+#include <vector>
+
 #include <QDockWidget>
 
 #include "umps/types.h"
@@ -30,6 +32,9 @@ class QAction;
 class QTreeView;
 class Processor;
 class RegisterSetSnapshot;
+class QStyledItemDelegate;
+class QActionGroup;
+class QToolBar;
 
 class RegisterSetWidget : public QDockWidget {
     Q_OBJECT
@@ -44,7 +49,15 @@ private Q_SLOTS:
     void setDisplayType(QAction* action);
 
 private:
+    void addDisplayAction(const QString& text,
+                          QStyledItemDelegate* delegate,
+                          QActionGroup* group,
+                          QToolBar* toolBar);
+    int currentDelegate() const;
+
     QTreeView* treeView;
+    std::vector<QStyledItemDelegate*> delegates;
+    const QString delegateKey;
 };
 
 #endif // QMPS_REGISTER_SET_WIDGET_H

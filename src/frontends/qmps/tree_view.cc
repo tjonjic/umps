@@ -25,7 +25,6 @@
 
 #include "base/lang.h"
 #include "qmps/application.h"
-#include "qmps/abstract_tree_model.h"
 #include "qmps/ui_utils.h"
 
 TreeView::TreeView(const QString& name,

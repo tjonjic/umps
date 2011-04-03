@@ -31,23 +31,12 @@
 #include "qmps/ui_utils.h"
 #include "qmps/register_item_delegate.h"
 #include "qmps/tree_view.h"
-
-static void addDisplayAction(const QString& text,
-                             QStyledItemDelegate* delegate,
-                             QActionGroup* group,
-                             QToolBar* toolBar,
-                             bool checked = false)
-{
-    QAction* action = new QAction(text, group);
-    action->setCheckable(true);
-    action->setData(QVariant::fromValue((void*) delegate));
-    action->setChecked(checked);
-    toolBar->addAction(action);
-}
+#include "qmps/application.h"
 
 RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     : QDockWidget("Registers", parent),
-      model(new RegisterSetSnapshot(cpuId, this))
+      model(new RegisterSetSnapshot(cpuId, this)),
+      delegateKey(QString("RegisterSetWidget%1/delegate").arg(cpuId))
 {
     QWidget* widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout(widget);
@@ -57,9 +46,9 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
 
     QActionGroup* displayGroup = new QActionGroup(this);
     QToolBar* toolBar = new QToolBar;
-    QStyledItemDelegate* hexDelegate = new RIDelegateHex(this);
-    addDisplayAction("Hex", hexDelegate,
-                     displayGroup, toolBar, true);
+
+    addDisplayAction("Hex", new RIDelegateHex(this),
+                     displayGroup, toolBar);
     addDisplayAction("Signed Decimal", new RIDelegateSignedDecimal(this),
                      displayGroup, toolBar);
     addDisplayAction("Unsigned Decimal", new RIDelegateUnsignedDecimal(this),
@@ -75,13 +64,13 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     toolBar->setFont(toolBarFont);
     toolBar->setStyleSheet("QToolButton { padding: 0; }");
 
-    treeView = new TreeView(QString("RegisterSet%1View").arg(cpuId),
+    treeView = new TreeView(QString("RegisterSetView%1").arg(cpuId),
                             boost::assign::list_of(RegisterSetSnapshot::COL_REGISTER_MNEMONIC),
                             true);
-    treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE, hexDelegate);
+    treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE,
+                                       delegates[currentDelegate()]);
     treeView->setAlternatingRowColors(true);
     treeView->setModel(model);
-    SetFirstColumnSpanned(treeView, true);
     layout->addWidget(treeView);
 
     setAllowedAreas(Qt::AllDockWidgetAreas);
@@ -90,6 +79,26 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
 
 void RegisterSetWidget::setDisplayType(QAction* action)
 {
-    QStyledItemDelegate* delegate = (QStyledItemDelegate*) action->data().value<void*>();
-    treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE, delegate);
+    int i = action->data().toInt();
+    treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE, delegates[i]);
+    Appl()->settings.setValue(delegateKey, i);
+}
+
+void RegisterSetWidget::addDisplayAction(const QString& text,
+                                         QStyledItemDelegate* delegate,
+                                         QActionGroup* group,
+                                         QToolBar* toolBar)
+{
+    QAction* action = new QAction(text, group);
+    action->setCheckable(true);
+    int index = delegates.size();
+    action->setData(QVariant::fromValue(index));
+    action->setChecked(currentDelegate() == index);
+    delegates.push_back(delegate);
+    toolBar->addAction(action);
+}
+
+int RegisterSetWidget::currentDelegate() const
+{
+    return Appl()->settings.value(delegateKey).toInt();
 }
