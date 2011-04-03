@@ -37,7 +37,8 @@ umps2_moc_sources = \
 	terminal_window_priv.moc.cc \
 	tlb_model.moc.cc \
 	trace_browser.moc.cc \
-	trace_browser_priv.moc.cc
+	trace_browser_priv.moc.cc \
+	tree_view.moc.cc
 
 umps2_SOURCES = \
 	main.cc				\
@@ -111,6 +112,8 @@ umps2_SOURCES = \
 	register_item_delegate.cc	\
 	ui_utils.h			\
 	ui_utils.cc			\
+	tree_view.h			\
+	tree_view.cc			\
 	flat_push_button.h		\
 	flat_push_button.cc
 

@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2010, 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,18 +19,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtDebug>
-
 #include "qmps/register_set_widget.h"
+
+#include <boost/assign.hpp>
 
 #include <QVBoxLayout>
 #include <QToolBar>
 #include <QAction>
-#include <QTreeView>
 
 #include "qmps/register_set_snapshot.h"
 #include "qmps/ui_utils.h"
 #include "qmps/register_item_delegate.h"
+#include "qmps/tree_view.h"
 
 static void addDisplayAction(const QString& text,
                              QStyledItemDelegate* delegate,
@@ -75,7 +75,9 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     toolBar->setFont(toolBarFont);
     toolBar->setStyleSheet("QToolButton { padding: 0; }");
 
-    treeView = new QTreeView;
+    treeView = new TreeView(QString("RegisterSet%1View").arg(cpuId),
+                            boost::assign::list_of(RegisterSetSnapshot::COL_REGISTER_MNEMONIC),
+                            true);
     treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE, hexDelegate);
     treeView->setAlternatingRowColors(true);
     treeView->setModel(model);
