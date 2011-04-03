@@ -23,6 +23,7 @@
 
 #include <map>
 #include <sigc++/sigc++.h>
+#include <boost/assign.hpp>
 
 #include <QtDebug>
 
@@ -39,7 +40,6 @@
 #include <QScrollArea>
 #include <QSplitter>
 #include <QSlider>
-#include <QTreeView>
 #include <QTableView>
 #include <QPixmap>
 #include <QToolButton>
@@ -70,6 +70,9 @@
 #include "qmps/processor_window.h"
 #include "qmps/terminal_window.h"
 #include "qmps/monitor_window_priv.h"
+#include "qmps/tree_view.h"
+
+using boost::assign::list_of;
 
 static const int kDefaultWidth = 640;
 static const int kDefaultHeight = 480;
@@ -458,13 +461,21 @@ QWidget* MonitorWindow::createConfigTab()
 
 QWidget* MonitorWindow::createCpuTab()
 {
-    cpuListView = new QTreeView;
+    cpuListView = new TreeView("CPUListView",
+                               list_of
+                               (ProcessorListModel::COLUMN_CPU_ID)
+                               (ProcessorListModel::COLUMN_CPU_STATUS)
+                               (ProcessorListModel::COLUMN_CPU_ADDRESS));
     cpuListView->setRootIsDecorated(false);
     cpuListView->setAlternatingRowColors(true);
     connect(cpuListView, SIGNAL(activated(const QModelIndex&)),
             this, SLOT(onCpuItemActivated(const QModelIndex&)));
 
-    breakpointListView = new QTreeView;
+    breakpointListView = new TreeView("BreakpointListView",
+                                      list_of
+                                      (StoppointListModel::COLUMN_STOPPOINT_ID)
+                                      (StoppointListModel::COLUMN_ACCESS_TYPE)
+                                      (StoppointListModel::COLUMN_ASID));
     breakpointListView->setRootIsDecorated(false);
     breakpointListView->setAlternatingRowColors(true);
     breakpointListView->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -481,7 +492,10 @@ QWidget* MonitorWindow::createCpuTab()
 
 QWidget* MonitorWindow::createMemoryTab()
 {
-    suspectListView = new QTreeView;
+    suspectListView = new TreeView("SuspectListView",
+                                   list_of
+                                   (StoppointListModel::COLUMN_STOPPOINT_ID)
+                                   (StoppointListModel::COLUMN_ASID));
     suspectListView->setRootIsDecorated(false);
     suspectListView->setAlternatingRowColors(true);
     suspectListView->setContextMenuPolicy(Qt::ActionsContextMenu);
@@ -667,21 +681,13 @@ void MonitorWindow::onMachineStarted()
 {
     cpuListModel.reset(new ProcessorListModel);
     cpuListView->setModel(cpuListModel.get());
-    cpuListView->resizeColumnToContents(ProcessorListModel::COLUMN_CPU_ID);
-    cpuListView->resizeColumnToContents(ProcessorListModel::COLUMN_CPU_STATUS);
-    cpuListView->resizeColumnToContents(ProcessorListModel::COLUMN_CPU_ADDRESS);
 
     breakpointListView->setModel(dbgSession->getBreakpointListModel());
     breakpointListView->hideColumn(StoppointListModel::COLUMN_ACCESS_TYPE);
-    breakpointListView->resizeColumnToContents(StoppointListModel::COLUMN_STOPPOINT_ID);
-    breakpointListView->resizeColumnToContents(StoppointListModel::COLUMN_ACCESS_TYPE);
-    breakpointListView->resizeColumnToContents(StoppointListModel::COLUMN_ASID);
 
     suspectListModel.reset(new StoppointListModel(dbgSession->getSuspects(),
                                                   "Suspect", 'S'));
     suspectListView->setModel(suspectListModel.get());
-    suspectListView->resizeColumnToContents(StoppointListModel::COLUMN_STOPPOINT_ID);
-    suspectListView->resizeColumnToContents(StoppointListModel::COLUMN_ASID);
     suspectListView->setItemDelegateForColumn(StoppointListModel::COLUMN_ACCESS_TYPE,
                                               new SuspectTypeDelegate);
 
