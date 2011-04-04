@@ -25,7 +25,6 @@ private:
 
     Word bootPC;
     Word bootSP;
-    Word bootArg;
 };
 
 #endif // UMPS_MP_CONTROLLER_H

@@ -5,8 +5,8 @@
  * IMPORTANT: Keep this header assembler-safe!
  */
 
-#ifndef UMPS_ARCH_ASM_H
-#define UMPS_ARCH_ASM_H
+#ifndef UMPS_ARCH_H
+#define UMPS_ARCH_H
 
 /*
  * Generalities
@@ -155,14 +155,13 @@
 #define     MPCONF_RESET_CPUID_MASK     0x0000000f
 #define MPCONF_BOOT_PC          0x10000508
 #define MPCONF_BOOT_SP          0x1000050c
-#define MPCONF_BOOT_ARG         0x10000510
 
 #define MPCONF_BASE             MPCONF_NCPUS
-#define MPCONF_END              (MPCONF_BOOT_ARG + WS)
+#define MPCONF_END              (MPCONF_BOOT_SP + WS)
 
 #define MPCONF_DEFAULT_BOOT_PC  0x1fc00000
 #define MPCONF_DEFAULT_BOOT_SP  0x00000000
 
 #define DEV_END                 MPCONF_END
 
-#endif /* !defined(UMPS_ARCH_ASM_H) */
+#endif /* !defined(UMPS_ARCH_H) */
