@@ -103,7 +103,7 @@ void Machine::Step(bool* stopped)
 bool Machine::IsIdle() const
 {
     foreach (Processor* cpu, cpus)
-        if (!cpu->IsIdle())
+        if (!cpu->HasIdleCycles())
             return false;
     // All cpus are idle; check for external activity
     return bus->IsIdle();
