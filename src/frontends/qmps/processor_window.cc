@@ -231,7 +231,7 @@ void ProcessorWindow::updateStatusInfo()
 
     if (!cpu->IsOffline()) {
         QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpuId);
-        if (dbgSession->IsStopped())
+        if (dbgSession->IsStopped() || cpu->IsIdle())
             newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
         statusLabel->setText(newStatus);
     } else {

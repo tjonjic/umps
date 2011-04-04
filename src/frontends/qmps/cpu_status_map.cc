@@ -51,7 +51,7 @@ const QString& CpuStatusMap::getLocation(unsigned int cpuId) const
 }
 
 const char* const CpuStatusMap::statusTemplates[] = {
-    "Running",
+    "Stopped",
     "Stopped: User",
     "Stopped: Breakpoint(B%brkpt%)",
     "Stopped: User+Breakpoint(B%brkpt%)",
@@ -82,6 +82,7 @@ void CpuStatusMap::update()
             break;
         case PS_IDLE:
             statusMap[cpuId].status = "Idle";
+            formatActiveCpuLocation(cpu);
             break;
         case PS_ONLINE:
             formatActiveCpuStatus(cpu);
