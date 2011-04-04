@@ -2,6 +2,7 @@
 
 #include "regdef.h"
 #include "h/bios_srv.h"
+#include "umps/arch.h"
 
 	.abicalls
 
@@ -16,39 +17,36 @@
  # -quiet -dumpbase -version -o
  # 
 
- 	# useful constants
-
 	PROGVSTART	= 0x20001004
 	GPSTARTADDR	= 0x200010A8
-	RAMBPHYADDR	= 0x10000000
-	RAMSIZEADDR	= 0x10000004
 	
-	# This is the standard __start function for kernel
-	# activation: it loads $t9 with .aout program start address,
-	# $gp with base value for $gp computations from .text section, and 
-	# at main() function return 
-	# calls BIOS Halt() routine (a break with $a0 == BIOS_SRV_HALT)
-
 	.text
 	.align	2
+
+/*
+ * This is the standard (SVR4-style PIC) __start function for kernel
+ * activation: it loads $t9 with .aout program start address, $gp with
+ * base value for $gp computations from .text section, and at main()
+ * function return calls BIOS Halt() routine (a break with a0 ==
+ * BIOS_SRV_HALT)
+ */
 	.globl	__start
 	.type	__start,@function
 	.ent	__start
-	.extern main 
-
+	.extern main
 __start:
 	.frame	$fp,16,$ra		# vars= 0, regs= 2/0, args= 0, extra= 8
 	.mask	0x50000000,-4
 	.fmask	0x00000000,0
 
-	# computes stack bottom (last address of physical RAM) 
-	# using $k0 and $k1 (k0 and k1)
-	lw 	$k0, RAMBPHYADDR
-	lw 	$k1, RAMSIZEADDR
-	add $k0, $k0, $k1 
-	subu $k0, $k0, 4
+	/* computes stack bottom (last address of physical RAM)
+	   using $k0 and $k1 (k0 and k1) */
+	lw	$k0, BUS_REG_RAM_BASE
+	lw	$k1, BUS_REG_RAM_SIZE
+	add	$k0, $k0, $k1
+	subu	$k0, $k0, 4
 
-	# loads start parameters into registers
+	/* loads start parameters into registers */
 	lw	$t9, PROGVSTART
 	move	$sp, $k0
 	lw	$gp, GPSTARTADDR
@@ -61,16 +59,16 @@ __start:
 
 	jal	main
 
-	move	$sp,$fp	
+	move	$sp,$fp
 	lw	$fp,12($sp)
 	addu	$sp,$sp,16
 	
 	.set noreorder
 	.set nomacro
 
-	# calls HALT BIOS routine directly
+	/* calls HALT BIOS routine directly */
 	li 	$a0, BIOS_SRV_HALT
-	nop	
+	nop
 	break
 	nop
 	.set reorder
