@@ -155,7 +155,6 @@ private:
     // device handling & interrupt generation tables
     Device* devTable[DEVINTUSED][DEVPERINT];
     Word instDevTable[DEVINTUSED];
-    Word intCauseDev[DEVINTUSED];
 
     // pending interrupts on lines: this word is packed into MIPS Cause
     // Register IP field format for easy masking
@@ -181,4 +180,3 @@ private:
 };
 
 #endif // UMPS_SYSTEMBUS_H
-

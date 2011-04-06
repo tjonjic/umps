@@ -117,7 +117,6 @@ SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
     intPendMask = 0UL;
     for (unsigned intl = 0; intl < N_EXT_IL; intl++) {
         instDevTable[intl] = 0UL;
-        intCauseDev[intl] = 0UL;
         for (unsigned int devNo = 0; devNo < N_DEV_PER_IL; devNo++) {
             devTable[intl][devNo] = makeDev(intl, devNo);
             if (devTable[intl][devNo]->Type() != NULLDEV)
