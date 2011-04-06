@@ -185,8 +185,12 @@ void StoppointSet::GetStoppointsInRange(Word asid, Word start, Word end, OutputI
     AddressRange r2(asid, end, end);
 
     StoppointMap::const_iterator it = addressMap.lower_bound(r1);
-    for (it = addressMap.lower_bound(r1); it != addressMap.end() && it->first < r2; ++it)
+    for (it = addressMap.lower_bound(r1);
+         it != addressMap.end() && (it->first < r2 || !(r2 < it->first));
+         ++it)
+    {
         *out++ = it->second;
+    }
 }
 
 #endif // UMPS_STOPPOINT_H
