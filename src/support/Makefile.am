@@ -15,7 +15,8 @@ EXTRA_DIST = \
 	elf32ltsmip.h.umpscore.x		\
 	libumps.S				\
 	regdef.h				\
-	h/bios_srv.h
+	h/bios_srv.h				\
+	bios_defs.h
 
 CLEANFILES = exec coreboot tapeboot *.o *.rom.umps 
 
