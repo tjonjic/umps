@@ -23,7 +23,6 @@
 #define UMPS_MACHINE_H
 
 #include <vector>
-#include <list>
 
 #include <sigc++/sigc++.h>
 
@@ -46,9 +45,6 @@ class StoppointSet;
 
 class Machine {
 public:
-    sigc::signal<void> SignalStatusChanged;
-    sigc::signal<void, Processor*> SignalCpuStatusChanged;
-
     Machine(const MachineConfig* config,
             StoppointSet* breakpoints,
             StoppointSet* suspects,
