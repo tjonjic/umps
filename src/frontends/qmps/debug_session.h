@@ -127,8 +127,8 @@ private:
     unsigned int stopMask;
 
     unsigned int speed;
-    static unsigned int cyclesPerIteration[kNumSpeedLevels];
-    static unsigned int iterationTimeoutInterval[kNumSpeedLevels];
+    static const unsigned int kIterCycles[kNumSpeedLevels];
+    static const unsigned int kIterInterval[kNumSpeedLevels];
 
     StoppointSet breakpoints;
     scoped_ptr<StoppointListModel> bplModel;
@@ -144,7 +144,6 @@ private:
 
     QTimer* timer;
 
-    bool skipIdle;
     uint32_t idleSteps;
 
 private Q_SLOTS:

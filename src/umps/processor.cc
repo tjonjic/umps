@@ -340,11 +340,6 @@ void Processor::Cycle()
     }
 }
 
-bool Processor::HasIdleCycles() const
-{
-    return IdleCycles() > 0;
-}
-
 uint32_t Processor::IdleCycles() const
 {
     if (IsIdle())

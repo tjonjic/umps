@@ -98,21 +98,18 @@ void Machine::Step(bool* stopped)
         *stopped = stopPointsReached;
 }
 
-bool Machine::IsIdle() const
-{
-    foreach (Processor* cpu, cpus)
-        if (!cpu->HasIdleCycles())
-            return false;
-    // All cpus are idle; check for external activity
-    return bus->IsIdle();
-}
-
 uint32_t Machine::IdleCycles() const
 {
-    uint32_t c = bus->IdleCycles();
+    uint32_t c;
 
-    foreach (Processor* cpu, cpus)
+    if ((c = bus->IdleCycles()) == 0)
+        return 0;
+
+    foreach (Processor* cpu, cpus) {
         c = std::min(c, cpu->IdleCycles());
+        if (c == 0)
+            return 0;
+    }
 
     return c;
 }

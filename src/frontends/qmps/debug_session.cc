@@ -34,7 +34,7 @@
 #include "umps/error.h"
 #include "qmps/application.h"
 
-unsigned int DebugSession::cyclesPerIteration[kNumSpeedLevels] = {
+const unsigned int DebugSession::kIterCycles[kNumSpeedLevels] = {
     5,
     25,
     250,
@@ -42,7 +42,7 @@ unsigned int DebugSession::cyclesPerIteration[kNumSpeedLevels] = {
     20000
 };
 
-unsigned int DebugSession::iterationTimeoutInterval[kNumSpeedLevels] = {
+const unsigned int DebugSession::kIterInterval[kNumSpeedLevels] = {
     50,
     25,
     5,
@@ -51,7 +51,8 @@ unsigned int DebugSession::iterationTimeoutInterval[kNumSpeedLevels] = {
 };
 
 DebugSession::DebugSession()
-    : status(MS_HALTED)
+    : status(MS_HALTED),
+      idleSteps(0)
 {
     createActions();
     updateActionSensitivity();
@@ -86,7 +87,7 @@ void DebugSession::setSpeed(int value)
     if (speed != value) {
         speed = value;
         Appl()->settings.setValue("SimulationSpeed", speed);
-        timer->setInterval(iterationTimeoutInterval[speed]);
+        timer->setInterval(kIterInterval[speed]);
         Q_EMIT SpeedChanged(speed);
     }
 }
@@ -296,18 +297,18 @@ void DebugSession::onContinue()
     assert(status == MS_STOPPED);
 
     stepping = false;
-    skipIdle = false;
+    idleSteps = 0;
     stoppedByUser = false;
     Q_EMIT MachineRan();
     setStatus(MS_RUNNING);
 
-    timer->setInterval(iterationTimeoutInterval[speed]);
+    timer->setInterval(kIterInterval[speed]);
     timer->start();
 }
 
 void DebugSession::onStep()
 {
-    timer->setInterval(iterationTimeoutInterval[speed]);
+    timer->setInterval(kIterInterval[speed]);
     step(1);
 }
 
@@ -361,7 +362,7 @@ void DebugSession::runIteration()
 
 void DebugSession::runStepIteration()
 {
-    unsigned int steps = std::min(stepsLeft, cyclesPerIteration[speed]);
+    unsigned int steps = std::min(stepsLeft, kIterCycles[speed]);
 
     bool stopped = false;
     unsigned int stepped;
@@ -380,26 +381,37 @@ void DebugSession::runStepIteration()
 
 void DebugSession::runContIteration()
 {
-    if (skipIdle) {
-        skipIdle = false;
-        machine->Skip(idleSteps);
-        timer->setInterval(iterationTimeoutInterval[speed]);
+    if (idleSteps) {
+        uint32_t steps = std::min(idleSteps, (uint32_t) kIterCycles[kMaxSpeed]);
+        machine->Skip(steps);
+        idleSteps -= steps;
+
+        // Check if we need to reset the timer interval
+        if (!idleSteps)
+            timer->setInterval(kIterInterval[speed]);
+        else if (steps < kIterCycles[kMaxSpeed])
+            timer->setInterval(steps / 1000);
+
         Q_EMIT DebugIterationCompleted();
-    } else if (machine->IsIdle()) {
-        skipIdle = true;
-        idleSteps = std::min(machine->IdleCycles(), (uint32_t) cyclesPerIteration[kMaxSpeed]);
-        timer->start(idleSteps / 1000);
+        return;
+    }
+
+    idleSteps = machine->IdleCycles();
+    if (idleSteps) {
+        // Enter low-power mode!
+        int ms = std::min(idleSteps, (uint32_t) kIterCycles[kMaxSpeed]) / 1000;
+        timer->setInterval(ms);
+        return;
+    }
+
+    bool stopped;
+    machine->Step(kIterCycles[speed], NULL, &stopped);
+    if (stopped) {
+        setStatus(MS_STOPPED);
+        Q_EMIT MachineStopped();
+        timer->stop();
     } else {
-        bool stopped;
-        unsigned int stepped;
-        machine->Step(cyclesPerIteration[speed], &stepped, &stopped);
-        if (stopped) {
-            setStatus(MS_STOPPED);
-            Q_EMIT MachineStopped();
-            timer->stop();
-        } else {
-            Q_EMIT DebugIterationCompleted();
-        }
+        Q_EMIT DebugIterationCompleted();
     }
 }
 

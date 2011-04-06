@@ -167,12 +167,6 @@ void SystemBus::ClockTick()
     }
 }
 
-bool SystemBus::IsIdle() const
-{
-    return ((eventQ->IsEmpty() || eventQ->getHTS()->getHiLo() > timeOfDay->getHiLo() + 1) &&
-            timer > 0);
-}
-
 uint32_t SystemBus::IdleCycles() const
 {
     if (eventQ->IsEmpty())

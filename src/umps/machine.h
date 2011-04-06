@@ -54,7 +54,6 @@ public:
     void Step(bool* stopped = NULL);
     void Step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
 
-    bool IsIdle() const;
     uint32_t IdleCycles() const;
     void Skip(uint32_t cycles);
 

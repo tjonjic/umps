@@ -51,8 +51,6 @@ public:
     // changes are notified to Watch control object
     void ClockTick();
 
-    bool IsIdle() const;
-
     uint32_t IdleCycles() const;
 
     void Skip(uint32_t cycles);
