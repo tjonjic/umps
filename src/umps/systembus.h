@@ -22,8 +22,6 @@
 #ifndef UMPS_SYSTEMBUS_H
 #define UMPS_SYSTEMBUS_H
 
-#include <sigc++/sigc++.h>
-
 #include "base/lang.h"
 #include "umps/event.h"
 #include "umps/const.h"
