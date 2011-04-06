@@ -39,8 +39,6 @@ class Event {
 public:
     typedef boost::function<void ()> Callback;
 
-    // This method creates a new Event object and initalizes it
-    Event(TimeStamp * ts, Word inc, unsigned int il, unsigned int dev);
     Event(TimeStamp* ts, Word inc, Callback callback);
 
     ~Event();
