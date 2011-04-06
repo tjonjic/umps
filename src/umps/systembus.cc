@@ -143,10 +143,6 @@ SystemBus::~SystemBus()
             delete devTable[intl][dnum];
 }
 
-void SystemBus::LinkProcessor(Processor* p)
-{
-}
-
 // This method increments system clock and decrements interval timer;
 // on timer underflow (0 -> FFFFFFFF transition) a interrupt is
 // generated.  Event queue is checked against the current clock value

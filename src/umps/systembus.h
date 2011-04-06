@@ -44,8 +44,6 @@ public:
     SystemBus(const MachineConfig* config, Machine* machine);
     ~SystemBus();
 
-    void LinkProcessor(Processor* p);
-
     // This method increments system clock and decrements interval
     // timer; on timer underflow (0 -> FFFFFFFF transition) a interrupt
     // is generated.  Event queue is checked against the current clock
@@ -92,10 +90,6 @@ public:
     // FALSE otherwise.  It notifies too the memory accesses to Watch
     // control object
     bool DMAVarTransfer(Block * blk, Word startAddr, Word byteLength, bool toMemory);
-
-    // This method inserts in the eventQ a event that must happen
-    // at (current system time) + (increment)
-    TimeStamp * EventReq(unsigned int intNum, unsigned int devNum, Word inc);
 
     TimeStamp* ScheduleEvent(Word delay, Event::Callback callback);
 

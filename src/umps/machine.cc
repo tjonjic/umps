@@ -54,8 +54,6 @@ Machine::Machine(const MachineConfig* config,
         );
         pd[i].stopCause = 0;
         cpus.push_back(cpu);
-
-        bus->LinkProcessor(cpu);
     }
 
     cpus[0]->Reset(MPCONF_DEFAULT_BOOT_PC, MPCONF_DEFAULT_BOOT_SP);
