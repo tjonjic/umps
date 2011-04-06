@@ -19,10 +19,8 @@
 
 /* Segment-related constants */
 #define KSEGOS_BASE        0x00000000
-#define KSEGOS_TOP         0x20000000
 #define KSEGOS_BIOS_BASE   0x00000000
 #define KSEGOS_BOOT_BASE   0x1FC00000
-
 #define KUSEG2_BASE        0x80000000
 
 /* Device register size */

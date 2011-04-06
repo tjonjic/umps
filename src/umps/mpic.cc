@@ -50,7 +50,7 @@ void InterruptController::StartIRQ(unsigned int il, unsigned int devNo)
         for (size_t i = 0; i < cpuData.size(); i++) {
             Word id = (arbiter + i) % cpuData.size();
             if (source.route.destination & (1U << id)) {
-                if (target == kInvalidCpuId || cpuData[id].taskPriority < cpuData[target].taskPriority)
+                if (target == kInvalidCpuId || cpuData[id].taskPriority > cpuData[target].taskPriority)
                     target = id;
             }
         }
