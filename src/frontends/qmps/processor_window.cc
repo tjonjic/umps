@@ -235,7 +235,7 @@ void ProcessorWindow::updateStatusInfo()
             newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
         statusLabel->setText(newStatus);
     } else {
-        statusLabel->setText("[Offline]");
+        statusLabel->setText("[Halted]");
     }
 }
 

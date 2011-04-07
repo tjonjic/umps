@@ -78,7 +78,7 @@ void CpuStatusMap::update()
 
         switch (cpu->getStatus()) {
         case PS_OFFLINE:
-            statusMap[cpuId].status = "Offline";
+            statusMap[cpuId].status = "Halted";
             break;
         case PS_IDLE:
             statusMap[cpuId].status = "Idle";
