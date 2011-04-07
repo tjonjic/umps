@@ -51,6 +51,7 @@ public:
 
     QVariant headerData(int section, Qt::Orientation orientation, int role) const;
     QVariant data(const QModelIndex& index, int role) const;
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole);
 
     Qt::ItemFlags flags(const QModelIndex& index) const;
 
@@ -64,14 +65,17 @@ private:
     };
 
     struct SpecialRegisterInfo {
-        SpecialRegisterInfo(const char* str, boost::function<Word ()> fun)
-            : name(str), getter(fun)
+        SpecialRegisterInfo(const char* str, boost::function<Word ()> get)
+            : name(str), getter(get)
         {}
-        SpecialRegisterInfo(const char* str)
-            : name(str)
+        SpecialRegisterInfo(const char* str,
+                            boost::function<Word ()> get,
+                            boost::function<void (Word)> set)
+            : name(str), getter(get), setter(set)
         {}
         const char* name;
         boost::function<Word ()> getter;
+        boost::function<void (Word)> setter;
         Word value;
     };
 

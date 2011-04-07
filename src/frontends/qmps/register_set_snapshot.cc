@@ -188,11 +188,71 @@ QVariant RegisterSetSnapshot::data(const QModelIndex& index, int role) const
     return QVariant();
 }
 
+bool RegisterSetSnapshot::setData(const QModelIndex& index, const QVariant& variant, int role)
+{
+    if (!(index.isValid() &&
+          role == Qt::EditRole &&
+          variant.canConvert<Word>() &&
+          index.internalId() &&
+          index.column() == COL_REGISTER_VALUE))
+    {
+        return false;
+    }
+
+    int r = index.row();
+
+    switch (index.internalId()) {
+    case RT_GENERAL:
+        cpu->setGPR(r, variant.value<Word>());
+        if (gprCache[r] != (Word) cpu->getGPR(r)) {
+            gprCache[r] = cpu->getGPR(r);
+            Q_EMIT dataChanged(index, index);
+        }
+        break;
+
+    case RT_CP0:
+        cpu->setCP0Reg(r, variant.value<Word>());
+        if (cp0Cache[r] != cpu->getCP0Reg(r)) {
+            cp0Cache[r] = cpu->getCP0Reg(r);
+            Q_EMIT dataChanged(index, index);
+        }
+        break;
+
+    case RT_OTHER:
+        if (sprCache[r].setter) {
+            sprCache[r].setter(variant.value<Word>());
+            if (sprCache[r].value != sprCache[r].getter()) {
+                sprCache[r].value = sprCache[r].getter();
+                Q_EMIT dataChanged(index, index);
+            }
+        }
+        break;
+
+    default:
+        AssertNotReached();
+    }
+
+    return true;
+}
+
 Qt::ItemFlags RegisterSetSnapshot::flags(const QModelIndex& index) const
 {
     if (!index.isValid())
         return 0;
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+
+    if (index.internalId() == 0)
+        return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+
+    switch (index.column()) {
+    case COL_REGISTER_MNEMONIC:
+        return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+    case COL_REGISTER_VALUE:
+        return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsEditable;
+    default:
+        AssertNotReached();
+    }
+
+    return 0;
 }
 
 void RegisterSetSnapshot::reset()
@@ -201,9 +261,11 @@ void RegisterSetSnapshot::reset()
 
     sprCache.clear();
     sprCache.push_back(SpecialRegisterInfo("nextPC",
-                                           boost::bind(&Processor::getNextPC, cpu)));
+                                           boost::bind(&Processor::getNextPC, cpu),
+                                           boost::bind(&Processor::setNextPC, cpu, _1)));
     sprCache.push_back(SpecialRegisterInfo("succPC",
-                                           boost::bind(&Processor::getSuccPC, cpu)));
+                                           boost::bind(&Processor::getSuccPC, cpu),
+                                           boost::bind(&Processor::setSuccPC, cpu, _1)));
     sprCache.push_back(SpecialRegisterInfo("prevPhysPC",
                                            boost::bind(&Processor::getPrevPPC, cpu)));
     sprCache.push_back(SpecialRegisterInfo("currPhysPC",
@@ -211,7 +273,8 @@ void RegisterSetSnapshot::reset()
 
     SystemBus* bus = debugSession->getMachine()->getBus();
     sprCache.push_back(SpecialRegisterInfo("Timer",
-                                           boost::bind(&SystemBus::getTimer, bus)));
+                                           boost::bind(&SystemBus::getTimer, bus),
+                                           boost::bind(&SystemBus::setTimer, bus, _1)));
 
     updateCache();
 }

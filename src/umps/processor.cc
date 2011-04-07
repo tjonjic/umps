@@ -510,7 +510,7 @@ void Processor::setGPR(unsigned int num, SWord val)
 void Processor::setCP0Reg(unsigned int num, Word val)
 {
     if (num < CP0REGNUM)
-        cpreg[num] = val;			
+        cpreg[num] = val;
 }
 
 // This method allows to modify the current value of nextPC to force sudden
