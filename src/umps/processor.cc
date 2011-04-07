@@ -351,7 +351,8 @@ uint32_t Processor::IdleCycles() const
 void Processor::Skip(uint32_t cycles)
 {
     assert(IsIdle() && cycles <= IdleCycles());
-    cpreg[CP0REG_TIMER] -= cycles;
+    if (cpreg[STATUS] & STATUS_TE)
+        cpreg[CP0REG_TIMER] -= cycles;
 }
 
 // This method allows SystemBus and Processor itself to signal Processor
