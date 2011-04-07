@@ -554,7 +554,7 @@ void MonitorWindow::onCreateConfig()
 
     CreateMachineDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted)
-        Appl()->CreateConfig_(dialog.getFileName());
+        Appl()->CreateConfig(dialog.getFileName());
 }
 
 void MonitorWindow::onLoadConfig()
@@ -564,13 +564,13 @@ void MonitorWindow::onLoadConfig()
 
     QString fileName = QFileDialog::getOpenFileName(this, "Open Machine Configuration");
     if (!fileName.isEmpty())
-        Appl()->LoadConfig_(fileName);
+        Appl()->LoadConfig(fileName);
 }
 
 void MonitorWindow::onLoadRecentConfig()
 {
     QAction* action = static_cast<QAction*>(sender());
-    Appl()->LoadConfig_(action->data().toString());
+    Appl()->LoadConfig(action->data().toString());
 }
 
 void MonitorWindow::editConfig()

@@ -44,8 +44,8 @@ public:
     ~Application();
 
     MachineConfig* getConfig();
-    void CreateConfig_(const QString& path);
-    void LoadConfig_(const QString& path);
+    void CreateConfig(const QString& path);
+    void LoadConfig(const QString& path);
     void LoadRecentConfig(unsigned int i);
 
     DebugSession* getDebugSession() { return dbgSession.get(); }

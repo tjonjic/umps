@@ -44,7 +44,7 @@ Application::Application(int& argc, char** argv)
 
 Application::~Application() {}
 
-void Application::CreateConfig_(const QString& path)
+void Application::CreateConfig(const QString& path)
 {
     MachineConfig* newConfig;
     try {
@@ -58,7 +58,7 @@ void Application::CreateConfig_(const QString& path)
         setCurrentConfig(path, newConfig);
 }
 
-void Application::LoadConfig_(const QString& path)
+void Application::LoadConfig(const QString& path)
 {
     std::string error;
     MachineConfig* newConfig = MachineConfig::LoadFromFile(QFile::encodeName(path).constData(),
@@ -74,7 +74,7 @@ void Application::LoadRecentConfig(unsigned int i)
 {
     QStringList recent = settings.value("RecentFiles").toStringList();
     assert(i < (unsigned int) recent.size());
-    LoadConfig_(recent[i]);
+    LoadConfig(recent[i]);
 }
 
 MachineConfig* Application::getConfig()
