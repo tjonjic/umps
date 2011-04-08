@@ -1,3 +1,14 @@
+1.9.5
+=====
+
+* Multiprocessor support
+* Implement WAIT and idle-state handling
+* Clean up installed headers (arch.h, cp0.h)
+* Resolve addresses to symbols for branches and j/jal disassembly
+* Save tree view item state
+* Save item view column width
+* Support editing cpu register values in all item view delegates
+
 1.9.4
 =====
 
