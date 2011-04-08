@@ -18,7 +18,7 @@ public:
     void Write(Word addr, Word data, const Processor* cpu);
 
 private:
-    static const unsigned int kCpuResetDelay = 20;
+    static const unsigned int kCpuResetDelay = 50;
 
     const MachineConfig* const config;
     Machine* const machine;
