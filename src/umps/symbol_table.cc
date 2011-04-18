@@ -202,24 +202,20 @@ SymbolTable::SymbolTable(Word asid, const char* fName)
     fclose(file);
 }
 
-
-// This method deletes the table and its contents
 SymbolTable::~SymbolTable()
 {
     unsigned int i;
 	
     if (fTable != NULL) {
         for (i = 0; i < ftSize; i++)
-            if (fTable[i] != NULL)
-                delete(fTable[i]);
-        delete fTable;
+            delete fTable[i];
+        delete[] fTable;
     }
 
     if (oTable != NULL) {
         for (i = 0; i < otSize; i++)
-            if (oTable[i] != NULL)
-                delete(oTable[i]);
-        delete oTable;
+            delete oTable[i];
+        delete[] oTable;
     }
 }
 
