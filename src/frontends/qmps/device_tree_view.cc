@@ -31,7 +31,7 @@
 DeviceTreeView::DeviceTreeView(QWidget* parent)
     : QTreeView(parent)
 {
-    BooleanItemDelegate* delegate = new BooleanItemDelegate;
+    BooleanItemDelegate* delegate = new BooleanItemDelegate(parent);
     setItemDelegateForColumn(DeviceTreeModel::COLUMN_DEVICE_CONDITION, delegate);
     setAlternatingRowColors(true);
 
