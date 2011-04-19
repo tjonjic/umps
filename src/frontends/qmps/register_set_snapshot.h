@@ -66,12 +66,12 @@ private:
 
     struct SpecialRegisterInfo {
         SpecialRegisterInfo(const char* str, boost::function<Word ()> get)
-            : name(str), getter(get)
+            : name(str), getter(get), value(0)
         {}
         SpecialRegisterInfo(const char* str,
                             boost::function<Word ()> get,
                             boost::function<void (Word)> set)
-            : name(str), getter(get), setter(set)
+            : name(str), getter(get), setter(set), value(0)
         {}
         const char* name;
         boost::function<Word ()> getter;

@@ -53,6 +53,11 @@ RegisterSetSnapshot::RegisterSetSnapshot(Word cpuId, QObject* parent)
 
     topLevelFont.setBold(true);
 
+    foreach (Word& v, gprCache)
+        v = 0;
+    foreach (Word& v, cp0Cache)
+        v = 0;
+
     reset();
 }
 
