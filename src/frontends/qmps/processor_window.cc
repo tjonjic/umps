@@ -181,7 +181,7 @@ void ProcessorWindow::createDockableWidgets()
     addDockWidget(Qt::BottomDockWidgetArea, regView);
 
     QTableView* tlbView = new QTableView;
-    tlbView->setModel(new TLBModel(cpuId));
+    tlbView->setModel(new TLBModel(cpuId, this));
     tlbView->setSelectionMode(QAbstractItemView::SingleSelection);
     tlbView->setSelectionBehavior(QAbstractItemView::SelectRows);
     tlbView->horizontalHeader()->setStretchLastSection(true);
