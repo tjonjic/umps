@@ -501,6 +501,8 @@ QWidget* MonitorWindow::createMemoryTab()
     suspectListView->setContextMenuPolicy(Qt::ActionsContextMenu);
     suspectListView->addAction(addSuspectAction);
     suspectListView->addAction(removeSuspectAction);
+    suspectListView->setItemDelegateForColumn(StoppointListModel::COLUMN_ACCESS_TYPE,
+                                              new SuspectTypeDelegate(this));
 
     QSplitter* splitter = new QSplitter(Qt::Vertical);
     splitter->addWidget(suspectListView);
@@ -688,8 +690,6 @@ void MonitorWindow::onMachineStarted()
     suspectListModel.reset(new StoppointListModel(dbgSession->getSuspects(),
                                                   "Suspect", 'S'));
     suspectListView->setModel(suspectListModel.get());
-    suspectListView->setItemDelegateForColumn(StoppointListModel::COLUMN_ACCESS_TYPE,
-                                              new SuspectTypeDelegate);
 
     deviceTreeModel.reset(new DeviceTreeModel(dbgSession->getMachine()));
     deviceTreeView->setModel(deviceTreeModel.get());
