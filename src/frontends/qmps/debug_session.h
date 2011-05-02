@@ -86,7 +86,6 @@ public:
 
     QAction* debugContinueAction;
     QAction* debugStepAction;
-    QAction* debugMultiStepAction;
     QAction* debugStopAction;
 
 public Q_SLOTS:
@@ -154,7 +153,6 @@ private Q_SLOTS:
     void onResetMachine();
     void onContinue();
     void onStep();
-    void onMultiStep();
 
     void updateActionSensitivity();
 

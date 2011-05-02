@@ -52,13 +52,13 @@ public:
     Word Id() const { return id; }
 
     ProcessorStatus getStatus() const { return status; }
-    void setStatus(ProcessorStatus newStatus);
 
     bool IsOffline() const { return status == PS_OFFLINE; }
     bool IsOnline() const { return status == PS_ONLINE; }
     bool IsIdle() const { return status == PS_IDLE; }
 
     void Reset(Word pc, Word sp);
+    void Halt();
 
     // This method makes Processor execute a single instruction.  For
     // simulation purposes, it differs from traditional processor cycle:
@@ -201,6 +201,7 @@ private:
     scoped_array<TLBEntry> tlb;
 
     // private methods
+    void setStatus(ProcessorStatus newStatus);
 
     void handleExc();
     void zapTLB(void);

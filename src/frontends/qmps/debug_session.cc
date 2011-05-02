@@ -2,7 +2,7 @@
 /*
  * uMPS - A general purpose computer system simulator
  *
- * Copyright (C) 2010 Tomislav Jonjic
+ * Copyright (C) 2010, 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -28,8 +28,6 @@
 #include <QAction>
 #include <QTimer>
 #include <QMessageBox>
-
-#include <QtDebug>
 
 #include "umps/error.h"
 #include "qmps/application.h"
@@ -109,7 +107,7 @@ void DebugSession::createActions()
     connect(startMachineAction, SIGNAL(triggered()), this, SLOT(startMachine()));
     startMachineAction->setEnabled(false);
 
-    haltMachineAction = new QAction("Shut Down", this);
+    haltMachineAction = new QAction("Power Off", this);
     haltMachineAction->setShortcut(QKeySequence("Shift+F5"));
     haltMachineAction->setIcon(QIcon(":/icons/machine_halt-22.png"));
     connect(haltMachineAction, SIGNAL(triggered()), this, SLOT(onHaltMachine()));
@@ -312,11 +310,6 @@ void DebugSession::onStep()
     step(1);
 }
 
-void DebugSession::onMultiStep()
-{
-    step(1);
-}
-
 void DebugSession::Stop()
 {
     if (status == MS_RUNNING) {
@@ -343,7 +336,9 @@ void DebugSession::step(unsigned int steps)
     machine->Step(&stopped);
     --stepsLeft;
 
-    if (!stepsLeft || stopped) {
+    if (machine->IsHalted()) {
+        Halt();
+    } else if (!stepsLeft || stopped) {
         stoppedByUser = !stepsLeft;
         setStatus(MS_STOPPED);
         Q_EMIT MachineStopped();
@@ -369,7 +364,9 @@ void DebugSession::runStepIteration()
     machine->Step(steps, &stepped, &stopped);
     stepsLeft -= stepped;
 
-    if (stopped || stepsLeft == 0) {
+    if (machine->IsHalted()) {
+        Halt();
+    } else if (stopped || stepsLeft == 0) {
         stoppedByUser = (stepsLeft == 0);
         timer->stop();
         setStatus(MS_STOPPED);
@@ -406,7 +403,9 @@ void DebugSession::runContIteration()
 
     bool stopped;
     machine->Step(kIterCycles[speed], NULL, &stopped);
-    if (stopped) {
+    if (machine->IsHalted()) {
+        Halt();
+    } else if (stopped) {
         setStatus(MS_STOPPED);
         Q_EMIT MachineStopped();
         timer->stop();

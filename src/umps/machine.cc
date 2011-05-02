@@ -39,6 +39,7 @@ Machine::Machine(const MachineConfig* config,
                  StoppointSet* tracepoints)
     : stopMask(0),
       config(config),
+      halted(false),
       breakpoints(breakpoints),
       suspects(suspects),
       tracepoints(tracepoints)
@@ -72,7 +73,7 @@ void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
         pd[cpu->Id()].stopCause = 0;
 
     unsigned int i;
-    for (i = 0; i < steps && !stopPointsReached; ++i) {
+    for (i = 0; !halted && i < steps && !stopPointsReached; ++i) {
         bus->ClockTick();
         for (CpuVector::iterator it = cpus.begin(); it != cpus.end(); ++it)
             (*it)->Cycle();
@@ -85,17 +86,7 @@ void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
 
 void Machine::Step(bool* stopped)
 {
-    stopPointsReached = false;
-
-    bus->ClockTick();
-
-    foreach (Processor* cpu, cpus) {
-        pd[cpu->Id()].stopCause = 0;
-        cpu->Cycle();
-    }
-
-    if (stopped != NULL)
-        *stopped = stopPointsReached;
+    Step(1, NULL, stopped);
 }
 
 uint32_t Machine::IdleCycles() const
@@ -124,6 +115,7 @@ void Machine::Skip(uint32_t cycles)
 
 void Machine::Halt()
 {
+    halted = true;
 }
 
 void Machine::onCpuException(unsigned int excCode, Processor* cpu)

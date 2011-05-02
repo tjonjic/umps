@@ -266,6 +266,11 @@ void Processor::Reset(Word pc, Word sp)
     setStatus(PS_ONLINE);
 }
 
+void Processor::Halt()
+{
+    setStatus(PS_OFFLINE);
+}
+
 // This method makes Processor execute a single instruction.
 // For simulation purposes, it differs from traditional processor cycle:
 // the first instruction after a reset is pre-loaded, and cycle is

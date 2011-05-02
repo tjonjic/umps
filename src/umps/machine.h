@@ -56,6 +56,7 @@ public:
     void Skip(uint32_t cycles);
 
     void Halt();
+    bool IsHalted() const { return halted; }
 
     Processor* getProcessor(unsigned int cpuId);
     Device* getDevice(unsigned int line, unsigned int devNo);
@@ -95,6 +96,7 @@ private:
 
     ProcessorData pd[MachineConfig::MAX_CPUS];
 
+    bool halted;
     bool stopPointsReached;
 
     StoppointSet* breakpoints;

@@ -19,6 +19,7 @@ public:
 
 private:
     static const unsigned int kCpuResetDelay = 50;
+    static const unsigned int kCpuHaltDelay = 50;
     static const unsigned int kPoweroffDelay = 1000;
 
     const MachineConfig* const config;

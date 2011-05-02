@@ -79,6 +79,13 @@ void MPController::Write(Word addr, Word data, const Processor* cpu)
         bootSP = data;
         break;
 
+    case MCTL_HALT_CPU:
+        cpuId = data & MCTL_RESET_CPU_CPUID_MASK;
+        if (cpuId < config->getNumProcessors())
+            machine->getBus()->ScheduleEvent(kCpuHaltDelay * config->getClockRate(),
+                                             boost::bind(&Processor::Halt, machine->getProcessor(cpuId)));
+        break;
+
     case MCTL_POWER:
         if (data == 0x0FF)
             machine->getBus()->ScheduleEvent(kPoweroffDelay * config->getClockRate(),
