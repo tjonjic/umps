@@ -14,8 +14,8 @@
 #define WORD_SIZE 4
 #define WS        WORD_SIZE
 
-#define DEV_BASE 0x10000000
-#define RAM_BASE 0x20000000
+#define MMIO_BASE 0x10000000
+#define RAM_BASE  0x20000000
 
 /* Segment-related constants */
 #define KSEGOS_BASE        0x00000000
@@ -146,20 +146,26 @@
 #define CPUCTL_END              (CPUCTL_BIOS_RES_1 + WS)
 
 /*
- * MP configuration and initialization
+ * Machine control registers
  */
-#define MPCONF_NCPUS            0x10000500
-#define MPCONF_RESET            0x10000504
-#define     MPCONF_RESET_CPUID_MASK     0x0000000f
-#define MPCONF_BOOT_PC          0x10000508
-#define MPCONF_BOOT_SP          0x1000050c
+#define MCTL_NCPUS              0x10000500
 
-#define MPCONF_BASE             MPCONF_NCPUS
-#define MPCONF_END              (MPCONF_BOOT_SP + WS)
+#define MCTL_RESET_CPU          0x10000504
+#define     MCTL_RESET_CPU_CPUID_MASK   0x0000000f
 
-#define MPCONF_DEFAULT_BOOT_PC  0x1fc00000
-#define MPCONF_DEFAULT_BOOT_SP  0x00000000
+/* Reset vector and initial $sp */
+#define MCTL_BOOT_PC            0x10000508
+#define MCTL_BOOT_SP            0x1000050c
 
-#define DEV_END                 MPCONF_END
+#define MCTL_DEFAULT_BOOT_PC    0x1fc00000
+#define MCTL_DEFAULT_BOOT_SP    0x00000000
+
+#define MCTL_HALT_CPU           0x10000510
+#define MCTL_POWER              0x10000514
+
+#define MCTL_BASE               MCTL_NCPUS
+#define MCTL_END                (MCTL_POWER + WS)
+
+#define MMIO_END                MCTL_END
 
 #endif /* !defined(UMPS_ARCH_H) */

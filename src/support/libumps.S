@@ -410,7 +410,7 @@ END_LEAF_FUNC(LDST)
  *     void INITCPU(u32 cpu_id, state t *start_state, state_t *state_areas)
  */
 LEAF_FUNC(INITCPU)
-	li	$t0, MPCONF_BOOT_PC
+	li	$t0, MCTL_BOOT_PC
 	li	$t1, 0x00000100
 	sw	$t1, 0($t0)
 
@@ -428,7 +428,7 @@ LEAF_FUNC(INITCPU)
 	sw	$a2, 8($t0)
 
 	.set	noreorder
-	li	$t0, MPCONF_RESET
+	li	$t0, MCTL_RESET_CPU
 	sw	$a0, 0($t0)
 	.set	reorder
 

@@ -24,8 +24,6 @@
 
 #include <vector>
 
-#include <sigc++/sigc++.h>
-
 #include "base/lang.h"
 #include "umps/machine_config.h"
 
@@ -56,6 +54,8 @@ public:
 
     uint32_t IdleCycles() const;
     void Skip(uint32_t cycles);
+
+    void Halt();
 
     Processor* getProcessor(unsigned int cpuId);
     Device* getDevice(unsigned int line, unsigned int devNo);

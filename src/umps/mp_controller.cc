@@ -33,8 +33,8 @@
 MPController::MPController(const MachineConfig* config, Machine* machine)
     : config(config),
       machine(machine),
-      bootPC(MPCONF_DEFAULT_BOOT_PC),
-      bootSP(MPCONF_DEFAULT_BOOT_SP)
+      bootPC(MCTL_DEFAULT_BOOT_PC),
+      bootSP(MCTL_DEFAULT_BOOT_SP)
 {}
 
 Word MPController::Read(Word addr, const Processor* cpu) const
@@ -42,13 +42,13 @@ Word MPController::Read(Word addr, const Processor* cpu) const
     UNUSED_ARG(cpu);
 
     switch (addr) {
-    case MPCONF_NCPUS:
+    case MCTL_NCPUS:
         return config->getNumProcessors();
 
-    case MPCONF_BOOT_PC:
+    case MCTL_BOOT_PC:
         return bootPC;
 
-    case MPCONF_BOOT_SP:
+    case MCTL_BOOT_SP:
         return bootSP;
 
     default:
@@ -63,20 +63,26 @@ void MPController::Write(Word addr, Word data, const Processor* cpu)
     Word cpuId;
 
     switch (addr) {
-    case MPCONF_RESET:
-        cpuId = data & MPCONF_RESET_CPUID_MASK;
+    case MCTL_RESET_CPU:
+        cpuId = data & MCTL_RESET_CPU_CPUID_MASK;
         if (cpuId < config->getNumProcessors())
             machine->getBus()->ScheduleEvent(kCpuResetDelay * config->getClockRate(),
                                              boost::bind(&Processor::Reset, machine->getProcessor(cpuId),
                                                          bootPC, bootSP));
         break;
 
-    case MPCONF_BOOT_PC:
+    case MCTL_BOOT_PC:
         bootPC = data;
         break;
 
-    case MPCONF_BOOT_SP:
+    case MCTL_BOOT_SP:
         bootSP = data;
+        break;
+
+    case MCTL_POWER:
+        if (data == 0x0FF)
+            machine->getBus()->ScheduleEvent(kPoweroffDelay * config->getClockRate(),
+                                             boost::bind(&Machine::Halt, machine));
         break;
 
     default:

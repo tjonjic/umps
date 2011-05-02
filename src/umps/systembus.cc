@@ -71,7 +71,7 @@ public:
     DeviceAreaAddress(Word paddr)
         : pa(paddr)
     {
-        assert(DEV_BASE <= paddr && paddr < DEV_END);
+        assert(MMIO_BASE <= paddr && paddr < MMIO_END);
     }
 
     DeviceAreaAddress(unsigned int line, unsigned int device, unsigned int field)
@@ -281,7 +281,7 @@ bool SystemBus::CompareAndSet(Word addr, Word oldval, Word newval, bool* result,
     if (RAMBASE <= addr && addr < RAMBASE + ram->Size()) {
         *result = ram->CompareAndSet((addr - RAMBASE) >> 2, oldval, newval);
         return false;
-    } else if (DEV_BASE <= addr && addr < DEV_END) {
+    } else if (MMIO_BASE <= addr && addr < MMIO_END) {
         *result = false;
         return false;
     } else {
@@ -433,7 +433,7 @@ bool SystemBus::busRead(Word addr, Word* datap, Processor* cpu)
         *datap = bios->MemRead(CONVERT(addr,BIOSBASE));
     else if (INBOUNDS(addr, BOOTBASE, BOOTBASE + boot->Size()))
         *datap = boot->MemRead(CONVERT(addr, BOOTBASE));
-    else if (INBOUNDS(addr, DEV_BASE, DEV_END))
+    else if (INBOUNDS(addr, MMIO_BASE, MMIO_END))
         *datap = busRegRead(addr, cpu);
     else {
         // address invalid: data read is out of bounds
@@ -465,7 +465,7 @@ Word SystemBus::busRegRead(Word addr, Processor* cpu)
                INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
     {
         data = pic->Read(addr, cpu);
-    } else if (MPCONF_BASE <= addr && addr < MPCONF_END) {
+    } else if (MCTL_BASE <= addr && addr < MCTL_END) {
         data = mpController->Read(addr, cpu);
     } else {
         // We're in the low "bus register area" space
@@ -556,7 +556,7 @@ bool SystemBus::busWrite(Word addr, Word data, Processor* cpu)
 {
     if (INBOUNDS(addr, RAMBASE, RAMBASE + ram->Size())) {
         ram->MemWrite(CONVERT(addr, RAMBASE), data);
-    } else if (INBOUNDS(addr, DEV_BASE, DEV_END)) {
+    } else if (INBOUNDS(addr, MMIO_BASE, MMIO_END)) {
         if (DEV_REG_START <= addr && addr < DEV_REG_END) {
             DeviceAreaAddress dva(addr);
             Device* device = devTable[dva.line()][dva.device()];
@@ -565,7 +565,7 @@ bool SystemBus::busWrite(Word addr, Word data, Processor* cpu)
                    INBOUNDS(addr, CPUCTL_BASE, CPUCTL_END))
         {
             pic->Write(addr, data, cpu);
-        } else if (MPCONF_BASE <= addr && addr < MPCONF_END) {
+        } else if (MCTL_BASE <= addr && addr < MCTL_END) {
             mpController->Write(addr, data, NULL);
         } else {
             // data write is in bus registers area

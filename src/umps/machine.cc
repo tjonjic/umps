@@ -56,7 +56,7 @@ Machine::Machine(const MachineConfig* config,
         cpus.push_back(cpu);
     }
 
-    cpus[0]->Reset(MPCONF_DEFAULT_BOOT_PC, MPCONF_DEFAULT_BOOT_SP);
+    cpus[0]->Reset(MCTL_DEFAULT_BOOT_PC, MCTL_DEFAULT_BOOT_SP);
 }
 
 Machine::~Machine()
@@ -120,6 +120,10 @@ void Machine::Skip(uint32_t cycles)
 
     foreach (Processor* cpu, cpus)
         cpu->Skip(cycles);
+}
+
+void Machine::Halt()
+{
 }
 
 void Machine::onCpuException(unsigned int excCode, Processor* cpu)
