@@ -248,14 +248,14 @@ bool SystemBus::DataRead(Word addr, Word* datap, Processor* cpu)
 // FALSE otherwise
 // 
 
-bool SystemBus::WatchRead(Word addr, Word * datap)
+bool SystemBus::WatchRead(Word addr, Word* datap)
 {
-    return busRead(addr, datap);
+    return busRead(addr, datap, machine->getProcessor(0));
 }
 
 bool SystemBus::WatchWrite(Word addr, Word data)
 {	
-    return busWrite(addr, data);
+    return busWrite(addr, data, machine->getProcessor(0));
 }
 
 // This method writes the data word at physical addr in RAM memory or device
