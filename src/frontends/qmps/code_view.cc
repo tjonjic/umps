@@ -177,6 +177,7 @@ QString CodeView::disasmBranch(Word instr, Word pc) const
 {
     Word target = pc + WS + (SignExtImm(instr) << 2);
 
+#if 0
     // Resolve symbol, if possible
     SWord offset;
     const char* symbol = GetSymbolicAddress(symbolTable, MachineConfig::MAX_ASID, target, true, &offset);
@@ -187,6 +188,13 @@ QString CodeView::disasmBranch(Word instr, Word pc) const
             .arg(RegName(RT(instr)))
             .arg(target, 8, 16, QChar('0'))
             .arg(symbol ? QString(" <%1+0x%2>").arg(symbol).arg(offset, 0, 16) : QString()));
+#else
+    return (QString("%1\t$%2, $%3, %4")
+            .arg(InstructionMnemonic(instr))
+            .arg(RegName(RS(instr)))
+            .arg(RegName(RT(instr)))
+            .arg(target, 8, 16, QChar('0')));
+#endif
 }
 
 QString CodeView::disasmJump(Word instr, Word pc) const
