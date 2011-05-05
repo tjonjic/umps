@@ -1,6 +1,6 @@
 m4_define([umps_major_version], [1])
 m4_define([umps_minor_version], [9])
-m4_define([umps_micro_version], [6])
+m4_define([umps_micro_version], [7])
 
 m4_define([umps_version], [umps_major_version.umps_minor_version.umps_micro_version])
 
