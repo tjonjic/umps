@@ -1,0 +1,100 @@
+OUTPUT_ARCH(mips)
+ENTRY(__start)
+
+PHDRS
+{
+    text PT_LOAD FILEHDR PHDRS;
+    data PT_LOAD;
+}
+
+SECTIONS
+{
+    /*
+     * Text segment content
+     */
+
+    . = 0x800000B0;
+    .text :
+    {
+        _ftext = . ;
+        *(.text .text.*)
+    } :text =0
+
+    PROVIDE (_etext = .);
+
+    .rodata : { *(.rodata .rodata.*) } :text
+    .rodata1 : { *(.rodata1) } :text
+
+    /* Contrary to what the names might lead you to believe, .sdata2 and
+       .sbss2 are used for _const_ initialized/uninitialized _small_
+       data only! Hence they belong in the text segment. Also note,
+       parenthetically, that .sdata2 and .sbss2 are utterly idiotic
+       names for those sections. In any case, the toolchain does _not_
+       create them automatically (for gpopt, MIPS uses .sdata and .sbss
+       instead). They are here for completeness (and to confuse
+       people). */
+    .sdata2 : { *(.sdata2 .sdata2.*) } :text
+    .sbss2 : { *(.sbss2 .sbss2.*) } :text
+
+    /*
+     * Data segment
+     */
+
+    /* Adjust the address for the data segment.  We want to adjust up to
+       the same address within the page on the next page up.  */
+    . = ALIGN(0x1000);
+
+    .data :
+    {
+        _fdata = . ;
+        *(.data .data.*)
+    } :data
+
+    .data1 : { *(.data1) } :data
+
+    _gp = ALIGN(16) + 0x7ff0;
+
+    .got : { *(.got.plt) *(.got) } :data
+
+    /* We want the small data sections together, so single-instruction offsets
+       can access them all, and initialized data all before uninitialized, so
+       we can shorten the on-disk segment size.  */
+    .sdata : { *(.sdata .sdata.*) } :data
+
+    .lit8 : { *(.lit8) } :data
+    .lit4 : { *(.lit4) } :data
+
+    _edata = .;
+
+    __bss_start = .;
+    _fbss = .;
+    .sbss :
+    {
+        PROVIDE (__sbss_start = .);
+        *(.sbss .sbss.*)
+        *(.scommon)
+        PROVIDE (__sbss_end = .);
+    } :data
+    .bss :
+    {
+        *(.bss .bss.*)
+        *(COMMON)
+        /* Align here to ensure that the .bss section occupies space up to
+           _end.  Align after .bss to ensure correct alignment even if the
+           .bss section disappears because there are no input sections. */
+       . = ALIGN(32 / 8);
+    } :data
+
+    . = ALIGN(32 / 8);
+    _end = .;
+    PROVIDE (end = .);
+
+    /DISCARD/ :
+    {
+        /* Get rid of MIPS SVR4 ABI mandated .reginfo garbage, since
+           different targets appear to have different ideas about this
+           section's properties (e.g. allocatable vs non). We can
+           obtain ri_gp_value from the symbol table anyway. */
+        *(.reginfo)
+    }
+}
