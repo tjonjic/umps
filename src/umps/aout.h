@@ -26,6 +26,9 @@
  * 
  ****************************************************************************/
 
+#ifndef UMPS_AOUT_H
+#define UMPS_AOUT_H
+
 // default kernel ASID identifier
 #define KERNID	0
 
@@ -48,3 +51,19 @@
 #define DATAVSIZE	7
 #define DATAFOFFS	8
 #define DATAFSIZE	9
+
+#define AOUT_TAG           0
+#define AOUT_ENTRY         1
+#define AOUT_TEXT_VADDR    2
+#define AOUT_TEXT_MEMSZ    3
+#define AOUT_TEXT_OFFSET   4
+#define AOUT_TEXT_FILESZ   5
+#define AOUT_DATA_VADDR    6
+#define AOUT_DATA_MEMSZ    7
+#define AOUT_DATA_OFFSET   8
+#define AOUT_DATA_FILESZ   9
+#define AOUT_GP_VALUE      42
+
+#define N_AOUT_HDR_ENT     43
+
+#endif /* !defined(UMPS_AOUT_H) */
