@@ -13,6 +13,8 @@ EXTRA_DIST = \
 	elf32btsmip.h.umpscore.x		\
 	elf32ltsmip.h.umpsaout.x		\
 	elf32ltsmip.h.umpscore.x		\
+	umpsaout.ldscript			\
+	umpscore.ldscript			\
 	libumps.S				\
 	regdef.h				\
 	h/bios_srv.h				\
@@ -21,8 +23,13 @@ EXTRA_DIST = \
 CLEANFILES = exec coreboot tapeboot *.o *.rom.umps 
 
 umps_data_DATA = \
-	exec.rom.umps coreboot.rom.umps tapeboot.rom.umps	\
-	$(LDCORESCRIPT) $(LDAOUTSCRIPT)
+	exec.rom.umps				\
+	coreboot.rom.umps			\
+	tapeboot.rom.umps			\
+	$(LDCORESCRIPT)				\
+	$(LDAOUTSCRIPT)				\
+	umpsaout.ldscript			\
+	umpscore.ldscript
 
 umps_lib_DATA = crtso.o crti.o libumps.o
 
