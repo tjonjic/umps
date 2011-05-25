@@ -5,10 +5,6 @@
 #include "umps/cp0.h"
 #include "bios_defs.h"
 
-	/* FIXME: it is utterly pointless to turn on abicalls in ROM
-	   code. Why was it here in the first place, though? */
-	.abicalls
-
  	/* Constants */
 
 	STATUSMASK 	= 0xFDBFFFF3
@@ -130,6 +126,4 @@ Lfor:
 	.set macro
 	
 	.end coreboot
-
-LcorebootEnd:
-	.size	 coreboot, LcorebootEnd - coreboot
+	.size	 coreboot, . - coreboot

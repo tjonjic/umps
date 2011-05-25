@@ -5,12 +5,7 @@
 #include "umps/cp0.h"
 #include "bios_defs.h"
 
-
-	.abicalls
-
- 	# Constants
-
-	# miscellaneous
+	/* Constants */
 
 	ASIDMASK	= 0x00000FC0
 	ASIDSTEP	= 0x00000040
@@ -18,12 +13,11 @@
 	VPNMASK		= 0xFFFFF000
 	VECTSIZE	= 140
 
-	# NOP padding: 30 nops - string length (32 bytes) 
+	/* NOP padding: 30 nops - string length (32 bytes) */
 	GENEXC_PADDING 	= (30 * 4) - 32
 	ENDSTRADDR	= 0x00000008
 	PANICSTRADDR	= ENDSTRADDR + 16
 
-	/*TERM0COMMAND	= 0x1000025C*/
 	TERM0COMMAND	= DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
 	BUSYCODE	= 3
 	BYTELEN 	= 8
@@ -726,9 +720,7 @@ LLoadStart:
 	jr	$k1
 	rfe
 	.set reorder
-	.set macro	
+	.set macro
 	
-	.end bios
-
-LbiosEnd:
-	.size bios, LbiosEnd - bios
+	.end	bios
+	.size	bios, . - bios

@@ -4,20 +4,7 @@
 #include "umps/arch.h"
 #include "umps/cp0.h"
 
-	.abicalls
-
- # GCC automatic generated header
- 
- # GNU C 2.7.2 [AL 1.1, MM 40] Linux/MIPSEL compiled by GNU C
-
- # Cc1 defaults:
- # -mgas -mabicalls
-
- # Cc1 arguments (-G value = 0, Cpu = 3000, ISA = 1):
- # -quiet -dumpbase -version -o
- # 
-
- 	# Constants
+ 	/* Constants */
 
 	STATUSMASK 	= 0xFDBFFFF3
 	BIOSVECTPAGE 	= 0x20000000

@@ -1,6 +1,8 @@
 XCPP_FLAGS = -I$(top_srcdir)/src
 CCASFLAGS="-KPIC"
 
+BIOS_CFLAGS = -mno-abicalls -fno-pic
+
 umps_datadir = $(datadir)/umps2
 umps_includedir = $(includedir)/umps2/umps
 umps_libdir = $(libdir)/umps2
@@ -42,13 +44,13 @@ umps_include_HEADERS = e/libumps.e h/types.h
 	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $<
 
 exec: exec.S
-	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
 
 coreboot: coreboot.S
-	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
 
 tapeboot: tapeboot.S
-	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $< -o $@
+	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
 
 exec.rom.umps: exec
 	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
