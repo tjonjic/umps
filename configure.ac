@@ -17,6 +17,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
+
 AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CPP
@@ -29,6 +30,44 @@ AC_PROG_RANLIB
 
 # Initialize libtool
 LT_INIT
+
+# Check for cross toolchain
+
+AC_ARG_WITH([mips-tool-prefix],
+            [AS_HELP_STRING([--with-mips-tool-prefix=PREFIX],
+            [specify prefix for the cross toochain tools])],
+            [xt_prefixes=$withval])
+
+if test -z "$xt_prefixes" ; then
+    if test "x$ac_cv_c_bigendian" = xyes ; then
+        xt_prefixes="mips-elf- mips-linux-"
+    else
+        xt_prefixes="mipsel-elf- mipsel-linux-"
+    fi
+fi
+
+for pref in $xt_prefixes ; do
+    AC_PATH_PROG([XCGCC], [${pref}gcc], [no])
+    if test "x${XCGCC}" != xno ; then
+        xt_prefix=$pref
+        break
+    fi
+done
+
+if test "x${XCGCC}" = xno ; then
+    AC_MSG_ERROR([MIPS toolchain (gcc) not found.])
+fi
+
+AC_PATH_PROG([XCAS], [${xt_prefix}as], [no])
+if test "x${XCAS}" = xno ; then
+    AC_MSG_ERROR([MIPS toolchain (as) not found.])
+fi
+
+AC_PATH_PROG([XCLD], [${xt_prefix}ld], [no])
+if test "x${XCLD}" = xno ; then
+    AC_MSG_ERROR([MIPS toolchain (ld) not found.])
+fi
+
 
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
@@ -76,46 +115,21 @@ AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([getcwd memset socket strchr strerror strstr strtoul])
 
 # Setting the arch-dependent prefix and flags.
-if test "x$ac_cv_c_bigendian" = "xyes"
-then
-	crosscompiler_prefix="mips-linux"
-	LDCOREFLAGS="-T ../support/elf32btsmip.h.umpscore.x"
-	LDAOUTFLAGS="-T ../support/elf32btsmip.h.umpsaout.x"
-	LDCORESCRIPT="elf32btsmip.h.umpscore.x"
-	LDAOUTSCRIPT="elf32btsmip.h.umpsaout.x"
+if test "x$ac_cv_c_bigendian" = "xyes" ; then
+    LDCOREFLAGS="-T ../support/elf32btsmip.h.umpscore.x"
+    LDAOUTFLAGS="-T ../support/elf32btsmip.h.umpsaout.x"
+    LDCORESCRIPT="elf32btsmip.h.umpscore.x"
+    LDAOUTSCRIPT="elf32btsmip.h.umpsaout.x"
 else
-	crosscompiler_prefix="mipsel-linux"
-	LDCOREFLAGS="-T ../support/elf32ltsmip.h.umpscore.x"
-	LDAOUTFLAGS="-T ../support/elf32ltsmip.h.umpsaout.x"
-	LDCORESCRIPT="elf32ltsmip.h.umpscore.x"
-	LDAOUTSCRIPT="elf32ltsmip.h.umpsaout.x"
+    LDCOREFLAGS="-T ../support/elf32ltsmip.h.umpscore.x"
+    LDAOUTFLAGS="-T ../support/elf32ltsmip.h.umpsaout.x"
+    LDCORESCRIPT="elf32ltsmip.h.umpscore.x"
+    LDAOUTSCRIPT="elf32ltsmip.h.umpsaout.x"
 fi
 AC_SUBST(LDCORESCRIPT)
 AC_SUBST(LDAOUTSCRIPT)
 AC_SUBST(LDCOREFLAGS)
 AC_SUBST(LDAOUTFLAGS)
-
-# Check for toolchain
-
-AC_PATH_PROG([XCGCC], ["${crosscompiler_prefix}"-gcc], ["no"])
-if test "x${XCGCC}" = "xno"; then
-    AC_MSG_ERROR([${crosscompiler_prefix}-gcc not found.])
-fi
-
-AC_PATH_PROG([XCAS], ["${crosscompiler_prefix}"-as], ["no"])
-if test "x${XCAS}" = "xno"; then
-    AC_MSG_ERROR([${crosscompiler_prefix}-as not found.])
-fi
-
-AC_PATH_PROG([XCAR], ["${crosscompiler_prefix}"-ar], ["no"])
-if test "x${XCAR}" = "xno"; then
-    AC_MSG_ERROR([${crosscompiler_prefix}-ar not found.])
-fi
-
-AC_PATH_PROG([XCLD], ["${crosscompiler_prefix}"-ld], ["no"])
-if test "x${XCLD}" = "xno"; then
-    AC_MSG_ERROR([${crosscompiler_prefix}-ld not found.])
-fi
 
 # Checking for hosttype.
 case "${host}" in
