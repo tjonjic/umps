@@ -65,7 +65,7 @@ bios:
 	 */
 	.set noreorder
 	.set nomacro
-	j	LUTLBHandler
+	b	LUTLBHandler
 	nop
 
 EndStr:	
@@ -79,7 +79,7 @@ PanicStr:
 	 * 0x00000080 address
 	 * This is the entry point for general ("other", non-TLB) exceptions.
 	 */
-	j	LEXCHandler
+	b	LEXCHandler
 	nop
 
 	.space	0x80 - 0x8
@@ -87,7 +87,7 @@ PanicStr:
 	 * 0x00000100 address
 	 * Secondary processor startup routine
 	 */
-	j	LInitSecondaryProcessor
+	b	LInitSecondaryProcessor
 	nop
 
 	/*
@@ -121,15 +121,15 @@ LPrintLoop:
 	addi	$a1, PRINTCHR
 	sw	$a1, 0($a3)
 
-	j	LWaitForReady 
+	b	LWaitForReady
 
 LInfinite:
-	j	LInfinite
+	b	LInfinite
 
 LHalt:
 	# this call prints a message on terminal 0 and loops forever 
 	li	$a0, ENDSTRADDR - 1
-	j 	LTermOp
+	b 	LTermOp
 
 /*
  * Get a cpu up and runing: initialize BIOS related structures and
@@ -154,7 +154,7 @@ LInitSecondaryProcessor:
 
 	/* Load a new state */
 	lw	$k0, 4($t0)
-	j	LLoadStart
+	b	LLoadStart
 
 /*
  * Handle TLBL/TLBS refill misses
@@ -187,7 +187,7 @@ LPTEScanLoop:
 	blez	$a3, LPTEStartFound
 	addi	$a2, PTESEGSIZE
 	addi	$a3, -ASIDSTEP
-	j	LPTEScanLoop
+	b	LPTEScanLoop
 	
 LPTEStartFound:
 	/* PTE segment table for ASID is in $a2; look for correct segment */
@@ -309,7 +309,7 @@ LEndLoop:
 	addiu	$k0, 8
 	addi	$a3, -1
 	beq 	$0, $a3, LPTEMiss
-	j	LSearchLoop
+	b	LSearchLoop
 
 LTLBFound:
 	# $k1 == $a1 o G bit entry match
@@ -358,7 +358,7 @@ LBadPTE:
 	lw	$k0, 0($k0)
 	li	$a0, BADPTE
 	sw	$a0, BIOS_SCRATCH_TLBEXC($k0)
-	j 	LTLBNotFound
+	b 	LTLBNotFound
 
 LPTEMiss:
 	/* set PTEBUGFLAG to signal TLB exc handler the problem and fall through */
@@ -412,7 +412,7 @@ LEXCHandler:
 	beq	$0, $k0, LBreakHandler
 	
 	/* other causes are program trap */
-	j	LPRGHandler
+	b	LPRGHandler
 
 LIntHandler:
 	/* If EPC address is in BIOS area, something in kernel has
@@ -426,7 +426,7 @@ LIntHandler:
 	 * save processor state into old area and load new state:
 	 * this is done calling a BIOS subroutine */
 	li	$k1, 0
-	j	LSOldLNewArea
+	b	LSOldLNewArea
 
 LTLBHandler:
 	/* If EPC address is in BIOS area, something in kernel has
@@ -438,7 +438,7 @@ LTLBHandler:
 	bltz	$k0, LPanic	
 
 	li	$k1, 2
-	j	LSOldLNewArea
+	b	LSOldLNewArea
 
 LPRGHandler:
 	/* If EPC address is in BIOS area, something in kernel or in BIOS
@@ -449,7 +449,7 @@ LPRGHandler:
 	bltz	$k0, LPanic
 
 	li	$k1, 4
-	j	LSOldLNewArea
+	b	LSOldLNewArea
 
 
 LSYSHandler:
@@ -461,7 +461,7 @@ LSYSHandler:
 	bltz	$k0, LPanic
 
 	li	$k1, 6
-	j	LSOldLNewArea
+	b	LSOldLNewArea
 
 LBreakHandler:
 	/* If EPC address is in BIOS area, something in kernel or in BIOS
@@ -484,7 +484,7 @@ LBreakHandler:
 	mfc0	$k0, $CP0_Status
 	andi	$k0, $k0, KUPSTATUSMASK
 	beq	$0, $k0, LisKernel
-	j 	LSYSHandler
+	b 	LSYSHandler
 
 LisKernel:
 	/* 0  is FORK(STATUS, EntryHI, PC, CAUSE) */
@@ -506,7 +506,7 @@ LisKernel:
 	beq     $0, $k1, LHalt
 
 	/* any other break is passed up to SYS handler */
-	j	LSYSHandler
+	b	LSYSHandler
 
 
 LFORK:
@@ -541,7 +541,7 @@ LFORK:
 LLDST:
 	# this means load from physical address in $a1
 	move	$k0, $a1
-	j	LLoadStart
+	b	LLoadStart
 
 
 /*
@@ -558,7 +558,7 @@ LComputeArea:
 	blez	$k1, LSave
 	addiu	$k0, VECTSIZE
 	addi	$k1, -1
-	j 	LComputeArea
+	b 	LComputeArea
 
 LSave:	
 	sw	$1, 16($k0)

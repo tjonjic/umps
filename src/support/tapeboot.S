@@ -54,7 +54,7 @@ tapeboot:
 	.set nomacro
 
 	# boot starts here 
-	j LTapeBootStart
+	b LTapeBootStart
 	nop
 
 	.space PADDINGTLB
@@ -244,8 +244,8 @@ Lfor:
 	jr	$ra
 	rfe
 	.set reorder
-	.set macro	
-	
+	.set macro
+
 	.end tapeboot
 
 LtapebootEnd:

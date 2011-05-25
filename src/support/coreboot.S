@@ -33,7 +33,7 @@ coreboot:
 	.set nomacro
 
 	/* boot starts here */
-	j	LCoreBootStart
+	b	LCoreBootStart
 	nop
 
 	.space PADDINGTLB
