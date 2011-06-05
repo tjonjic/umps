@@ -1,7 +1,9 @@
 XCPP_FLAGS = -I$(top_srcdir)/src
-CCASFLAGS="-KPIC"
 
-BIOS_CFLAGS = -mno-abicalls -fno-pic
+BIOS_CFLAGS = -mno-abicalls -fno-pic -ffreestanding
+
+CRT_CFLAGS_PIC = -ffreestanding -DABICALLS -Wa,-KPIC
+CRT_CFLAGS_NOPIC = -ffreestanding -mno-abicalls -fno-pic
 
 umps_datadir = $(datadir)/umps2
 umps_includedir = $(includedir)/umps2/umps
@@ -33,15 +35,23 @@ umps_data_DATA = \
 	umpsaout.ldscript			\
 	umpscore.ldscript
 
-umps_lib_DATA = crtso.o crti.o libumps.o
+umps_lib_DATA = \
+	crtso.o					\
+	crti.o					\
+	libumps.o
 
 umps_include_HEADERS = e/libumps.e h/types.h
 
 #all: exec.rom.umps coreboot.rom.umps tapeboot.rom.umps libumps.o crtso.o crti.template.o crti.o
 
-# generic aout startup function 
-.S.o:
-	$(XCGCC) -c $(XCPP_FLAGS) -Wa,$(CCASFLAGS) $<
+crtso.o : crtso.S
+	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
+
+crti.o : crti.S
+	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
+
+libumps.o : libumps.S
+	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
 
 exec: exec.S
 	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@

@@ -51,10 +51,14 @@ LEAF_FUNC(set ## suffix);                       \
 END_LEAF_FUNC(set ## suffix)
 
 
-	/* Ugh, we don't really want abicalls unconditionally. */
+	/* We don't want abicalls unconditionally. */
+#ifdef ABICALLS
 	.abicalls
+#endif
 
-	# Code start
+	/*
+	 * Code start
+	 */
 
 	.text
 	.set noat
