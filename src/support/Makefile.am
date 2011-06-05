@@ -10,9 +10,13 @@ umps_includedir = $(includedir)/umps2/umps
 umps_libdir = $(libdir)/umps2
 
 EXTRA_DIST = \
-	coreboot.S tapeboot.S			\
+	coreboot.S				\
+	tapeboot.S				\
 	exec.S					\
-	crti.template.S crti.S crtso.S		\
+	crti.template.S				\
+	crti.S					\
+	crtso.S					\
+	crtso_pic.S				\
 	elf32btsmip.h.umpsaout.x		\
 	elf32btsmip.h.umpscore.x		\
 	elf32ltsmip.h.umpsaout.x		\
@@ -33,7 +37,9 @@ umps_data_DATA = \
 	$(LDCORESCRIPT)				\
 	$(LDAOUTSCRIPT)				\
 	umpsaout.ldscript			\
-	umpscore.ldscript
+	umpscore.ldscript			\
+	crtso.S					\
+	libumps.S
 
 umps_lib_DATA = \
 	crtso.o					\
@@ -42,10 +48,8 @@ umps_lib_DATA = \
 
 umps_include_HEADERS = e/libumps.e h/types.h
 
-#all: exec.rom.umps coreboot.rom.umps tapeboot.rom.umps libumps.o crtso.o crti.template.o crti.o
-
-crtso.o : crtso.S
-	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
+crtso.o : crtso_pic.S
+	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) -o $@ $<
 
 crti.o : crti.S
 	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
