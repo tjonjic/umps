@@ -3,7 +3,7 @@ ENTRY(__start)
 
 PHDRS
 {
-    text PT_LOAD FILEHDR PHDRS;
+    text PT_LOAD;
     data PT_LOAD;
 }
 
@@ -13,10 +13,11 @@ SECTIONS
      * Text segment content
      */
 
-    . = 0x200010B0;
+    . = 0x20001000;
     .text :
     {
         _ftext = . ;
+        . = 0xb0;
         *(.text .text.*)
     } :text =0
 
