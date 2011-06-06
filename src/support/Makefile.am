@@ -25,7 +25,6 @@ EXTRA_DIST = \
 	umpscore.ldscript			\
 	libumps.S				\
 	regdef.h				\
-	h/bios_srv.h				\
 	bios_defs.h
 
 CLEANFILES = exec coreboot tapeboot *.o *.rom.umps 

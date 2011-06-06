@@ -1,7 +1,7 @@
 /* -*- mode: asm; tab-width: 8; indent-tabs-mode: t -*- */
 
 #include "regdef.h"
-#include "h/bios_srv.h"
+#include "bios_defs.h"
 #include "umps/arch.h"
 
 	.abicalls
