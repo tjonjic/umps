@@ -44,6 +44,7 @@
 #include <libelf.h>
 
 #include "base/debug.h"
+#include "base/bit_tricks.h"
 #include "umps/aout.h"
 #include "umps/blockdev_params.h"
 
@@ -51,6 +52,7 @@
  * Functions throughtout this module close over this global!
  */
 static Elf* elf;
+static Elf32_Ehdr* elfHeader;
 
 static const size_t kBlockSize = 4096;
 
@@ -99,6 +101,8 @@ private:
 static void fatalError(const char *format, ...);
 static void elfError();
 static void printHelp();
+
+uint32_t toTargetEndian(uint32_t x);
 
 static Elf_Scn* getSectionByType(Elf32_Word type);
 static Elf32_Addr getGPValue();
@@ -168,7 +172,7 @@ int main(int argc, char** argv)
         fatalError("`%s' is not an ELF file", fileName);
 
     // Check ELF file version and arch
-    Elf32_Ehdr* elfHeader = elf32_getehdr(elf);
+    elfHeader = elf32_getehdr(elf);
     if (elfHeader == NULL)
         elfError();
     if (elfHeader->e_version != EV_CURRENT)
@@ -224,6 +228,15 @@ static void printHelp()
             "-k\tmake kernel core file <file>.core.umps + map file\n"
             "-b\tmake BIOS file <file>.rom.umps\n-a\tmake a.out file <file>.aout.umps\n",
             programName);
+}
+
+inline uint32_t toTargetEndian(uint32_t x)
+{
+#ifdef WORDS_BIGENDIAN
+    return (elfHeader->e_ident[EI_DATA] == ELFDATA2LSB) ? SwapEndian32(x) : x;
+#else
+    return (elfHeader->e_ident[EI_DATA] == ELFDATA2LSB) ? x : SwapEndian32(x);
+#endif
 }
 
 SymbolTableIterator::SymbolTableIterator(Elf* elf)
@@ -310,10 +323,6 @@ static Elf32_Addr getGPValue()
  */
 static void elf2aout(bool isCore)
 {
-    Elf32_Ehdr* elfHeader = elf32_getehdr(elf);
-    if (elfHeader == NULL)
-        elfError();
-
     // Check ELF object type
     if (elfHeader->e_type != ET_EXEC)
         fatalError("ELF object file is not executable");
@@ -403,7 +412,7 @@ static void elf2aout(bool isCore)
     for (size_t i = 0; i < N_AOUT_HDR_ENT; i++) {
         if (headerBuf[i])
             fatalError("No space for a.out header");
-        headerBuf[i] = header[i];
+        headerBuf[i] = toTargetEndian(header[i]);
     }
 
     std::string outName = fileName;
@@ -417,7 +426,7 @@ static void elf2aout(bool isCore)
 
     // If it's a core file, write the RRF padding first
     if (isCore) {
-        uint32_t tag = COREFILEID;
+        uint32_t tag = toTargetEndian(COREFILEID);
         if (fwrite(&tag, sizeof(tag), 1, file) != 1)
             fatalError("Error writing a.out file `%s'", outName.c_str());
         uint32_t pad = 0;
@@ -453,7 +462,7 @@ static void createSymbolTable()
     if (file == NULL)
         fatalError("Cannot create symbol table file `%s': %s", outName.c_str(), strerror(errno));
 
-    uint32_t tag = STABFILEID;
+    uint32_t tag = toTargetEndian(STABFILEID);
     if (fwrite(&tag, sizeof(tag), 1, file) != 1)
         fatalError("Error writing symbol table file `%s': %s", outName.c_str(), strerror(errno));
 
@@ -492,7 +501,7 @@ static void createSymbolTable()
 
     // Write symbol counts
     if (fseek(file, sizeof(tag), SEEK_SET) ||
-        fprintf(file, "%.8X %.8X", funCount, objCount) < 0)
+        fprintf(file, "%.8X %.8X", (unsigned int) funCount, (unsigned int) objCount) < 0)
     {
         fatalError("Error writing symbol table file `%s': %s", outName.c_str(), strerror(errno));
     }
@@ -506,9 +515,6 @@ static void createSymbolTable()
 static void elf2bios()
 {
     // Check ELF object type
-    Elf32_Ehdr* elfHeader = elf32_getehdr(elf);
-    if (elfHeader == NULL)
-        elfError();
     if (elfHeader->e_type != ET_REL)
         fatalError("`%s' is not a relocatable ELF object file", fileName);
 
@@ -537,11 +543,12 @@ static void elf2bios()
     Elf_Data* data;
 
     // Write header
-    uint32_t tag = BIOSFILEID;
+    uint32_t tag = toTargetEndian(BIOSFILEID);
     uint32_t size = 0;
     forEachSectionData(sd, data)
         if (data->d_type == ELF_T_BYTE)
             size += data->d_size / 4;
+    size = toTargetEndian(size);
     if (fwrite(&tag, sizeof(tag), 1, file) != 1 ||
         fwrite(&size, sizeof(size), 1, file) != 1)
     {
@@ -580,7 +587,7 @@ static void elf2bios()
     }
     if (relocs) {
         fprintf(stderr,
-                "%s : Warning : BIOS code may contain %u unresolved relocations\n",
+                "%s: Warning: BIOS code may contain %u unresolved relocations\n",
                 programName, (unsigned int) relocs);
     }
 }
