@@ -29,4 +29,9 @@ inline uint32_t CeilingP2(uint32_t x)
     return x + 1;
 }
 
+inline uint32_t SwapEndian32(uint32_t x)
+{
+    return (x << 24) | ((x << 8) & 0x00ff0000) | ((x >> 8) & 0x0000ff00) | (x >> 24);
+}
+
 #endif // BASE_BIT_TRICKS_H
