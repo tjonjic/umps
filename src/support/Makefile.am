@@ -1,4 +1,4 @@
-XCPP_FLAGS = -I$(top_srcdir)/src
+XCPP_FLAGS = -I$(top_srcdir)/src/include
 
 BIOS_CFLAGS = -mno-abicalls -fno-pic -ffreestanding
 

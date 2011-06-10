@@ -1,1 +1,1 @@
-SUBDIRS = base umps frontends support tests
+SUBDIRS = include base umps frontends support tests

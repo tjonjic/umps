@@ -142,6 +142,7 @@ AC_SUBST(UMPSCPPFLAG)
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 src/include/Makefile
 		 src/base/Makefile
 		 src/umps/Makefile
 		 src/support/Makefile

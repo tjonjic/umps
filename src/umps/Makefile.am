@@ -1,20 +1,12 @@
-AM_CPPFLAGS = $(UMPSCPPFLAG) -I$(top_srcdir)/src
-
-umpsincludedir = $(includedir)/umps2/umps
-
-umpsinclude_HEADERS = \
-	arch.h			\
-	cp0.h
+AM_CPPFLAGS = $(UMPSCPPFLAG) -I$(top_srcdir)/src -I$(top_srcdir)/src/include
 
 noinst_LIBRARIES = libumps.a
 
 libumps_a_SOURCES = \
-	arch.h			\
 	blockdev.h		\
 	blockdev.cc		\
 	blockdev_params.h	\
 	const.h			\
-	cp0.h			\
 	device.h		\
 	device.cc		\
 	disassemble.h		\
@@ -57,25 +49,13 @@ libumps_a_CPPFLAGS = \
 bin_PROGRAMS = umps2-elf2umps umps2-mkdev umps2-objdump
 
 umps2_elf2umps_SOURCES = \
-	elf2umps.cc		\
-	const.h			\
-	types.h			\
-	blockdev_params.h	\
-	processor_defs.h	\
-	aout.h
+	elf2umps.cc
 
 umps2_elf2umps_LDADD = $(ELF_LIBS)
 
 umps2_mkdev_SOURCES = \
-	mkdev.cc		\
-	const.h			\
-	types.h			\
-	blockdev_params.h
+	mkdev.cc
 
 umps2_objdump_SOURCES = \
-	const.h			\
-	types.h			\
-	blockdev_params.h	\
-	aout.h			\
 	disassemble.cc		\
 	objdump.cc

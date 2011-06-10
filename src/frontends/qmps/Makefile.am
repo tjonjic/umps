@@ -123,7 +123,9 @@ nodist_umps2_SOURCES = \
 
 umps2_CXXFLAGS = $(QT_CXXFLAGS) $(AM_CXXFLAGS)
 
-umps2_CPPFLAGS = $(UMPSCPPFLAG) $(QT_CPPFLAGS) $(AM_CPPFLAGS) $(SIGCPP_CFLAGS) -I$(top_srcdir)/src -I$(top_srcdir)/src/frontends
+umps2_CPPFLAGS = \
+	$(UMPSCPPFLAG) $(QT_CPPFLAGS) $(SIGCPP_CFLAGS) \
+	-I$(top_srcdir)/src -I$(top_srcdir)/src/include	-I$(top_srcdir)/src/frontends
 
 umps2_LDFLAGS = $(QT_LDFLAGS)
 
@@ -141,4 +143,3 @@ umps2_LDADD = \
 BUILT_SOURCES = $(umps2_moc_sources) qmps.qrc.cc
 
 EXTRA_DIST = qmps.qrc icons
-
