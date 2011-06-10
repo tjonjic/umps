@@ -1,6 +1,6 @@
 /* -*- mode: asm; tab-width: 8; indent-tabs-mode: t -*- */
 
-#include "regdef.h"
+#include "umps/regdef.h"
 #include "umps/arch.h"
 #include "umps/cp0.h"
 

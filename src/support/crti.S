@@ -1,6 +1,6 @@
  #$Id: crti.s,v 1.1 2004/04/13 14:11:58 morsiani Exp $
 	
-#include "regdef.h"
+#include "umps/regdef.h"
 
 	.abicalls
 
