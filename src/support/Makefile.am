@@ -13,7 +13,6 @@ EXTRA_DIST = \
 	coreboot.S				\
 	tapeboot.S				\
 	exec.S					\
-	crti.template.S				\
 	crti.S					\
 	crtso.S					\
 	crtso_pic.S				\
