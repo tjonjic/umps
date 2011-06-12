@@ -138,6 +138,8 @@ case "${host}" in
 	;;
 esac
 
+AM_CONDITIONAL([WORDS_BIGENDIAN], [test "x$ac_cv_c_bigendian" = xyes])
+
 AC_SUBST(UMPSCPPFLAG)
 
 AC_CONFIG_FILES([Makefile
@@ -147,6 +149,7 @@ AC_CONFIG_FILES([Makefile
 		 src/umps/Makefile
 		 src/support/Makefile
 		 src/support/bios/Makefile
+		 src/support/legacy/Makefile
                  src/frontends/Makefile
                  src/frontends/qmps/Makefile
                  src/tests/Makefile])

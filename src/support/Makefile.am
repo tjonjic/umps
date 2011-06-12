@@ -1,4 +1,4 @@
-SUBDIRS = bios
+SUBDIRS = bios legacy
 
 XCPP_FLAGS = -I$(top_srcdir)/src/include
 
@@ -36,15 +36,15 @@ umps_data_DATA = \
 	crtso.S					\
 	libumps.S
 
-umps_lib_DATA = \
-	crtso.o					\
-	crti.o					\
-	libumps.o
+#umps_lib_DATA = \
+#	crtso.o					\
+#	crti.o					\
+#	libumps.o
 
 umps_include_HEADERS = e/libumps.e h/types.h
 
-crtso.o : crtso_pic.S
-	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) -o $@ $<
+#crtso.o : crtso_pic.S
+#	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) -o $@ $<
 
 crti.o : crti.S
 	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
