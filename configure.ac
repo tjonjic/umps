@@ -146,6 +146,7 @@ AC_CONFIG_FILES([Makefile
 		 src/base/Makefile
 		 src/umps/Makefile
 		 src/support/Makefile
+		 src/support/bios/Makefile
                  src/frontends/Makefile
                  src/frontends/qmps/Makefile
                  src/tests/Makefile])

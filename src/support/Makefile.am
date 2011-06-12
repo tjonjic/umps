@@ -1,3 +1,5 @@
+SUBDIRS = bios
+
 XCPP_FLAGS = -I$(top_srcdir)/src/include
 
 BIOS_CFLAGS = -mno-abicalls -fno-pic -ffreestanding
@@ -10,9 +12,6 @@ umps_includedir = $(includedir)/umps2/umps
 umps_libdir = $(libdir)/umps2
 
 EXTRA_DIST = \
-	coreboot.S				\
-	tapeboot.S				\
-	exec.S					\
 	crti.S					\
 	crtso.S					\
 	crtso_pic.S				\
@@ -26,12 +25,10 @@ EXTRA_DIST = \
 	regdef.h				\
 	bios_defs.h
 
-CLEANFILES = exec coreboot tapeboot *.o *.rom.umps 
+#CLEANFILES = exec coreboot tapeboot *.o *.rom.umps 
+CLEANFILES = *.o
 
 umps_data_DATA = \
-	exec.rom.umps				\
-	coreboot.rom.umps			\
-	tapeboot.rom.umps			\
 	$(LDCORESCRIPT)				\
 	$(LDAOUTSCRIPT)				\
 	umpsaout.ldscript			\
@@ -54,21 +51,3 @@ crti.o : crti.S
 
 libumps.o : libumps.S
 	$(XCGCC) -c $(XCPP_FLAGS) $(CRT_CFLAGS_PIC) $<
-
-exec: exec.S
-	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
-
-coreboot: coreboot.S
-	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
-
-tapeboot: tapeboot.S
-	$(XCGCC) -c $(XCPP_FLAGS) $(BIOS_CFLAGS) $< -o $@
-
-exec.rom.umps: exec
-	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
-
-tapeboot.rom.umps: tapeboot
-	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
-
-coreboot.rom.umps: coreboot
-	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
