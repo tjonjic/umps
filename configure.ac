@@ -150,6 +150,8 @@ AC_CONFIG_FILES([Makefile
 		 src/support/Makefile
 		 src/support/bios/Makefile
 		 src/support/legacy/Makefile
+		 src/support/crt/Makefile
+		 src/support/libumps/Makefile
                  src/frontends/Makefile
                  src/frontends/qmps/Makefile
                  src/tests/Makefile])
