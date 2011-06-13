@@ -3,10 +3,11 @@ umps_libdir = $(libdir)/umps2
 EXTRA_DIST = \
 	Makefile.legacy_dist	\
 	crtso_pic.S		\
-	crtso_pic.eb.o		\
-	crtso_pic.el.o		\
-	libumps_pic.eb.o	\
-	libumps_pic.el.o
+	crtso_pic.o.eb		\
+	crtso_pic.o.el
+
+#libumps_pic.o.eb
+#libumps_pic.o.el
 
 if WORDS_BIGENDIAN
 endian = eb
@@ -15,9 +16,10 @@ endian = el
 endif
 
 install-data-local:
-	$(INSTALL_DATA) $(srcdir)/crtso_pic.$(endian).o $(DESTDIR)$(umps_libdir)/crtso.o
-	$(INSTALL_DATA) $(srcdir)/libumps_pic.$(endian).o $(DESTDIR)$(umps_libdir)/libumps.o
+	$(mkinstalldirs) $(DESTDIR)$(umps_libdir)
+	$(INSTALL_DATA) $(srcdir)/crtso_pic.o.$(endian) $(DESTDIR)$(umps_libdir)/crtso.o
+#$(INSTALL_DATA) $(srcdir)/libumps_pic.o.$(endian) $(DESTDIR)$(umps_libdir)/libumps.o
 
 uninstall-local:
-	-rm -f $(DESTDIR)$(umps_libdir)/crtso.o \
-	       $(DESTDIR)$(umps_libdir)/libumps.o
+	-rm -f $(DESTDIR)$(umps_libdir)/crtso.o
+#$(DESTDIR)$(umps_libdir)/libumps.o

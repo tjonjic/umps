@@ -1,21 +1,10 @@
 /* -*- mode: asm; tab-width: 8; indent-tabs-mode: t -*- */
 
 #include "umps/regdef.h"
-#include "bios_defs.h"
+#include "umps/bios_defs.h"
 #include "umps/arch.h"
 
 	.abicalls
-
- # GCC automatic generated header
- 
- # GNU C 2.7.2 [AL 1.1, MM 40] Linux/MIPSEL compiled by GNU C
-
- # Cc1 defaults:
- # -mgas -mabicalls
-
- # Cc1 arguments (-G value = 0, Cpu = 3000, ISA = 1):
- # -quiet -dumpbase -version -o
- # 
 
 	PROGVSTART	= 0x20001004
 	GPSTARTADDR	= 0x200010A8

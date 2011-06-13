@@ -1,15 +1,21 @@
-CFLAGS = -ffreestanding -mips1 -mabi=32 -DABICALLS -Wa,-KPIC
+CFLAGS = -ffreestanding -mips1 -mabi=32 -DABICALLS -Wa,-KPIC -I../../include
 CC = mipsel-linux-gcc
 
 .PHONY : all clean
 
-all : crtso_pic.eb.o crtso_pic.el.o libumps_pic.eb.o libumps_pic.el.o
+all : crtso_pic.o.eb crtso_pic.o.el #libumps_pic.o.eb libumps_pic.o.el
 
 clean :
-	-rm -f *.o
+	-rm -f *.o.e[bl]
 
-%.eb.o : %.S
+crt%.o.eb : crt%.S
 	$(CC) $(CFLAGS) -EB -o $@ -c $<
 
-%.el.o : %.S
+crt%.o.el : crt%.S
 	$(CC) $(CFLAGS) -EL -o $@ -c $<
+
+#libumps_pic.o.eb : ../libumps/crt/libumps.S
+#	$(CC) $(CFLAGS) -EB -o $@ -c $<
+#
+#libumps_pic.el.o : ../libumps/crt/libumps.S
+#	$(CC) $(CFLAGS) -EL -o $@ -c $<
