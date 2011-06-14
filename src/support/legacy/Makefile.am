@@ -1,4 +1,4 @@
-umps_libdir = $(libdir)/umps2
+umpslibdir = $(libdir)/umps2
 umpsdatadir = $(datadir)/umps2
 
 legacy_ldscripts_eb = elf32btsmip.h.umpsaout.x elf32btsmip.h.umpscore.x
@@ -9,6 +9,9 @@ EXTRA_DIST = \
 	crtso_pic.S			\
 	crtso_pic.o.eb			\
 	crtso_pic.o.el			\
+	crti_pic.S			\
+	crti_pic.o.eb			\
+	crti_pic.o.el			\
 	$(legacy_ldscripts_eb)		\
 	$(legacy_ldscripts_el)
 
@@ -24,10 +27,13 @@ umpsdata_DATA = $(legacy_ldscripts_el)
 endif
 
 install-data-local:
-	$(mkinstalldirs) $(DESTDIR)$(umps_libdir)
-	$(INSTALL_DATA) $(srcdir)/crtso_pic.o.$(endian) $(DESTDIR)$(umps_libdir)/crtso.o
+	$(mkinstalldirs) $(DESTDIR)$(umpslibdir)
+	$(INSTALL_DATA) $(srcdir)/crtso_pic.o.$(endian) $(DESTDIR)$(umpslibdir)/crtso.o
+	$(INSTALL_DATA) $(srcdir)/crti_pic.o.$(endian) $(DESTDIR)$(umpslibdir)/crti.o
+
 #$(INSTALL_DATA) $(srcdir)/libumps_pic.o.$(endian) $(DESTDIR)$(umps_libdir)/libumps.o
 
 uninstall-local:
-	-rm -f $(DESTDIR)$(umps_libdir)/crtso.o
+	-rm -f $(DESTDIR)$(umpslibdir)/crtso.o
+	-rm -f $(DESTDIR)$(umpslibdir)/crti.o
 #$(DESTDIR)$(umps_libdir)/libumps.o

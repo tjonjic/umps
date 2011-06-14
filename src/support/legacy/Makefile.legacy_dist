@@ -3,7 +3,10 @@ CC = mipsel-linux-gcc
 
 .PHONY : all clean
 
-all : crtso_pic.o.eb crtso_pic.o.el #libumps_pic.o.eb libumps_pic.o.el
+all : crtso_pic.o.eb crtso_pic.o.el \
+      crti_pic.o.eb crti_pic.o.el
+
+#libumps_pic.o.eb libumps_pic.o.el
 
 clean :
 	-rm -f *.o.e[bl]
