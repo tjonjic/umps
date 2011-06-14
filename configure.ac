@@ -31,6 +31,15 @@ AC_PROG_RANLIB
 # Initialize libtool
 LT_INIT
 
+# Add a maintainer mode option
+AC_ARG_ENABLE([maintainer-mode],
+              [AS_HELP_STRING([--enable-maintainer-mode],
+                              [enable make rules and dependencies not useful (and
+                               maybe confusing) to the casual installer])],
+              [maintainer_mode=$enableval],
+              [maintainer_mode=no])
+AM_CONDITIONAL([MAINTAINER_MODE], [test "$maintainer_mode" = yes])
+
 # Check for cross toolchain
 
 AC_ARG_WITH([mips-tool-prefix],
