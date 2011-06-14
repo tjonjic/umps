@@ -3,7 +3,6 @@ SUBDIRS = bios legacy crt libumps
 umps_datadir = $(datadir)/umps2
 
 EXTRA_DIST = \
-	crti.S					\
 	umpsaout.ldscript			\
 	umpscore.ldscript
 
