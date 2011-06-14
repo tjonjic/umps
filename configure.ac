@@ -114,23 +114,6 @@ AC_FUNC_SETVBUF_REVERSED
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS([getcwd memset socket strchr strerror strstr strtoul])
 
-# Setting the arch-dependent prefix and flags.
-if test "x$ac_cv_c_bigendian" = "xyes" ; then
-    LDCOREFLAGS="-T ../support/elf32btsmip.h.umpscore.x"
-    LDAOUTFLAGS="-T ../support/elf32btsmip.h.umpsaout.x"
-    LDCORESCRIPT="elf32btsmip.h.umpscore.x"
-    LDAOUTSCRIPT="elf32btsmip.h.umpsaout.x"
-else
-    LDCOREFLAGS="-T ../support/elf32ltsmip.h.umpscore.x"
-    LDAOUTFLAGS="-T ../support/elf32ltsmip.h.umpsaout.x"
-    LDCORESCRIPT="elf32ltsmip.h.umpscore.x"
-    LDAOUTSCRIPT="elf32ltsmip.h.umpsaout.x"
-fi
-AC_SUBST(LDCORESCRIPT)
-AC_SUBST(LDAOUTSCRIPT)
-AC_SUBST(LDCOREFLAGS)
-AC_SUBST(LDAOUTFLAGS)
-
 # Checking for hosttype.
 case "${host}" in
 	*-*-linux*) 

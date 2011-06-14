@@ -1,18 +1,26 @@
 umps_libdir = $(libdir)/umps2
+umpsdatadir = $(datadir)/umps2
+
+legacy_ldscripts_eb = elf32btsmip.h.umpsaout.x elf32btsmip.h.umpscore.x
+legacy_ldscripts_el = elf32ltsmip.h.umpsaout.x elf32ltsmip.h.umpscore.x
 
 EXTRA_DIST = \
-	Makefile.legacy_dist	\
-	crtso_pic.S		\
-	crtso_pic.o.eb		\
-	crtso_pic.o.el
+	Makefile.legacy_dist		\
+	crtso_pic.S			\
+	crtso_pic.o.eb			\
+	crtso_pic.o.el			\
+	$(legacy_ldscripts_eb)		\
+	$(legacy_ldscripts_el)
 
 #libumps_pic.o.eb
 #libumps_pic.o.el
 
 if WORDS_BIGENDIAN
 endian = eb
+umpsdata_DATA = $(legacy_ldscripts_eb)
 else
 endian = el
+umpsdata_DATA = $(legacy_ldscripts_el)
 endif
 
 install-data-local:
