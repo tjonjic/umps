@@ -1,10 +1,9 @@
-/* File: $Id: libumps.e 0.14 2004/05/23 12:07:15 morsiani Exp $ */
+/*
+ * External declarations for uMPS library module.
+ */
 
-/****************************************************************************
- *
- * External declarations for mps library module.
- *
- ****************************************************************************/
+#ifndef UMPS_LIBUMPS_H
+#define UMPS_LIBUMPS_H
 
 /* Functions valid in user mode
  */
@@ -157,3 +156,5 @@ extern void HALT(void);
 extern void INITCPU(unsigned int cpuid, state_t *start_state, state_t *state_areas);
 
 extern int CAS(volatile unsigned int *atomic, unsigned int oldval, unsigned int newval);
+
+#endif /* !defined(UMPS_LIBUMPS_H) */
