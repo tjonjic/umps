@@ -49,10 +49,11 @@ AC_ARG_WITH([mips-tool-prefix],
 
 if test $maintainer_mode = yes ; then
     if test -z "$xt_prefixes" ; then
+        xt_prefixes="mips-sde-elf- mips-linux-gnu-"
         if test "x$ac_cv_c_bigendian" = xyes ; then
-            xt_prefixes="mips-elf- mips-linux-"
+            xt_prefixes="mips-elf- mips-linux- $xt_prefixes"
         else
-            xt_prefixes="mipsel-elf- mipsel-linux-"
+            xt_prefixes="mipsel-elf- mipsel-linux- $xt_prefixes"
         fi
     fi
 
