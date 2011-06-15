@@ -47,36 +47,37 @@ AC_ARG_WITH([mips-tool-prefix],
             [specify prefix for the cross toochain tools])],
             [xt_prefixes=$withval])
 
-if test -z "$xt_prefixes" ; then
-    if test "x$ac_cv_c_bigendian" = xyes ; then
-        xt_prefixes="mips-elf- mips-linux-"
-    else
-        xt_prefixes="mipsel-elf- mipsel-linux-"
+if test $maintainer_mode = yes ; then
+    if test -z "$xt_prefixes" ; then
+        if test "x$ac_cv_c_bigendian" = xyes ; then
+            xt_prefixes="mips-elf- mips-linux-"
+        else
+            xt_prefixes="mipsel-elf- mipsel-linux-"
+        fi
+    fi
+
+    for pref in $xt_prefixes ; do
+        AC_PATH_PROG([XCGCC], [${pref}gcc], [no])
+        if test "x${XCGCC}" != xno ; then
+            xt_prefix=$pref
+            break
+        fi
+    done
+
+    if test "x${XCGCC}" = xno ; then
+        AC_MSG_ERROR([MIPS toolchain (gcc) not found.])
+    fi
+
+    AC_PATH_PROG([XCAS], [${xt_prefix}as], [no])
+    if test "x${XCAS}" = xno ; then
+        AC_MSG_ERROR([MIPS toolchain (as) not found.])
+    fi
+
+    AC_PATH_PROG([XCLD], [${xt_prefix}ld], [no])
+    if test "x${XCLD}" = xno ; then
+        AC_MSG_ERROR([MIPS toolchain (ld) not found.])
     fi
 fi
-
-for pref in $xt_prefixes ; do
-    AC_PATH_PROG([XCGCC], [${pref}gcc], [no])
-    if test "x${XCGCC}" != xno ; then
-        xt_prefix=$pref
-        break
-    fi
-done
-
-if test "x${XCGCC}" = xno ; then
-    AC_MSG_ERROR([MIPS toolchain (gcc) not found.])
-fi
-
-AC_PATH_PROG([XCAS], [${xt_prefix}as], [no])
-if test "x${XCAS}" = xno ; then
-    AC_MSG_ERROR([MIPS toolchain (as) not found.])
-fi
-
-AC_PATH_PROG([XCLD], [${xt_prefix}ld], [no])
-if test "x${XCLD}" = xno ; then
-    AC_MSG_ERROR([MIPS toolchain (ld) not found.])
-fi
-
 
 AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 

@@ -1,34 +1,62 @@
-umps_datadir = $(datadir)/umps2
+umpsdatadir = $(datadir)/umps2
 
-umps_data_DATA = \
-	exec.rom.umps		\
-	coreboot.rom.umps	\
-	tapeboot.rom.umps
+umps_rom_types = coreboot tapeboot exec
+
+dist_noinst_DATA = \
+	coreboot.eb.rom.umps	\
+	coreboot.el.rom.umps	\
+	tapeboot.eb.rom.umps	\
+	tapeboot.el.rom.umps	\
+	exec.eb.rom.umps	\
+	exec.el.rom.umps
 
 EXTRA_DIST = \
-	coreboot.S		\
-	tapeboot.S		\
+	coreboot.S \
+	tapeboot.S \
 	exec.S
 
-CLEANFILES = coreboot tapeboot exec *.rom.umps
+if MAINTAINER_MODE
+CLEANFILES = $(dist_noinst_DATA)
+clean-local:
+	-for t in $(umps_rom_types) ; do rm -f $$t.eb $$t.el; done
 
-BIOS_CFLAGS = -mno-abicalls -fno-pic -ffreestanding
+BIOS_CFLAGS = -mips1 -mabi=32 -mno-abicalls -fno-pic -ffreestanding
 BIOS_CPPFLAGS = -I$(top_srcdir)/src/include
 
-coreboot.rom.umps: coreboot
+SUFFIXES = .S .eb .el .eb.rom.umps .el.rom.umps
+
+.S.eb:
+	$(XCGCC) -c -EB $(BIOS_CPPFLAGS) $(BIOS_CFLAGS) -o $@ $<
+
+.S.el:
+	$(XCGCC) -c -EL $(BIOS_CPPFLAGS) $(BIOS_CFLAGS) -o $@ $<
+
+.eb.eb.rom.umps:
 	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
 
-tapeboot.rom.umps: tapeboot
+.el.el.rom.umps:
 	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
+endif
 
-exec.rom.umps: exec
-	$(top_builddir)/src/umps/umps2-elf2umps -v -b $<
+if WORDS_BIGENDIAN
+endian = eb
+else
+endian = el
+endif
 
-coreboot: coreboot.S
-	$(XCGCC) -c $(BIOS_CPPFLAGS) $(BIOS_CFLAGS) $< -o $@
+install-data-local:
+	$(mkinstalldirs) $(DESTDIR)$(umpsdatadir)
+	@for t in $(umps_rom_types); do \
+		rom=$$t.$(endian).rom.umps; \
+		if test -f $$rom; then \
+			f=$$rom; \
+		else \
+			f=$(srcdir)/$$rom; \
+		fi; \
+		$(INSTALL_DATA) $$f $(DESTDIR)$(umpsdatadir)/$$t.rom.umps; \
+	done
 
-tapeboot: tapeboot.S
-	$(XCGCC) -c $(BIOS_CPPFLAGS) $(BIOS_CFLAGS) $< -o $@
-
-exec: exec.S
-	$(XCGCC) -c $(BIOS_CPPFLAGS) $(BIOS_CFLAGS) $< -o $@
+uninstall-local:
+	@for t in $(umps_rom_types); do \
+		rm -f $(DESTDIR)$(umpsdatadir)/$$t.rom.umps; \
+	done
