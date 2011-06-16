@@ -26,6 +26,7 @@
  * See external documentation for format details.
  */
 
+#include <config.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
