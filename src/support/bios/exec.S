@@ -7,9 +7,7 @@
 
 /* Constants */
 
-#define ASIDMASK    0x00000FC0
 #define ASIDSTEP    0x00000040
-#define GBITONMASK  0x00000100
 #define VPNMASK     0xFFFFF000
 #define VECTSIZE    140
 
@@ -178,7 +176,7 @@ LUTLBHandler:
 
 	/* compute ASID in $a3 */
 	move $a3, $k1
-	andi $a3, ASIDMASK
+	andi $a3, ENTRYHI_ASID_MASK
 
 	/* gets PTE segment starting address in $a2 */
 	li	$a2, PTESTART
@@ -297,7 +295,7 @@ LSearchLoop:
 	
 	/* checks for G bit */
 	lw	$a1, 4($k0)
-	andi	$a1, GBITONMASK
+	andi	$a1, ENTRYLO_GLOBAL
 	beq	$0, $a1, LEndLoop
 	
 	/* G bit is on: checks against $a0 */
