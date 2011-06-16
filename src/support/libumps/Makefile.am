@@ -10,4 +10,4 @@ install-data-hook:
 	$(LN_S) libumps.h libumps.e
 
 uninstall-hook:
-	cd $(DESTDIR)$(hello_includedir); rm -f libumps.e
+	cd $(DESTDIR)$(umpsincludedir); rm -f libumps.e
