@@ -65,7 +65,7 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     toolBar->setStyleSheet("QToolButton { padding: 0; }");
 
     treeView = new TreeView(QString("RegisterSetView%1").arg(cpuId),
-                            boost::assign::list_of(RegisterSetSnapshot::COL_REGISTER_MNEMONIC),
+                            boost::assign::list_of<int>(RegisterSetSnapshot::COL_REGISTER_MNEMONIC),
                             true);
     treeView->setItemDelegateForColumn(RegisterSetSnapshot::COL_REGISTER_VALUE,
                                        delegates[currentDelegate()]);

@@ -462,7 +462,7 @@ QWidget* MonitorWindow::createConfigTab()
 QWidget* MonitorWindow::createCpuTab()
 {
     cpuListView = new TreeView("CPUListView",
-                               list_of
+                               list_of<int>
                                (ProcessorListModel::COLUMN_CPU_ID)
                                (ProcessorListModel::COLUMN_CPU_STATUS)
                                (ProcessorListModel::COLUMN_CPU_ADDRESS));
@@ -472,7 +472,7 @@ QWidget* MonitorWindow::createCpuTab()
             this, SLOT(onCpuItemActivated(const QModelIndex&)));
 
     breakpointListView = new TreeView("BreakpointListView",
-                                      list_of
+                                      list_of<int>
                                       (StoppointListModel::COLUMN_STOPPOINT_ID)
                                       (StoppointListModel::COLUMN_ACCESS_TYPE)
                                       (StoppointListModel::COLUMN_ASID));
@@ -493,7 +493,7 @@ QWidget* MonitorWindow::createCpuTab()
 QWidget* MonitorWindow::createMemoryTab()
 {
     suspectListView = new TreeView("SuspectListView",
-                                   list_of
+                                   list_of<int>
                                    (StoppointListModel::COLUMN_STOPPOINT_ID)
                                    (StoppointListModel::COLUMN_ASID));
     suspectListView->setRootIsDecorated(false);
