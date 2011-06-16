@@ -5,39 +5,39 @@
 #include "umps/cp0.h"
 #include "umps/bios_defs.h"
 
-	/* Constants */
+/* Constants */
 
-	ASIDMASK	= 0x00000FC0
-	ASIDSTEP	= 0x00000040
-	GBITONMASK	= 0x00000100
-	VPNMASK		= 0xFFFFF000
-	VECTSIZE	= 140
+#define ASIDMASK    0x00000FC0
+#define ASIDSTEP    0x00000040
+#define GBITONMASK  0x00000100
+#define VPNMASK     0xFFFFF000
+#define VECTSIZE    140
 
-	/* NOP padding: 30 nops - string length (32 bytes) */
-	GENEXC_PADDING 	= (30 * 4) - 32
-	ENDSTRADDR	= 0x00000008
-	PANICSTRADDR	= ENDSTRADDR + 16
+/* NOP padding: 30 nops - string length (32 bytes) */
+#define GENEXC_PADDING    (30 * 4) - 32
+#define ENDSTRADDR        0x00000008
+#define PANICSTRADDR      (ENDSTRADDR + 16)
 
-	TERM0COMMAND	= DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
-	BUSYCODE	= 3
-	BYTELEN 	= 8
-	PRINTCHR	= 2	
+/* Terminal device related stuff */
+#define TERM0COMMAND      DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
+#define BUSYCODE          3
+#define BYTELEN           8
+#define PRINTCHR          2
 
-	PTEBUGFLAG  	= 0x20000FFC
-	PTESTART	= 0x20000500
-	PTESEGSIZE  	= 12
-	PTESEGOFFS	= 30
-	PTEMAGIC	= 0x2A
-	PTEMAGICOFFS	= 24
-	PTECNTOFFS	= 8
-	UTLBSTACK	= 0x20000FF8
+/* TLB-related constants */
+#define PTESTART          0x20000500
+#define PTESEGSIZE        12
+#define PTESEGOFFS        30
+#define PTEMAGIC          0x2A
+#define PTEMAGICOFFS      24
+#define PTECNTOFFS        8
 
-	BADPTE		= 13
-	PTEMISS		= 14
-	
-	CAUSENEGMASK	= 0xFFFFFF83
-	KUPSTATUSMASK	= 0x00000008
-	SAFESTATUSMASK	= 0xFEFFFFFC
+#define BADPTE            13
+#define PTEMISS           14
+
+#define CAUSENEGMASK      0xFFFFFF83
+#define KUPSTATUSMASK     0x00000008
+#define SAFESTATUSMASK    0xFEFFFFFC
 
 
 	/*
