@@ -50,6 +50,7 @@
 
 #include "umps/disassemble.h"
 
+static const size_t AOUTENTNUM = 10;
 
 // number of NOPS, empty words and characters before skip in displaying
 #define NOPSMIN	2
@@ -208,7 +209,7 @@ HIDDEN int hdrDump(const char * prgName, const char * fileName)
 				}	
 				else
 				{
-					offs = COREHDRSIZE * WORDLEN;
+					offs = CORE_HDR_SIZE * WORDLEN;
 					printf("%s : core file type\n\n", fileName);
 				}
 				// load header
@@ -273,19 +274,19 @@ HIDDEN int disAsm(const char * prgName, const char * fileName)
 				if (tag == AOUTFILEID)
 					offs = 0L;
 				else
-					offs = COREHDRSIZE * WORDLEN;
+					offs = CORE_HDR_SIZE * WORDLEN;
 
 				// load header
 				if (fseek(inFile, offs, SEEK_SET) == EOF || \
 					fread((void *) aoutHdr, WORDLEN, AOUTENTNUM, inFile) != AOUTENTNUM || \
-					fseek(inFile, (SWord) ((aoutHdr[PROGSTART] - aoutHdr[TEXTVSTART]) + aoutHdr[TEXTFOFFS]) + offs, SEEK_SET) == EOF)
+					fseek(inFile, (SWord) ((aoutHdr[AOUT_ENTRY] - aoutHdr[AOUT_TEXT_VADDR]) + aoutHdr[AOUT_TEXT_OFFSET]) + offs, SEEK_SET) == EOF)
 					
 				{
 					fprintf(stderr, "%s : Error reading file %s : invalid/corrupted file\n", prgName, fileName);
 					ret = EXIT_FAILURE;
 				}
 				else
-					ret = asmPrint(prgName, fileName, inFile, aoutHdr[PROGSTART], aoutHdr[TEXTVSIZE]);
+					ret = asmPrint(prgName, fileName, inFile, aoutHdr[AOUT_ENTRY], aoutHdr[AOUT_TEXT_MEMSZ]);
 			}
 		}
 		fclose(inFile);

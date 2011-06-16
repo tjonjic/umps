@@ -32,26 +32,16 @@
 // default kernel ASID identifier
 #define KERNID	0
 
-// BIOS reserved page frames number
-#define BIOSPAGES	1
+// Number of BIOS reserved page frames
+#define N_BIOS_PAGES  1
 
-// core file header size in words: core file id tag (1W) + 1 full page frames
-// (FRAMESIZE) for BIOS exclusive use
-#define COREHDRSIZE	((BIOSPAGES * FRAMESIZE) + 1)
+// Core file header size in words: core file id tag (1W) + 1 full page frame
+// for BIOS exclusive use
+#define CORE_HDR_SIZE (N_BIOS_PAGES * 1024 + 1)
 
-// .aout header entries number and position within header itself
-#define AOUTENTNUM 10
-#define AOUTTAG	0
-#define PROGSTART	1
-#define TEXTVSTART	2
-#define TEXTVSIZE	3
-#define TEXTFOFFS	4
-#define TEXTFSIZE	5
-#define DATAVSTART	6
-#define DATAVSIZE	7
-#define DATAFOFFS	8
-#define DATAFSIZE	9
-
+/*
+ * AOUT header entries
+ */
 #define AOUT_TAG           0
 #define AOUT_ENTRY         1
 #define AOUT_TEXT_VADDR    2
