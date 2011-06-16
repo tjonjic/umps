@@ -12,11 +12,10 @@ EXTRA_DIST = \
 	crti_pic.S			\
 	crti_pic.o.eb			\
 	crti_pic.o.el			\
+	libumps_pic.o.eb		\
+	libumps_pic.o.el		\
 	$(legacy_ldscripts_eb)		\
 	$(legacy_ldscripts_el)
-
-#libumps_pic.o.eb
-#libumps_pic.o.el
 
 if WORDS_BIGENDIAN
 endian = eb
@@ -30,10 +29,9 @@ install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(umpslibdir)
 	$(INSTALL_DATA) $(srcdir)/crtso_pic.o.$(endian) $(DESTDIR)$(umpslibdir)/crtso.o
 	$(INSTALL_DATA) $(srcdir)/crti_pic.o.$(endian) $(DESTDIR)$(umpslibdir)/crti.o
-
-#$(INSTALL_DATA) $(srcdir)/libumps_pic.o.$(endian) $(DESTDIR)$(umps_libdir)/libumps.o
+	$(INSTALL_DATA) $(srcdir)/libumps_pic.o.$(endian) $(DESTDIR)$(umpslibdir)/libumps.o
 
 uninstall-local:
-	-rm -f $(DESTDIR)$(umpslibdir)/crtso.o
-	-rm -f $(DESTDIR)$(umpslibdir)/crti.o
-#$(DESTDIR)$(umps_libdir)/libumps.o
+	-rm -f $(DESTDIR)$(umpslibdir)/crtso.o \
+	       $(DESTDIR)$(umpslibdir)/crti.o \
+	       $(DESTDIR)$(umpslibdir)/libumps.o

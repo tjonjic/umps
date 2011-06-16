@@ -3,7 +3,7 @@
 #include "umps/regdef.h"
 #include "umps/arch.h"
 #include "umps/cp0.h"
-#include "bios_defs.h"
+#include "umps/bios_defs.h"
 
 #define casopc movn
 

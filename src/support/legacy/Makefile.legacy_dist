@@ -4,9 +4,8 @@ CC = mipsel-linux-gcc
 .PHONY : all clean
 
 all : crtso_pic.o.eb crtso_pic.o.el \
-      crti_pic.o.eb crti_pic.o.el
-
-#libumps_pic.o.eb libumps_pic.o.el
+      crti_pic.o.eb crti_pic.o.el \
+      libumps_pic.o.eb libumps_pic.o.el
 
 clean :
 	-rm -f *.o.e[bl]
@@ -17,8 +16,8 @@ crt%.o.eb : crt%.S
 crt%.o.el : crt%.S
 	$(CC) $(CFLAGS) -EL -o $@ -c $<
 
-#libumps_pic.o.eb : ../libumps/crt/libumps.S
-#	$(CC) $(CFLAGS) -EB -o $@ -c $<
-#
-#libumps_pic.el.o : ../libumps/crt/libumps.S
-#	$(CC) $(CFLAGS) -EL -o $@ -c $<
+libumps_pic.o.eb : ../libumps/libumps.S
+	$(CC) $(CFLAGS) -EB -o $@ -c $<
+
+libumps_pic.o.el : ../libumps/libumps.S
+	$(CC) $(CFLAGS) -EL -o $@ -c $<
