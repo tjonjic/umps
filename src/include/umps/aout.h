@@ -29,9 +29,6 @@
 #ifndef UMPS_AOUT_H
 #define UMPS_AOUT_H
 
-// default kernel ASID identifier
-#define KERNID	0
-
 // Number of BIOS reserved page frames
 #define N_BIOS_PAGES  1
 
