@@ -1,3 +1,19 @@
+1.9.7
+=====
+
+* Add new streamlined linker scripts (umpsaout.ldscript,
+  umpscore.ldscript), designed to be compatible with a variety of
+  toolchains
+* Autodetect more (most?) MIPS toolchains
+* Add an option to specify cross toolchain prefix (mips-tool-prefix)
+  to configure
+* Add a maintainer-mode configure option
+* Don't require a cross toolchain for end-user installation; ROM
+  files are now included in the distribution, in both endian variants
+* Install aout.h (uMPS a.out format header definitions)
+* Install crt and libumps assembler sources
+* Honor target file endianess in umps2-elf2umps, regardless of host
+
 1.9.6
 =====
 
