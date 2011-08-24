@@ -19,21 +19,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-/**************************************************************************** 
- *
+/*
  * This header file contains constant & macro definitions for .aout/.core 
  * file types.
- * 
- ****************************************************************************/
+ */
 
 #ifndef UMPS_AOUT_H
 #define UMPS_AOUT_H
 
-// Number of BIOS reserved page frames
+/* Number of BIOS reserved page frames */
 #define N_BIOS_PAGES  1
 
-// Core file header size in words: core file id tag (1W) + 1 full page frame
-// for BIOS exclusive use
+/*
+ * Core file header size in words: core file id tag (1W) + 1 full page frame
+ * for BIOS exclusive use
+ */
 #define CORE_HDR_SIZE (N_BIOS_PAGES * 1024 + 1)
 
 /*
