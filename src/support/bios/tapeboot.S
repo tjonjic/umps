@@ -5,38 +5,47 @@
 #include "umps/cp0.h"
 #include "umps/bios_defs.h"
 
- 	/* Constants */
-#define TERM0COMMAND      DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
+/*
+ * Constants
+ */
 
+/* Device register ptrs */
+#define TERM0COMMAND      DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
+#define TAPE0BASE         DEV_REG_ADDR(IL_TAPE, 0)
+
+/* Panic vector */
 #define BIOSPANIC 0x00000108
 
-	STATUSMASK 	= 0xFDBFFFF3
-	BIOSVECTPAGE 	= 0x20000000
+/* New Status value */
+#define STATUSMASK 0xFDBFFFF3
 
-	VECTAREANUM	= 8
-	VECTPCPOS	= 12
-	VECTSIZE	= 140
-	PROGVSTART	= 0x20001004
+/* New/old area structure */
+#define BIOSVECTPAGE 0x20000000
+#define VECTAREANUM  8
+#define VECTPCPOS    12
+#define VECTSIZE     140
 
-	BYTELEN 	= 8
-	PRINTCHR	= 2	
-	DOTCHAR		= 46
-	LFCHAR		= 10
+#define PROGVSTART  0x20001004
 
-	TAPE0BASE	= 0x100000D0
-	TAPESTART	= 3
-	READBLK		= 3
-	
-	ACK		= 1
-	BUSYCODE	= 3
-	READYCODE	= 1
-	EOBCODE		= 2
+#define BYTELEN         8
+#define PRINTCHR        2
+#define DOTCHAR         46
+#define LFCHAR          10
 
-	RAMBASE		= 0x20000000
-	BLOCKSIZE	= 4096
+/* Tape device related constants */
+#define TAPESTART       3
+#define READBLK         3
 
-	PADDINGTLB	= 0x100 - 8
-	PADDINGEXC	= 0x80 - 16
+#define ACK             1
+#define BUSYCODE        3
+#define READYCODE       1
+#define EOBCODE         2
+
+#define RAMBASE         0x20000000
+#define BLOCKSIZE       4096
+
+#define PADDINGTLB      0x100 - 8
+#define PADDINGEXC      0x80 - 16
 
 	/*
 	 * Code start
