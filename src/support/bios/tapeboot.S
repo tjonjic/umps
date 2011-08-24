@@ -3,19 +3,21 @@
 #include "umps/regdef.h"
 #include "umps/arch.h"
 #include "umps/cp0.h"
+#include "umps/bios_defs.h"
 
  	/* Constants */
+#define TERM0COMMAND      DEV_REG_ADDR(IL_TERMINAL, 0) + 0xC
+
+#define BIOSPANIC 0x00000108
 
 	STATUSMASK 	= 0xFDBFFFF3
 	BIOSVECTPAGE 	= 0x20000000
-	BIOSPANIC	= 0x00000088
+
 	VECTAREANUM	= 8
 	VECTPCPOS	= 12
 	VECTSIZE	= 140
 	PROGVSTART	= 0x20001004
 
-	/*TERM0COMMAND	= 0x1000025C*/
-	TERM0COMMAND	= 0x1000026C
 	BYTELEN 	= 8
 	PRINTCHR	= 2	
 	DOTCHAR		= 46
@@ -36,7 +38,9 @@
 	PADDINGTLB	= 0x100 - 8
 	PADDINGEXC	= 0x80 - 16
 
-	#Code start
+	/*
+	 * Code start
+	 */
 
 	.text
 	.align	2
@@ -224,11 +228,21 @@ LPrintLoop2:
 	li 	$a0, BIOSVECTPAGE
 	li 	$a1, BIOSPANIC # put here panic() address
 	li 	$a2, VECTAREANUM
-Lfor:	
+Lfor:
 	sw	$a1, VECTPCPOS($a0)
 	addiu	$a0,VECTSIZE
 	addi	$a2, -1
 	bgtz	$a2, Lfor
+
+	/* We use per/cpu bios reserved registers to point to the
+	   exception vector and some scratch RAM space */
+	li	$t0, BIOS_EXCVEC_BASE
+	li	$t1, BIOS_LEGACY_EXCVEC_BASE
+	sw	$t1, 0($t0)
+
+	li	$t0, BIOS_SCRATCH_BASE
+	li	$t1, BIOS_LEGACY_SCRATCH_BASE
+	sw	$t1, 0($t0)
 	
 	# finally, we set EntryHI and STATUS for kernel:
 	# being EntryHI = 0, and STATUS good as it is now,
@@ -247,6 +261,4 @@ Lfor:
 	.set macro
 
 	.end tapeboot
-
-LtapebootEnd:
-	.size	 tapeboot, LtapebootEnd - tapeboot
+	.size	 tapeboot, . - tapeboot
