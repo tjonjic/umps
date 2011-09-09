@@ -2,6 +2,11 @@ umpsdatadir = $(datadir)/umps2
 
 umps_rom_types = coreboot tapeboot exec
 
+dist_umpsdata_DATA = \
+	coreboot.S	\
+	tapeboot.S	\
+	exec.S
+
 dist_noinst_DATA = \
 	coreboot.eb.rom.umps	\
 	coreboot.el.rom.umps	\
@@ -9,11 +14,6 @@ dist_noinst_DATA = \
 	tapeboot.el.rom.umps	\
 	exec.eb.rom.umps	\
 	exec.el.rom.umps
-
-EXTRA_DIST = \
-	coreboot.S \
-	tapeboot.S \
-	exec.S
 
 if MAINTAINER_MODE
 CLEANFILES = $(dist_noinst_DATA)
