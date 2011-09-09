@@ -279,14 +279,14 @@ HIDDEN int disAsm(const char * prgName, const char * fileName)
 				// load header
 				if (fseek(inFile, offs, SEEK_SET) == EOF || \
 					fread((void *) aoutHdr, WORDLEN, AOUTENTNUM, inFile) != AOUTENTNUM || \
-					fseek(inFile, (SWord) ((aoutHdr[AOUT_ENTRY] - aoutHdr[AOUT_TEXT_VADDR]) + aoutHdr[AOUT_TEXT_OFFSET]) + offs, SEEK_SET) == EOF)
+					fseek(inFile, (SWord) ((aoutHdr[AOUT_HE_ENTRY] - aoutHdr[AOUT_HE_TEXT_VADDR]) + aoutHdr[AOUT_HE_TEXT_OFFSET]) + offs, SEEK_SET) == EOF)
 					
 				{
 					fprintf(stderr, "%s : Error reading file %s : invalid/corrupted file\n", prgName, fileName);
 					ret = EXIT_FAILURE;
 				}
 				else
-					ret = asmPrint(prgName, fileName, inFile, aoutHdr[AOUT_ENTRY], aoutHdr[AOUT_TEXT_MEMSZ]);
+					ret = asmPrint(prgName, fileName, inFile, aoutHdr[AOUT_HE_ENTRY], aoutHdr[AOUT_HE_TEXT_MEMSZ]);
 			}
 		}
 		fclose(inFile);

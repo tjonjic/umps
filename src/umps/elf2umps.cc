@@ -330,14 +330,14 @@ static void elf2aout(bool isCore)
 
     uint32_t header[N_AOUT_HDR_ENT];
     std::fill_n(header, N_AOUT_HDR_ENT, 0);
-    header[AOUT_TAG] = AOUTFILEID;
+    header[AOUT_HE_TAG] = AOUTFILEID;
 
     // Set program entry
-    header[AOUT_ENTRY] = elfHeader->e_entry;
+    header[AOUT_HE_ENTRY] = elfHeader->e_entry;
 
     // Set initial $gp entry
-    header[AOUT_GP_VALUE] = getGPValue();
-    if (header[AOUT_GP_VALUE] == (Elf32_Addr) -1)
+    header[AOUT_HE_GP_VALUE] = getGPValue();
+    if (header[AOUT_HE_GP_VALUE] == (Elf32_Addr) -1)
         fatalError("Cannot obtain initial $gp value");
 
     // Obtain the program header table
@@ -359,23 +359,23 @@ static void elf2aout(bool isCore)
             continue;
         if (pht[i].p_flags == (PF_R | PF_W) && !foundDataSeg) {
             foundDataSeg = true;
-            header[AOUT_DATA_MEMSZ] = pht[i].p_memsz;
-            header[AOUT_DATA_VADDR] = pht[i].p_vaddr;
+            header[AOUT_HE_DATA_MEMSZ] = pht[i].p_memsz;
+            header[AOUT_HE_DATA_VADDR] = pht[i].p_vaddr;
             uint32_t size = isCore ? pht[i].p_memsz : pht[i].p_filesz;
-            header[AOUT_DATA_FILESZ] = (size / kBlockSize) * kBlockSize;
-            if (header[AOUT_DATA_FILESZ] < size)
-                header[AOUT_DATA_FILESZ] += kBlockSize;
-            dataBuf = new uint8_t[header[AOUT_DATA_FILESZ]];
-            std::fill_n(dataBuf, header[AOUT_DATA_FILESZ], 0);
+            header[AOUT_HE_DATA_FILESZ] = (size / kBlockSize) * kBlockSize;
+            if (header[AOUT_HE_DATA_FILESZ] < size)
+                header[AOUT_HE_DATA_FILESZ] += kBlockSize;
+            dataBuf = new uint8_t[header[AOUT_HE_DATA_FILESZ]];
+            std::fill_n(dataBuf, header[AOUT_HE_DATA_FILESZ], 0);
         } else if (pht[i].p_flags == (PF_R | PF_X) && !foundTextSeg) {
             foundTextSeg = true;
-            header[AOUT_TEXT_MEMSZ] = pht[i].p_memsz;
-            header[AOUT_TEXT_VADDR] = pht[i].p_vaddr;
-            header[AOUT_TEXT_FILESZ] = (pht[i].p_memsz / kBlockSize) * kBlockSize;
-            if (header[AOUT_TEXT_FILESZ] < pht[i].p_memsz)
-                header[AOUT_TEXT_FILESZ] += kBlockSize;
-            textBuf = new uint8_t[header[AOUT_TEXT_FILESZ]];
-            std::fill_n(textBuf, header[AOUT_TEXT_FILESZ], 0);
+            header[AOUT_HE_TEXT_MEMSZ] = pht[i].p_memsz;
+            header[AOUT_HE_TEXT_VADDR] = pht[i].p_vaddr;
+            header[AOUT_HE_TEXT_FILESZ] = (pht[i].p_memsz / kBlockSize) * kBlockSize;
+            if (header[AOUT_HE_TEXT_FILESZ] < pht[i].p_memsz)
+                header[AOUT_HE_TEXT_FILESZ] += kBlockSize;
+            textBuf = new uint8_t[header[AOUT_HE_TEXT_FILESZ]];
+            std::fill_n(textBuf, header[AOUT_HE_TEXT_FILESZ], 0);
         } else {
             fatalError("unknown and/or redundant program header table entries");
         }
@@ -384,8 +384,8 @@ static void elf2aout(bool isCore)
     if (!foundDataSeg || !foundTextSeg)
         fatalError("missing program header");
 
-    header[AOUT_TEXT_OFFSET] = 0;
-    header[AOUT_DATA_OFFSET] = header[AOUT_TEXT_FILESZ];
+    header[AOUT_HE_TEXT_OFFSET] = 0;
+    header[AOUT_HE_DATA_OFFSET] = header[AOUT_HE_TEXT_FILESZ];
 
     // Scan sections and copy data to a.out segments
     Elf_Scn* sd;
@@ -395,10 +395,10 @@ static void elf2aout(bool isCore)
             elfError();
         if (sh->sh_type == SHT_PROGBITS && (sh->sh_flags & SHF_ALLOC)) {
             uint8_t* buf;
-            if (sh->sh_addr >= header[AOUT_DATA_VADDR])
-                buf = dataBuf + (sh->sh_addr - header[AOUT_DATA_VADDR]);
+            if (sh->sh_addr >= header[AOUT_HE_DATA_VADDR])
+                buf = dataBuf + (sh->sh_addr - header[AOUT_HE_DATA_VADDR]);
             else
-                buf = textBuf + (sh->sh_addr - header[AOUT_TEXT_VADDR]);
+                buf = textBuf + (sh->sh_addr - header[AOUT_HE_TEXT_VADDR]);
 
             Elf_Data* data;
             forEachSectionData(sd, data) {
@@ -437,8 +437,8 @@ static void elf2aout(bool isCore)
     }
 
     // Write the segments, finally.
-    if (fwrite(textBuf, 1, header[AOUT_TEXT_FILESZ], file) != header[AOUT_TEXT_FILESZ] ||
-        fwrite(dataBuf, 1, header[AOUT_DATA_FILESZ], file) != header[AOUT_DATA_FILESZ])
+    if (fwrite(textBuf, 1, header[AOUT_HE_TEXT_FILESZ], file) != header[AOUT_HE_TEXT_FILESZ] ||
+        fwrite(dataBuf, 1, header[AOUT_HE_DATA_FILESZ], file) != header[AOUT_HE_DATA_FILESZ])
     {
         fatalError("Error writing a.out file `%s'", outName.c_str());
     }

@@ -53,7 +53,7 @@ __start:
 
 	/* Initialize the $gp register. The initial gp value is found
 	   in the .aout header (and also in the linker-defined `_gp' symbol). */
-	li	$t0, TEXT_VADDR + (AOUT_GP_VALUE << 2)
+	li	$t0, TEXT_VADDR + (AOUT_HE_GP_VALUE << 2)
 	lw	$gp, 0($t0)
 
 	/* Call main */

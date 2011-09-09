@@ -27,7 +27,7 @@ __start:
 	addiu	$sp, $k0, -8
 
 	/* Initialize $gp */
-	lw	$gp, CORE_TEXT_VADDR + (AOUT_GP_VALUE << 2)
+	lw	$gp, CORE_TEXT_VADDR + (AOUT_HE_GP_VALUE << 2)
 
 	addiu	$sp, $sp, -16
 	jal	main
