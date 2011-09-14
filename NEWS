@@ -1,3 +1,10 @@
+1.9.8
+=====
+
+* Fix initialization bug in tapeboot bootstrap ROM code
+* Add crti.S .aout crt template
+* Install except. handler sources
+
 1.9.7
 =====
 
