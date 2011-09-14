@@ -11,7 +11,9 @@ microprocessor.
  Installation & Prerequisites
 ##############################################################################
 
-Prerequisties:
+a) Normal builds (building from archives)
+
+Prerequisites:
 
  - A working GCC-based MIPS toolchain
 
@@ -28,5 +30,17 @@ Prerequisties:
 
  - libsigc++ 2.0
 
-Detailed configuration/installation instructions can be found in the
-file ./INSTALL.
+The usual "configure/make/make install" mantra applies. Detailed
+configuration/installation instructions can be found in the file
+./INSTALL.
+
+b) Building from git
+
+You need to configure with `--enable-maintainer-mode' when building
+from git.
+
+Apart from the dependencies listed above, you will also need a MIPS
+cross toolchain in your PATH. `configure' will do its best to detect
+one; if that fails, you can pass the toolchain tool prefix to
+configure using `--with-mips-tool-prefix=PREFIX'. Known prefixes are:
+`mips(el)-elf-', `mips(el)-linux-', `mips-sde-elf-', 'mips-linux-gnu-'.
