@@ -5,7 +5,7 @@ m4_define([umps_micro_version], [8])
 m4_define([umps_version], [umps_major_version.umps_minor_version.umps_micro_version])
 
 AC_PREREQ(2.64)
-AC_INIT([umps], [umps_version], [jonjic@cs.unibo.it])
+AC_INIT([umps], [umps_version], [tjonjic@gmail.com])
 AC_CONFIG_AUX_DIR([build-aux])
 
 AC_CANONICAL_SYSTEM
@@ -15,6 +15,8 @@ AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_CONFIG_SRCDIR([src/umps/device.cc])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
+
+AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
 
 # Checks for programs.
 
@@ -26,7 +28,6 @@ AC_PROG_LN_S
 AC_PROG_LIBTOOL
 AM_PROG_AS
 AM_PROG_LD
-AC_PROG_RANLIB
 
 # Initialize libtool
 LT_INIT
@@ -79,9 +80,6 @@ if test $maintainer_mode = yes ; then
         AC_MSG_ERROR([MIPS toolchain (ld) not found.])
     fi
 fi
-
-AC_SUBST(ACLOCAL_AMFLAGS, "$ACLOCAL_FLAGS -I m4")
-
 
 # Do you have external libelf?
 AC_ARG_WITH([elf],[  --with-elf[=PATH]         libelf-dev patname if not in standard location.], [ELFLIB="${withval}"], [ELFLIB="no"])
