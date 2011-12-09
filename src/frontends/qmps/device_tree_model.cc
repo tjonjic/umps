@@ -192,7 +192,7 @@ QVariant DeviceTreeModel::data(const QModelIndex& index, int role) const
             return device->getDevSStr();
 
         case COLUMN_COMPLETION_TOD:
-            return device->getDevCTStr();
+            return device->getCTimeInfo().c_str();
         }
     }
 

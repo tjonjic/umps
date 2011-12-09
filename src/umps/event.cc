@@ -34,26 +34,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "base/debug.h"
 #include "umps/const.h"
 #include "umps/utility.h"
 #include "umps/time_stamp.h"
 
-Event::Event(TimeStamp* ts, Word inc, Callback callback)
-    : time(new TimeStamp(ts, inc)),
+
+Event::Event(uint64_t ts, Word inc, Callback callback)
+    : deadline(ts + inc),
       callback(callback),
       next(NULL)
 {}
-
-Event::~Event()
-{
-    delete time;
-}
-
-// This method returns the TimeStamp access pointer
-TimeStamp *Event::getTS()
-{
-    return (time);
-}
 
 // This method links an Event to its successor in a structure
 void Event::AddBefore(Event * ev)
@@ -97,17 +88,13 @@ EventQueue::~EventQueue()
     }
 }
 
-// This method returns a pointer to the timestamp of the EventQueue head, 
-// if queue is not empty, and NULL otherwise
-TimeStamp *EventQueue::getHTS()
+uint64_t EventQueue::nextDeadline() const
 {
-    if (!IsEmpty())
-        return (head->getTS());
-    else
-        return (NULL);
+    assert(!IsEmpty());
+    return head->getDeadline();
 }
 
-Event::Callback EventQueue::getHCallback() const
+Event::Callback EventQueue::nextCallback() const
 {
     assert(!IsEmpty());
     return head->getCallback();
@@ -116,21 +103,21 @@ Event::Callback EventQueue::getHCallback() const
 // This method creates a new Event object and inserts it in the
 // EventQueue; EventQueue is sorted on ascending time order
 
-TimeStamp* EventQueue::InsertQ(TimeStamp* ts, Word delay, Event::Callback callback)
+uint64_t EventQueue::InsertQ(uint64_t tod, Word delay, Event::Callback callback)
 {
     Event *ins, *p, *q;
 
-    ins = new Event(ts, delay, callback);
+    ins = new Event(tod, delay, callback);
     if (IsEmpty()) {
         head = ins;
-    } else if ((ins->getTS())->LessEq(head->getTS())) {
+    } else if (ins->getDeadline() <= head->getDeadline()) {
         // "ins" has to happen before that at the head of the queue;
         // should be put before it
         ins->AddBefore(head);
         head = ins;
     } else {
         // should find place in queue: check lastIns to shorten search time 
-        if (lastIns != NULL && !((ins->getTS())->LessEq(lastIns->getTS())))
+        if (lastIns != NULL && !(ins->getDeadline() <= lastIns->getDeadline()))
             // can start from lastIns
             p = lastIns;
         else
@@ -138,8 +125,7 @@ TimeStamp* EventQueue::InsertQ(TimeStamp* ts, Word delay, Event::Callback callba
             p = head;
 
         q = p;
-        while (p != NULL && (p->getTS())->LessEq(ins->getTS())) {
-            // traverse the queue 
+        while (p != NULL && p->getDeadline() <= ins->getDeadline()) {
             q = p;
             p = p->Next();
         }
@@ -147,7 +133,7 @@ TimeStamp* EventQueue::InsertQ(TimeStamp* ts, Word delay, Event::Callback callba
         ins->InsAfter(q);
     }
     lastIns = ins;
-    return ins->getTS();
+    return ins->getDeadline();
 }
 
 // This method removes the head of a (not empty) queue and sets it to the

@@ -23,14 +23,15 @@
 #define UMPS_SYSTEMBUS_H
 
 #include "base/lang.h"
+#include "base/basic_types.h"
 #include "umps/event.h"
 #include "umps/const.h"
+#include "umps/time_stamp.h"
 
 class Machine;
 class MachineConfig;
 class Device;
 class Processor;
-class TimeStamp;
 class RamSpace;
 class BiosSpace;
 class Block;
@@ -87,7 +88,7 @@ public:
     // control object
     bool DMAVarTransfer(Block * blk, Word startAddr, Word byteLength, bool toMemory);
 
-    TimeStamp* ScheduleEvent(Word delay, Event::Callback callback);
+    uint64_t scheduleEvent(uint64_t delay, Event::Callback callback);
 
     // This method sets the appropriate bits into intCauseDev[] and
     // IntPendMask to signal device interrupt pending; it notifies
@@ -113,9 +114,10 @@ public:
     // These methods allow to inspect or modify  TimeofDay Clock and
     // Interval Timer (typically for simulation reasons)
 
-    Word getToDHI();
-    Word getToDLO();
-    Word getTimer();
+    Word getToDLO() const { return TimeStamp::getLo(tod); }
+    Word getToDHI() const { return TimeStamp::getHi(tod); }
+    Word getTimer() const { return timer; }
+
     void setToDHI(Word hi);
     void setToDLO(Word lo);
     void setTimer(Word time);
@@ -137,7 +139,7 @@ private:
     scoped_ptr<MPController> mpController;
 
     // system clock & interval timer
-    TimeStamp* timeOfDay;
+    uint64_t tod;
     Word timer;
 
     // device events queue

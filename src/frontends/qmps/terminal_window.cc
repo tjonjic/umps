@@ -169,8 +169,8 @@ void TerminalStatusWidget::updateStatus()
     rxStatusLabel->setText(terminal->getRXStatus());
     txStatusLabel->setText(terminal->getTXStatus());
 
-    rxCompletionTime->setText(terminal->getRXCompletionTime());
-    txCompletionTime->setText(terminal->getTXCompletionTime());
+    rxCompletionTime->setText(terminal->getRXCTimeInfo().c_str());
+    txCompletionTime->setText(terminal->getTXCTimeInfo().c_str());
 }
 
 void TerminalStatusWidget::onConditionChanged(bool isWorking)

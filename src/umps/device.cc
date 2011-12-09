@@ -243,8 +243,7 @@ Device::Device(SystemBus * busl, unsigned int intl, unsigned int dnum)
     for (unsigned int i = 0; i < DEVREGLEN; i++)
         reg[i] = 0UL;
     bus = busl;
-    complTime = NULL;
-        
+    complTime = UINT64_C(0);
     // a NULLDEV never works
     isWorking = false;
 }
@@ -298,18 +297,16 @@ bool Device::getDevNotWorking()
     return !isWorking;
 }
 
-// This method returns a human-readable expression for completion time of
-// device operation under execution, if one
-const char* Device::getDevCTStr()
+/*
+ * Return a human-readable expression for completion time of the
+ * current device operation.
+ */
+std::string Device::getCTimeInfo() const
 {
-    if (complTime != NULL) {
-        sprintf(strbuf, "0x%.8lX.%.8lX",
-                (unsigned long) complTime->getHiTS(),
-                (unsigned long) complTime->getLoTS());
-        return strbuf;
-    } else {
+    if (isBusy())
+        return TimeStamp::toString(complTime);
+    else
         return "";
-    }
 }
 
 // This method sets the operational status for the device inside the
@@ -354,9 +351,14 @@ bool Device::TapeLoad(const char * tFName)
     return(false);
 }
 
-TimeStamp* Device::scheduleIOEvent(Word delay)
+bool Device::isBusy() const
 {
-    return bus->ScheduleEvent(delay, boost::bind(&Device::CompleteDevOp, this));
+    return reg[STATUS] == BUSY;
+}
+
+uint64_t Device::scheduleIOEvent(uint64_t delay)
+{
+    return bus->scheduleEvent(delay, boost::bind(&Device::CompleteDevOp, this));
 }
 
 /****************************************************************************/
@@ -498,7 +500,6 @@ unsigned int PrinterDevice::CompleteDevOp()
     }
 
     SignalStatusChanged(getDevSStr());
-    complTime = NULL;
 
     bus->IntReq(intL, devNum);
 
@@ -534,8 +535,8 @@ TerminalDevice::TerminalDevice(SystemBus* bus, const MachineConfig* cfg,
     reg[TRANSTATUS] = READY;
     sprintf(recvStatStr, "Idle");
     sprintf(tranStatStr, "Idle");
-    recvCTime = NULL;
-    tranCTime = NULL;
+    recvCTime = UINT64_C(0);
+    tranCTime = UINT64_C(0);
     recvIntPend = false;
     tranIntPend = false;
 
@@ -688,52 +689,25 @@ const char* TerminalDevice::getRXStatus() const
     return recvStatStr;
 }
 
-const char* TerminalDevice::getDevCTStr()
+std::string TerminalDevice::getCTimeInfo() const
 {
-    char tmpbuf[SMALLBUFSIZE];
-
-    // There two completion times must be returned, if needed: they are 
-    // split up by a newline
-
-    if (recvCTime != NULL)
-        sprintf(tmpbuf, "0x%.8lX.%.8lX",
-                (unsigned long) recvCTime->getHiTS(),
-                (unsigned long) recvCTime->getLoTS());
-    else
-        strcpy(tmpbuf, EMPTYSTR);
-
-    if (tranCTime != NULL)
-        sprintf(strbuf, "%s\n0x%.8lX.%.8lX", tmpbuf,
-                (unsigned long) tranCTime->getHiTS(),
-                (unsigned long) tranCTime->getLoTS());
-    else
-        sprintf(strbuf, "%s\n", tmpbuf);
-
-    return(strbuf);
+    return getRXCTimeInfo() + "\n" + getTXCTimeInfo();
 }
 
-const char* TerminalDevice::getTXCompletionTime() const
+std::string TerminalDevice::getTXCTimeInfo() const
 {
-    if (tranCTime != NULL)
-        sprintf(strbuf, "0x%.8lX.%.8lX",
-                (unsigned long) tranCTime->getHiTS(),
-                (unsigned long) tranCTime->getLoTS());
+    if (reg[TRANSTATUS] == BUSY)
+        return TimeStamp::toString(tranCTime);
     else
-        *strbuf = '\0';
-
-    return strbuf;
+        return "";
 }
 
-const char* TerminalDevice::getRXCompletionTime() const
+std::string TerminalDevice::getRXCTimeInfo() const
 {
-    if (recvCTime != NULL)
-        sprintf(strbuf, "0x%.8lX.%.8lX",
-                (unsigned long) recvCTime->getHiTS(),
-                (unsigned long) recvCTime->getLoTS());
+    if (reg[RECVSTATUS] == BUSY)
+        return TimeStamp::toString(recvCTime);
     else
-        *strbuf = '\0';
-
-    return strbuf;
+        return "";
 }
 
 unsigned int TerminalDevice::CompleteDevOp()
@@ -749,7 +723,7 @@ unsigned int TerminalDevice::CompleteDevOp()
         // matter because there will be another CompleteDevOp
         // following, and one sub-device will have already completed
         // its op or posponed it (recv).
-        if (recvCTime->LessEq(tranCTime))
+        if (recvCTime <= tranCTime)
             doRecv = true;
         else
             doRecv = false;
@@ -770,7 +744,6 @@ unsigned int TerminalDevice::CompleteDevOp()
             sprintf(recvStatStr, "Reset completed : waiting for ACK");
             reg[RECVSTATUS] = READY;
             recvIntPend = true;
-            recvCTime = NULL;
             bus->IntReq(intL, devNum);
             break;
 
@@ -791,7 +764,6 @@ unsigned int TerminalDevice::CompleteDevOp()
                 }
                 // interrupt request
                 recvIntPend = true;
-                recvCTime = NULL;
                 bus->IntReq(intL, devNum);
             }
             break;
@@ -843,7 +815,6 @@ unsigned int TerminalDevice::CompleteDevOp()
         // interrupt generation 
         bus->IntReq(intL, devNum);
         tranIntPend = true;
-        tranCTime = NULL;
         devMod = TRANSTATUS;
     }
     SignalStatusChanged.emit(getDevSStr());
@@ -1220,7 +1191,6 @@ unsigned int DiskDevice::CompleteDevOp()
     }
 
     SignalStatusChanged(getDevSStr());
-    complTime = NULL;
     bus->IntReq(intL, devNum);
     return STATUS;
 }
@@ -1489,7 +1459,6 @@ unsigned int TapeDevice::CompleteDevOp()
     }
 
     SignalStatusChanged(getDevSStr());
-    complTime = NULL;
     bus->IntReq(intL, devNum);
 
     // here Reg[DATA1] too is changed, but there is only one return value
@@ -1556,10 +1525,12 @@ EthDevice::EthDevice(SystemBus* bus, const MachineConfig* cfg, unsigned int line
     netint = new netinterface(config->getDeviceFile(intL, devNum).c_str(),
                               (const char*) config->getMACId(devNum),
                               devNum);
-    if ((netint->getmode() & INTERRUPT)!= 0)
-        polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
-    else
-        polltime = NULL;
+    if (netint->getmode() & INTERRUPT) {
+        scheduleIOEvent(POLLNETTIME * config->getClockRate());
+        polling = true;
+    } else {
+        polling = false;
+    }
 }
 
 EthDevice::~EthDevice()
@@ -1573,11 +1544,9 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
 {
     int rp = reg[STATUS] & READPENDING;
     int err = 0;
-    //printf("EthDevice::WriteDevReg %d %d\n",regnum,data);
-    if ((reg[STATUS] & READPENDINGMASK) != BUSY) 
-    {
-        switch (regnum)
-        {
+
+    if ((reg[STATUS] & READPENDINGMASK) != BUSY) {
+        switch (regnum) {
         case COMMAND:
             // decode operation requested: for each, acknowledges a
             // previous interrupt if pending, sets the device registers,
@@ -1596,7 +1565,7 @@ void EthDevice::WriteDevReg(unsigned int regnum, Word data)
                 reg[STATUS] = READY;
                 break;
             case READCONF:
-                bus->IntAck(intL, devNum);                                      
+                bus->IntAck(intL, devNum);
                 reg[STATUS] = BUSY;
                 sprintf(statStr, "Reading Interface Configuration");
                 complTime = scheduleIOEvent(CONFNETTIME * config->getClockRate());
@@ -1658,32 +1627,37 @@ const char* EthDevice::getDevSStr()
 
 unsigned int EthDevice::CompleteDevOp()
 {
-    int rp=reg[STATUS] & READPENDING;
-    if (polltime != NULL && complTime==NULL)
-    {      /* polling with no pending ops */
-        polltime=NULL;
-        if (!rp) { /*process has not been informed yet */
-            if (netint->polling()) {  /*there are waiting packets*/
+    int rp = reg[STATUS] & READPENDING;
+    const bool busy = (reg[STATUS] & READPENDINGMASK) == BUSY;
+
+    if (polling && !busy) {
+        /* polling with no pending ops */
+        polling = false;
+        if (!rp) {
+            /* process has not been informed yet */
+            if (netint->polling()) {
+                /* there are waiting packets */
                 reg[STATUS] = reg[STATUS] | READPENDING;
                 SignalStatusChanged(getDevSStr());
                 bus->IntReq(intL, devNum);
-            } else                   /* there are not waiting packets */
-                if ((netint->getmode() & INTERRUPT)!= 0)        /*continue polling if the user
-                                                                  hasn't changed her mind*/
-                    polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
+            } else {
+                /* there are no waiting packets;
+                   continue polling if the user hasn't changed her mind */
+                if (netint->getmode() & INTERRUPT) {
+                    scheduleIOEvent(POLLNETTIME * config->getClockRate());
+                    polling = true;
+                }
+            }
         }
-    }
-    else
-    {     
+    } else {
         //Real operation
-        switch (reg[COMMAND])
-        {
+        switch (reg[COMMAND]) {
         case RESET:
             // a reset always works, even if isWorking == FALSE
             sprintf(statStr, "Reset completed : waiting for ACK");
             reg[STATUS] = READY;
             break;
-        case READCONF: 	
+        case READCONF:
             // readconf always works even if isWorking == FALSE
         {
             char macaddr[6];
@@ -1740,7 +1714,6 @@ unsigned int EthDevice::CompleteDevOp()
                 sprintf(statStr, "Net reading error : waiting for ACK");
                 reg[STATUS] = READERR;
             }				
-				
             break;
         case WRITENET:
             if (isWorking)
@@ -1766,15 +1739,22 @@ unsigned int EthDevice::CompleteDevOp()
         }
 
         SignalStatusChanged(getDevSStr());
-        complTime = NULL;
         reg[STATUS] |= rp;
         bus->IntReq(intL, devNum);
-        if ((netint->getmode() & INTERRUPT)!= 0 /* user wants interrupts */
-            && polltime==NULL /* no polling in place */
-            && !rp)        /* no already read pending requests */
-        {
-            polltime = scheduleIOEvent(POLLNETTIME * config->getClockRate());
+
+        // If user wants interrupts, we are not already polling, and
+        // there are no pending read requests, schedule another poll
+        // event.
+        if (netint->getmode() & INTERRUPT && !polling && !rp) {
+            scheduleIOEvent(POLLNETTIME * config->getClockRate());
+            polling = true;
         }
     }
-    return(STATUS);
+
+    return STATUS;
+}
+
+bool EthDevice::isBusy() const
+{
+    return (reg[STATUS] & READPENDINGMASK) == BUSY;
 }

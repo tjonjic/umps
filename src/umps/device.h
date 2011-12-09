@@ -47,7 +47,6 @@ class SystemBus;
 class Block;
 class DriveParams;
 class netinterface;
-class TimeStamp;
 class MachineConfig;
 
 // Device class defines the interface to all device types, and represents
@@ -86,9 +85,11 @@ public:
     // NULLDEV devices are not operational
     virtual const char* getDevSStr();
 
-    // This method returns a human-readable expression for completion time of
-    // device operation under execution, if one
-    virtual const char* getDevCTStr();				
+    /*
+     * Return a human-readable expression for completion time of the
+     * current device operation.
+     */
+    virtual std::string getCTimeInfo() const;
 
     // This method allows to copy inputstr contents inside
     // TerminalDevice receiver buffer: not operational for all other
@@ -125,8 +126,10 @@ public:
     sigc::signal<void, bool> SignalConditionChanged;
 
 protected:
-    TimeStamp* scheduleIOEvent(Word delay);
+    virtual bool isBusy() const;
+    uint64_t scheduleIOEvent(uint64_t delay);
 
+    // Interrupt line and device number
     unsigned int intL;
     unsigned int devNum;
 
@@ -137,12 +140,12 @@ protected:
     unsigned int dType;
 
     // controlling SystemBus object
-    SystemBus * bus;
+    SystemBus* bus;
 
-    // completion time TimeStamp for current operation (if one)
-    TimeStamp * complTime;
+    // Completion time for current operation (if any)
+    uint64_t complTime;
 
-    // device operational status 
+    // device operational status
     bool isWorking;
 };
 
@@ -203,9 +206,9 @@ public:
     const char* getTXStatus() const;
     const char* getRXStatus() const;
 
-    virtual const char* getDevCTStr();
-    const char* getTXCompletionTime() const;
-    const char* getRXCompletionTime() const;
+    std::string getTXCTimeInfo() const;
+    std::string getRXCTimeInfo() const;
+    virtual std::string getCTimeInfo() const;
 
     virtual void Input(const char * inputstr);
 
@@ -227,15 +230,15 @@ private:
     // static buffer for transmitter
     char tranStatStr[TERMBUFSIZE];
 
-    // completion time TimeStamp for current receiver operation (if one)
-    TimeStamp * recvCTime;
+    // Completion time for current receiver operation (if any)
+    uint64_t recvCTime;
 
-    // completion time TimeStamp for current transmitter operation (if one)
-    TimeStamp * tranCTime;
-		
+    // Completion time for current transmitter operation (if any)
+    uint64_t tranCTime;
+
     // receiver operation pending flag
-    bool recvIntPend;		
-		
+    bool recvIntPend;
+
     // transmitter operation pending flag
     bool tranIntPend;
 };
@@ -352,8 +355,10 @@ public:
     virtual ~EthDevice();
     virtual void WriteDevReg(unsigned int regnum, Word data);
     virtual unsigned int CompleteDevOp();
-    virtual const char * getDevSStr();
-    //virtual bool EthLoad(const char * tFName);
+    virtual const char* getDevSStr();
+
+protected:
+    virtual bool isBusy() const;
 
 private:
     const MachineConfig* const config;
@@ -364,8 +369,8 @@ private:
     // static buffer
     char statStr[ETHBUFSIZE];
 
-    TimeStamp *polltime;
-		
+    bool polling;
+
     netinterface *netint;
 };
 

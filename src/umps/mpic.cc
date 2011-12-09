@@ -168,7 +168,7 @@ void InterruptController::Write(Word addr, Word data, const Processor* cpu)
             break;
 
         case CPUCTL_OUTBOX:
-            bus->ScheduleEvent(kIpiLatency * config->getClockRate(),
+            bus->scheduleEvent(kIpiLatency * config->getClockRate(),
                                boost::bind(&InterruptController::deliverIPI, this, cpu->Id(), data));
             break;
 

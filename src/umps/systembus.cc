@@ -100,7 +100,7 @@ SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
       pic(new InterruptController(conf, this)),
       mpController(new MPController(conf, machine))
 {
-    timeOfDay = new TimeStamp();
+    tod = UINT64_C(0);
     timer = MAXWORDVAL;
     eventQ = new EventQueue();
 
@@ -128,17 +128,14 @@ SystemBus::SystemBus(const MachineConfig* conf, Machine* machine)
 // This method deletes a SystemBus object and all related structures
 SystemBus::~SystemBus()
 {
-    unsigned int intl, dnum;
-	
-    delete timeOfDay;
     delete eventQ;
-	
+
     delete ram;
     delete bios;
     delete boot;
-	
-    for (intl = 0; intl < DEVINTUSED; intl++)
-        for (dnum = 0; dnum < DEVPERINT; dnum++)
+
+    for (unsigned int intl = 0; intl < DEVINTUSED; intl++)
+        for (unsigned int dnum = 0; dnum < DEVPERINT; dnum++)
             delete devTable[intl][dnum];
 }
 
@@ -149,7 +146,7 @@ SystemBus::~SystemBus()
 // are notified to Watch control object
 void SystemBus::ClockTick()
 {
-    timeOfDay->Increase();
+    tod++;
 
     // both registers signal "change" because they are conceptually one
     machine->HandleBusAccess(BUS_REG_TOD_HI, WRITE, NULL);
@@ -160,9 +157,9 @@ void SystemBus::ClockTick()
         pic->StartIRQ(IL_TIMER);
     machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
 
-    // scans the event queue
-    while (!eventQ->IsEmpty() && (eventQ->getHTS())->LessEq(timeOfDay)) {
-        (eventQ->getHCallback())();
+    // Scan the event queue
+    while (!eventQ->IsEmpty() && eventQ->nextDeadline() <= tod) {
+        (eventQ->nextCallback())();
         eventQ->RemoveHead();
     }
 }
@@ -172,7 +169,7 @@ uint32_t SystemBus::IdleCycles() const
     if (eventQ->IsEmpty())
         return timer;
 
-    uint64_t tod = timeOfDay->getHiLo(), et = eventQ->getHTS()->getHiLo();
+    const uint64_t et = eventQ->nextDeadline();
     if (et > tod)
         return std::min(timer, (uint32_t) (et - tod - 1));
     else
@@ -181,7 +178,7 @@ uint32_t SystemBus::IdleCycles() const
 
 void SystemBus::Skip(uint32_t cycles)
 {
-    timeOfDay->Increase(cycles);
+    tod += cycles;
     machine->HandleBusAccess(BUS_REG_TOD_HI, WRITE, NULL);
     machine->HandleBusAccess(BUS_REG_TOD_LO, WRITE, NULL);
 
@@ -189,34 +186,14 @@ void SystemBus::Skip(uint32_t cycles)
     machine->HandleBusAccess(BUS_REG_TIMER, WRITE, NULL);
 }
 
-//
-// The following methods allow to inspect or modify  TimeofDay Clock and
-// Interval Timer (typically for simulation reasons); they are self-explanatory
-//
-
-Word SystemBus::getToDHI()
-{
-    return timeOfDay->getHiTS();
-}
-
-Word SystemBus::getToDLO()
-{
-    return timeOfDay->getLoTS();
-}
-
-Word SystemBus::getTimer()
-{
-    return timer;
-}
-
 void SystemBus::setToDHI(Word hi)
 {
-    timeOfDay->setHiTS(hi);
+    TimeStamp::setHi(tod, hi);
 }
 
 void SystemBus::setToDLO(Word lo)
 {
-    timeOfDay->setLoTS(lo);
+    TimeStamp::setLo(tod, lo);
 }
 
 void SystemBus::setTimer(Word time)
@@ -374,9 +351,9 @@ bool SystemBus::InstrRead(Word addr, Word* instrp, Processor* proc)
 
 // This method inserts in the eventQ a event that must happen
 // at (current system time) + delay
-TimeStamp* SystemBus::ScheduleEvent(Word delay, Event::Callback callback)
+uint64_t SystemBus::scheduleEvent(uint64_t delay, Event::Callback callback)
 {
-    return eventQ->InsertQ(timeOfDay, delay, callback);
+    return eventQ->InsertQ(tod, delay, callback);
 }
 
 void SystemBus::IntReq(unsigned int intl, unsigned int devNum)
@@ -475,10 +452,10 @@ Word SystemBus::busRegRead(Word addr, Processor* cpu)
             data = config->getClockRate();
             break;
         case BUS_REG_TOD_HI:
-            data = timeOfDay->getHiTS();
+            data = getToDHI();
             break;
         case BUS_REG_TOD_LO:
-            data = timeOfDay->getLoTS();
+            data = getToDLO();
             break;
         case BUS_REG_TIMER:
             data = timer;

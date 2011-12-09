@@ -26,8 +26,6 @@
 
 #include "umps/types.h"
 
-class TimeStamp;
-
 // Event class is used to keep track of the external events of the
 // system: device operations and interrupt generation.
 // Every object contains a device number saying what device will complete
@@ -39,28 +37,24 @@ class Event {
 public:
     typedef boost::function<void ()> Callback;
 
-    Event(TimeStamp* ts, Word inc, Callback callback);
+    Event(uint64_t ts, Word inc, Callback callback);
 
-    ~Event();
-
-    // This method returns the TimeStamp access pointer
-    TimeStamp *getTS();
-
+    uint64_t getDeadline() const { return deadline; }
     Callback getCallback() const { return callback; }
 
     // This method links an Event to its successor in a structure
-    void AddBefore(Event * ev);
+    void AddBefore(Event* ev);
 
     // This method inserts an Event after another, linking the former to the
     // successor of the latter
-    void InsAfter(Event * ev);
+    void InsAfter(Event* ev);
 
     // This method returns the pointer to the successor of an Event
     Event *Next();
 
 private:
     // Event verification time
-    TimeStamp *time;
+    uint64_t deadline;
 
     // Event handler
     Callback callback;
@@ -85,15 +79,12 @@ public:
     // This method returns TRUE if the queue is empty, FALSE otherwise
     bool IsEmpty() const { return head == NULL; }
 
-    // This method returns the TimeStamp in the EventQueue
-    // head, if queue is not empty, and NULL otherwise
-    TimeStamp *getHTS();
-
-    Event::Callback getHCallback() const;
+    uint64_t nextDeadline() const;
+    Event::Callback nextCallback() const;
 
     // This method creates a new Event object and inserts it in the
     // EventQueue; EventQueue is sorted on ascending time order
-    TimeStamp* InsertQ(TimeStamp* ts, Word delay, Event::Callback callback);
+    uint64_t InsertQ(uint64_t tod, Word delay, Event::Callback callback);
 
     // This method removes the head of a (not empty) queue and sets it to the
     // following Event          

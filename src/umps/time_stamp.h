@@ -3,6 +3,7 @@
  * uMPS - A general purpose computer system simulator
  *
  * Copyright (C) 2004 Mauro Morsiani
+ * Copyright (C) 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,50 +23,34 @@
 #ifndef UMPS_TIME_STAMP_H
 #define UMPS_TIME_STAMP_H
 
-#include "umps/types.h"
+#include <string>
 
-// This class implements the TimeStamps used for the system clock and
-// in the Event objects to schedule device operations and interrupts.
-// Every object is a 64 bit counter, split into two 32 bit parts (high
-// & low). It is used to schedule I/O operations inside the simulator
-// and to handle the system clock.  TimeStamp class is very easy to
-// understand: it has been done so to provide some example to be given
-// to C++ beginners.
+#include "base/basic_types.h"
 
-class TimeStamp {
-public:
-    TimeStamp(Word hi = 0, Word lo = 0);
+namespace TimeStamp {
 
-    // This method creates a new TS and sets it to the value of another,
-    // plus an (optional) increment
-    TimeStamp(const TimeStamp* ts, Word inc = 0);
+inline uint32_t getHi(uint64_t ts)
+{
+    return ts >> 32;
+}
 
-    // Increase the timestamp by 1
-    void Increase(Word amount = 1U);
+inline uint32_t getLo(uint64_t ts)
+{
+    return (uint32_t) ts;
+}
 
-    // This method returns the current value of hiTS part
-    Word getHiTS() const { return hiTS; }
+inline void setHi(uint64_t& ts, uint32_t value)
+{
+    ts = (uint64_t) getLo(ts) | (uint64_t) value << 32;
+}
 
-    // This method returns the current value of loTS part
-    Word getLoTS() const { return loTS; }
+inline void setLo(uint64_t& ts, uint32_t value)
+{
+    ts = (uint64_t) getHi(ts) | (uint64_t) value;
+}
 
-    uint64_t getHiLo() const { return ((uint64_t) hiTS << 32) + ((uint64_t) loTS); }
+std::string toString(uint64_t ts);
 
-    // This method sets hiTS value
-    void setHiTS(Word hi) { hiTS = hi; }
-
-    // This method sets loTS value
-    void setLoTS(Word lo) { loTS = lo; }
-
-    // This method compares 2 TSs and returns TRUE if the first is
-    // less than or equal to the second, FALSE otherwise
-    bool LessEq(const TimeStamp* ts2) const;
-
-private:
-    // high part of the TimeStamp
-    Word hiTS;		
-    // low part
-    Word loTS;
-};
+} // namespace TimeStamp
 
 #endif // UMPS_TIME_STAMP_H

@@ -3,6 +3,7 @@
  * uMPS - A general purpose computer system simulator
  *
  * Copyright (C) 2004 Mauro Morsiani
+ * Copyright (C) 2011 Tomislav Jonjic
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,35 +20,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "umps/time_stamp.h"
+#include "time_stamp.h"
 
-#include "umps/utility.h"
+#include <boost/format.hpp>
 
-TimeStamp::TimeStamp(Word hi, Word lo)
-    : hiTS(hi), loTS(lo)
-{}
+namespace TimeStamp {
 
-// This method creates a new TS and sets it to the value of another,
-// plus an (optional) increment
-TimeStamp::TimeStamp(const TimeStamp* ts, Word inc)
-    : hiTS(ts->getHiTS()),
-      loTS(ts->getLoTS())
+std::string toString(uint64_t ts)
 {
-    if (UnsAdd(&loTS, loTS, inc))
-        hiTS++;
+    using boost::format;
+    using boost::str;
+    return str(format("0x%08lx.%08lx") %((unsigned long) getHi(ts)) %((unsigned long) getLo(ts)));
 }
 
-// Increase the timestamp by 1
-void TimeStamp::Increase(Word amount)
-{
-    if (UnsAdd(&loTS, loTS, amount))
-        // unsigned overflow occurred: need to increase HiTS
-        hiTS++;
-}
-
-// This method compares 2 TSs and returns TRUE if the first is 
-// less than or equal to the second, FALSE otherwise
-bool TimeStamp::LessEq(const TimeStamp* ts2) const
-{
-    return hiTS < ts2->hiTS || (hiTS == ts2->hiTS && loTS <= ts2->loTS);
-}
+} // namespace TimeStamp
