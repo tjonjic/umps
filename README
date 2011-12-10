@@ -15,18 +15,11 @@ a) Normal builds (building from archives)
 
 Prerequisites:
 
- - A working GCC-based MIPS toolchain
-
-   Development for uMPS is done using a cross toolchain, that is GNU
-   binutils+GCC configured for a MIPS target. Most likely they are
-   going to be configured for a `mips[el]-linux' or (less likely?)
-   `mips[el]-unknown-elf' target.
-
  - Qt 4.6.x or later
 
  - libelf
 
- - Boost 1.34+
+ - Boost (headers) 1.34+
 
  - libsigc++ 2.0
 
