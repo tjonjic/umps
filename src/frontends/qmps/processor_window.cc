@@ -207,7 +207,7 @@ void ProcessorWindow::updateStatusInfo()
 {
     QString str;
 
-    if (!cpu->IsOffline()) {
+    if (!cpu->isHalted()) {
         Word prevPC, prevInstr;
         cpu->getPrevStatus(&prevPC, &prevInstr);
         prevPCLabel->setText(str.sprintf("0x%.8X: %s", prevPC, StrInstr(prevInstr)));
@@ -229,9 +229,9 @@ void ProcessorWindow::updateStatusInfo()
         ldIndicator->setEnabled(false);
     }
 
-    if (!cpu->IsOffline()) {
+    if (!cpu->isHalted()) {
         QString newStatus = dbgSession->getCpuStatusMap()->getLocation(cpuId);
-        if (dbgSession->IsStopped() || cpu->IsIdle())
+        if (dbgSession->IsStopped() || cpu->isIdle())
             newStatus.append(QString(" [%1]").arg(dbgSession->getCpuStatusMap()->getStatus(cpu->getId())));
         statusLabel->setText(newStatus);
     } else {

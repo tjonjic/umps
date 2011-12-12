@@ -199,7 +199,7 @@ Processor::Processor(const MachineConfig* config, Word cpuId, Machine* machine, 
     : id(cpuId),
       machine(machine),
       bus(bus),
-      status(PS_OFFLINE),
+      status(PS_HALTED),
       tlbSize(config->getTLBSize()),
       tlb(new TLBEntry[tlbSize])
 {}
@@ -263,12 +263,12 @@ void Processor::Reset(Word pc, Word sp)
     nextPC = currPC + WORDLEN;
     succPC = nextPC + WORDLEN;
 
-    setStatus(PS_ONLINE);
+    setStatus(PS_RUNNING);
 }
 
 void Processor::Halt()
 {
-    setStatus(PS_OFFLINE);
+    setStatus(PS_HALTED);
 }
 
 // This method makes Processor execute a single instruction.
@@ -289,7 +289,7 @@ void Processor::Halt()
 void Processor::Cycle()
 {
     // Nothing to do if the cpu is halted
-    if (IsOffline())
+    if (isHalted())
         return;
 
     // Update internal timer
@@ -302,7 +302,7 @@ void Processor::Cycle()
     }
 
     // In low-power state, only the per-cpu timer keeps running
-    if (IsIdle())
+    if (isIdle())
         return;
 
     // Instruction decode & exec
@@ -311,7 +311,7 @@ void Processor::Cycle()
 
     // Check if we entered sleep mode as a result of the last
     // instruction; if so, we effectively stall the pipeline.
-    if (IsIdle())
+    if (isIdle())
         return;
 
     // PC saving for book-keeping purposes
@@ -347,7 +347,7 @@ void Processor::Cycle()
 
 uint32_t Processor::IdleCycles() const
 {
-    if (IsIdle())
+    if (isIdle())
         return (cpreg[STATUS] & STATUS_TE) ? cpreg[CP0REG_TIMER] : (uint32_t) -1;
     else
         return 0;
@@ -355,7 +355,7 @@ uint32_t Processor::IdleCycles() const
 
 void Processor::Skip(uint32_t cycles)
 {
-    assert(IsIdle() && cycles <= IdleCycles());
+    assert(isIdle() && cycles <= IdleCycles());
     if (cpreg[STATUS] & STATUS_TE)
         cpreg[CP0REG_TIMER] -= cycles;
 }
@@ -382,8 +382,8 @@ void Processor::AssertIRQ(unsigned int il)
     cpreg[CAUSE] |= CAUSE_IP(il);
 
     // If in standby mode, go back to being a power hog.
-    if (IsIdle())
-        setStatus(PS_ONLINE);
+    if (isIdle())
+        setStatus(PS_RUNNING);
 }
 
 void Processor::DeassertIRQ(unsigned int il)

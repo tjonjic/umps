@@ -113,7 +113,7 @@ void CodeView::loadCode()
     codeLoaded = false;
     clear();
 
-    if (cpu->IsOffline())
+    if (cpu->isHalted())
         return;
 
     Word pc = cpu->getPC();

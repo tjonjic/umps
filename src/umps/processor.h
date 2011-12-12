@@ -34,8 +34,8 @@ class SystemBus;
 class TLBEntry;
 
 enum ProcessorStatus {
-    PS_OFFLINE,
-    PS_ONLINE,
+    PS_HALTED,
+    PS_RUNNING,
     PS_IDLE
 };
 
@@ -53,9 +53,9 @@ public:
 
     ProcessorStatus getStatus() const { return status; }
 
-    bool IsOffline() const { return status == PS_OFFLINE; }
-    bool IsOnline() const { return status == PS_ONLINE; }
-    bool IsIdle() const { return status == PS_IDLE; }
+    bool isHalted() const { return status == PS_HALTED; }
+    bool isRunning() const { return status == PS_RUNNING; }
+    bool isIdle() const { return status == PS_IDLE; }
 
     void Reset(Word pc, Word sp);
     void Halt();
