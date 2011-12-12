@@ -357,7 +357,9 @@ static void elf2aout(bool isCore)
     for (size_t i = 0; i < phtSize; i++) {
         if (pht[i].p_type != PT_LOAD)
             continue;
-        if (pht[i].p_flags == (PF_R | PF_W) && !foundDataSeg) {
+        if (pht[i].p_flags == (PF_R | PF_W)) {
+            if (foundDataSeg)
+                fatalError("Redundant .data program header table entry %u", (unsigned int) i);
             foundDataSeg = true;
             header[AOUT_HE_DATA_MEMSZ] = pht[i].p_memsz;
             header[AOUT_HE_DATA_VADDR] = pht[i].p_vaddr;
@@ -365,9 +367,17 @@ static void elf2aout(bool isCore)
             header[AOUT_HE_DATA_FILESZ] = (size / kBlockSize) * kBlockSize;
             if (header[AOUT_HE_DATA_FILESZ] < size)
                 header[AOUT_HE_DATA_FILESZ] += kBlockSize;
-            dataBuf = new uint8_t[header[AOUT_HE_DATA_FILESZ]];
-            std::fill_n(dataBuf, header[AOUT_HE_DATA_FILESZ], 0);
-        } else if (pht[i].p_flags == (PF_R | PF_X) && !foundTextSeg) {
+            if (header[AOUT_HE_DATA_FILESZ] > 0) {
+                dataBuf = new uint8_t[header[AOUT_HE_DATA_FILESZ]];
+                std::fill_n(dataBuf, header[AOUT_HE_DATA_FILESZ], 0);
+            } else {
+                dataBuf = NULL;
+            }
+        } else if (pht[i].p_flags == (PF_R | PF_X)) {
+            if (foundTextSeg)
+                fatalError("Redundant .text program header table entry %u", (unsigned int) i);
+            if (pht[i].p_memsz == 0)
+                fatalError("Empty .text segment");
             foundTextSeg = true;
             header[AOUT_HE_TEXT_MEMSZ] = pht[i].p_memsz;
             header[AOUT_HE_TEXT_VADDR] = pht[i].p_vaddr;
@@ -377,12 +387,18 @@ static void elf2aout(bool isCore)
             textBuf = new uint8_t[header[AOUT_HE_TEXT_FILESZ]];
             std::fill_n(textBuf, header[AOUT_HE_TEXT_FILESZ], 0);
         } else {
-            fatalError("unknown and/or redundant program header table entries");
+            fprintf(stderr, "Warning: unknown program header table entry %u\n", (unsigned int) i);
         }
     }
 
-    if (!foundDataSeg || !foundTextSeg)
-        fatalError("missing program header");
+    if (!foundTextSeg)
+        fatalError("Missing .text program header");
+
+    if (!foundDataSeg) {
+        header[AOUT_HE_DATA_MEMSZ] = header[AOUT_HE_DATA_FILESZ] = 0;
+        header[AOUT_HE_DATA_VADDR] = header[AOUT_HE_TEXT_VADDR] + header[AOUT_HE_TEXT_FILESZ];
+        dataBuf = NULL;
+    }
 
     header[AOUT_HE_TEXT_OFFSET] = 0;
     header[AOUT_HE_DATA_OFFSET] = header[AOUT_HE_TEXT_FILESZ];
@@ -437,10 +453,12 @@ static void elf2aout(bool isCore)
     }
 
     // Write the segments, finally.
-    if (fwrite(textBuf, 1, header[AOUT_HE_TEXT_FILESZ], file) != header[AOUT_HE_TEXT_FILESZ] ||
-        fwrite(dataBuf, 1, header[AOUT_HE_DATA_FILESZ], file) != header[AOUT_HE_DATA_FILESZ])
-    {
+    if (fwrite(textBuf, 1, header[AOUT_HE_TEXT_FILESZ], file) != header[AOUT_HE_TEXT_FILESZ])
         fatalError("Error writing a.out file `%s'", outName.c_str());
+
+    if (dataBuf != NULL) {
+        if (fwrite(dataBuf, 1, header[AOUT_HE_DATA_FILESZ], file) != header[AOUT_HE_DATA_FILESZ])
+            fatalError("Error writing a.out file `%s'", outName.c_str());
     }
 
     fclose(file);
