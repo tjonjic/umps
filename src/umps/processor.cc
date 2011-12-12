@@ -33,9 +33,7 @@
 
 #include "umps/processor.h"
 
-#include <stdio.h>
 #include <cassert>
-#include <iostream>
 
 #include "umps/const.h"
 #include "umps/cp0.h"
