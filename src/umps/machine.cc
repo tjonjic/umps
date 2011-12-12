@@ -108,9 +108,10 @@ uint32_t Machine::IdleCycles() const
 void Machine::Skip(uint32_t cycles)
 {
     bus->Skip(cycles);
-
-    foreach (Processor* cpu, cpus)
-        cpu->Skip(cycles);
+    foreach (Processor* cpu, cpus) {
+        if (!cpu->isHalted())
+            cpu->Skip(cycles);
+    }
 }
 
 void Machine::Halt()

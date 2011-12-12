@@ -345,7 +345,9 @@ void Processor::Cycle()
 
 uint32_t Processor::IdleCycles() const
 {
-    if (isIdle())
+    if (isHalted())
+        return (uint32_t) -1;
+    else if (isIdle())
         return (cpreg[STATUS] & STATUS_TE) ? cpreg[CP0REG_TIMER] : (uint32_t) -1;
     else
         return 0;
