@@ -52,8 +52,8 @@ public:
     void Step(bool* stopped = NULL);
     void Step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
 
-    uint32_t IdleCycles() const;
-    void Skip(uint32_t cycles);
+    uint32_t idleCycles() const;
+    void skip(uint32_t cycles);
 
     void Halt();
     bool IsHalted() const { return halted; }

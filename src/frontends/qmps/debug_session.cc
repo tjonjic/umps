@@ -60,17 +60,20 @@ DebugSession::DebugSession()
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(runIteration()));
 
+    idleTimer = new QTimer(this);
+    connect(idleTimer, SIGNAL(timeout()), this, SLOT(skip()));
+
     setSpeed(Appl()->settings.value("SimulationSpeed", kMaxSpeed).toInt());
     stopMask = Appl()->settings.value("StopMask", kDefaultStopMask).toUInt();
 }
 
-void DebugSession::Halt()
+void DebugSession::halt()
 {
-    if (!IsStarted())
+    if (!isStarted())
         return;
 
-    if (IsRunning())
-        timer->stop();
+    timer->stop();
+    idleTimer->stop();
 
     machine.reset();
     bplModel.reset();
@@ -132,7 +135,7 @@ void DebugSession::createActions()
     debugStopAction = new QAction("&Stop", this);
     debugStopAction->setShortcut(QKeySequence("F12"));
     debugStopAction->setIcon(QIcon(":/icons/debug_stop-22.png"));
-    connect(debugStopAction, SIGNAL(triggered()), this, SLOT(Stop()));
+    connect(debugStopAction, SIGNAL(triggered()), this, SLOT(stop()));
 }
 
 void DebugSession::updateActionSensitivity()
@@ -271,14 +274,14 @@ void DebugSession::startMachine()
 void DebugSession::onHaltMachine()
 {
     assert(status != MS_HALTED);
-    Halt();
+    halt();
 }
 
 void DebugSession::onResetMachine()
 {
-    assert(IsStarted());
+    assert(isStarted());
 
-    Stop();
+    stop();
 
     machine.reset();
     initializeMachine();
@@ -295,26 +298,24 @@ void DebugSession::onContinue()
     assert(status == MS_STOPPED);
 
     stepping = false;
-    idleSteps = 0;
     stoppedByUser = false;
     Q_EMIT MachineRan();
     setStatus(MS_RUNNING);
 
-    timer->setInterval(kIterInterval[speed]);
     timer->start();
 }
 
 void DebugSession::onStep()
 {
-    timer->setInterval(kIterInterval[speed]);
     step(1);
 }
 
-void DebugSession::Stop()
+void DebugSession::stop()
 {
-    if (status == MS_RUNNING) {
+    if (isRunning()) {
         stoppedByUser = true;
         timer->stop();
+        idleTimer->stop();
         setStatus(MS_STOPPED);
         Q_EMIT MachineStopped();
     }
@@ -337,7 +338,7 @@ void DebugSession::step(unsigned int steps)
     --stepsLeft;
 
     if (machine->IsHalted()) {
-        Halt();
+        halt();
     } else if (!stepsLeft || stopped) {
         stoppedByUser = !stepsLeft;
         setStatus(MS_STOPPED);
@@ -365,7 +366,7 @@ void DebugSession::runStepIteration()
     stepsLeft -= stepped;
 
     if (machine->IsHalted()) {
-        Halt();
+        halt();
     } else if (stopped || stepsLeft == 0) {
         stoppedByUser = (stepsLeft == 0);
         timer->stop();
@@ -378,40 +379,46 @@ void DebugSession::runStepIteration()
 
 void DebugSession::runContIteration()
 {
-    if (idleSteps) {
-        uint32_t steps = std::min(idleSteps, (uint32_t) kIterCycles[kMaxSpeed]);
-        machine->Skip(steps);
-        idleSteps -= steps;
-
-        // Check if we need to reset the timer interval
-        if (!idleSteps)
-            timer->setInterval(kIterInterval[speed]);
-        else if (steps < kIterCycles[kMaxSpeed])
-            timer->setInterval(steps / 1000);
-
-        Q_EMIT DebugIterationCompleted();
-        return;
-    }
-
-    idleSteps = machine->IdleCycles();
-    if (idleSteps) {
+    idleSteps = machine->idleCycles();
+    if (idleSteps > 0) {
         // Enter low-power mode!
-        int ms = std::min(idleSteps, (uint32_t) kIterCycles[kMaxSpeed]) / 1000;
-        timer->setInterval(ms);
-        return;
+        timer->stop();
+        const uint32_t ticksPerMsec = 1000 * Appl()->getConfig()->getClockRate();
+        const int interval = std::min(idleSteps, kMaxSkipped) / ticksPerMsec;
+        idleTimer->start(interval);
+    } else {
+        bool stopped;
+        machine->Step(kIterCycles[speed], NULL, &stopped);
+        if (machine->IsHalted()) {
+            halt();
+        } else if (stopped) {
+            setStatus(MS_STOPPED);
+            Q_EMIT MachineStopped();
+            timer->stop();
+        } else {
+            Q_EMIT DebugIterationCompleted();
+        }
+    }
+}
+
+void DebugSession::skip()
+{
+    assert(idleSteps > 0);
+
+    const uint32_t skipped = std::min(idleSteps, kMaxSkipped);
+    machine->skip(skipped);
+    idleSteps -= skipped;
+
+    // Keep skipping cycles while the machine is idle.
+    if (idleSteps == 0) {
+        idleTimer->stop();
+        timer->start();
+    } else if (idleSteps < kMaxSkipped) {
+        const uint32_t ticksPerMsec = 1000 * Appl()->getConfig()->getClockRate();
+        idleTimer->setInterval(idleSteps / ticksPerMsec);
     }
 
-    bool stopped;
-    machine->Step(kIterCycles[speed], NULL, &stopped);
-    if (machine->IsHalted()) {
-        Halt();
-    } else if (stopped) {
-        setStatus(MS_STOPPED);
-        Q_EMIT MachineStopped();
-        timer->stop();
-    } else {
-        Q_EMIT DebugIterationCompleted();
-    }
+    Q_EMIT DebugIterationCompleted();
 }
 
 void DebugSession::relocateStoppoints(const SymbolTable* newTable, StoppointSet& set)

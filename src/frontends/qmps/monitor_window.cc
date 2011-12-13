@@ -536,7 +536,7 @@ void MonitorWindow::updateRecentConfigList()
 
 bool MonitorWindow::discardMachineConfirmed()
 {
-    if (!dbgSession->IsStarted())
+    if (!dbgSession->isStarted())
         return true;
 
     QMessageBox::StandardButton reply;
@@ -741,7 +741,7 @@ void MonitorWindow::onMachineHalted()
 
 void MonitorWindow::updateStoppointActionsSensitivity()
 {
-    bool stopped = dbgSession->IsStopped();
+    bool stopped = dbgSession->isStopped();
 
     addBreakpointAction->setEnabled(stopped);
     addSuspectAction->setEnabled(stopped);

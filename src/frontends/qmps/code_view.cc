@@ -294,7 +294,7 @@ void CodeView::paintMargin(QPaintEvent* event)
 
     while (y0 <= event->rect().bottom()) {
         if (event->rect().top() <= y1) {
-            if (addr == pc && dbgSession->IsStopped())
+            if (addr == pc && dbgSession->isStopped())
                 painter.drawPixmap(codeMargin->width() - CodeViewMargin::kMarkerSize, y0, pcMarkerPixmap);
             painter.drawText(0, y0,
                              codeMargin->width(), codeMargin->fontMetrics().height(),

@@ -89,7 +89,7 @@ void Machine::Step(bool* stopped)
     Step(1, NULL, stopped);
 }
 
-uint32_t Machine::IdleCycles() const
+uint32_t Machine::idleCycles() const
 {
     uint32_t c;
 
@@ -105,7 +105,7 @@ uint32_t Machine::IdleCycles() const
     return c;
 }
 
-void Machine::Skip(uint32_t cycles)
+void Machine::skip(uint32_t cycles)
 {
     bus->Skip(cycles);
     foreach (Processor* cpu, cpus) {

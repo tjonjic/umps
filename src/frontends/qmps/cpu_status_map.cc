@@ -106,7 +106,7 @@ void CpuStatusMap::formatActiveCpuStatus(Processor* cpu)
     switch (dbgSession->getStatus()) {
     case MS_STOPPED:
         stopCause = machine->getStopCause(cpu->getId());
-        if (dbgSession->IsStoppedByUser())
+        if (dbgSession->isStoppedByUser())
             stopCause |= SC_USER;
 
         str = statusTemplates[stopCause];

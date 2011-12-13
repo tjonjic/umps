@@ -58,12 +58,12 @@ public:
 
     MachineStatus getStatus() const { return status; }
 
-    bool IsStopped() const { return status == MS_STOPPED; }
-    bool IsStoppedByUser() const { return stoppedByUser; }
-    bool IsRunning() const { return status == MS_RUNNING; }
-    bool IsStarted() const { return status != MS_HALTED; }
+    bool isStopped() const { return status == MS_STOPPED; }
+    bool isStoppedByUser() const { return stoppedByUser; }
+    bool isRunning() const { return status == MS_RUNNING; }
+    bool isStarted() const { return status != MS_HALTED; }
 
-    void Halt();
+    void halt();
 
     unsigned int getStopMask() const { return stopMask; }
     int getSpeed() const { return speed; }
@@ -91,7 +91,7 @@ public:
 public Q_SLOTS:
     void setStopMask(unsigned int value);
     void setSpeed(int value);
-    void Stop();
+    void stop();
 
 Q_SIGNALS:
     void StatusChanged();
@@ -105,6 +105,8 @@ Q_SIGNALS:
     void SpeedChanged(int);
 
 private:
+    static const uint32_t kMaxSkipped = 50000;
+
     void createActions();
     void setStatus(MachineStatus newStatus);
 
@@ -142,6 +144,7 @@ private:
     unsigned int stepsLeft;
 
     QTimer* timer;
+    QTimer* idleTimer;
 
     uint32_t idleSteps;
 
@@ -157,6 +160,7 @@ private Q_SLOTS:
     void updateActionSensitivity();
 
     void runIteration();
+    void skip();
 };
 
 #endif // QMPS_DEBUG_SESSION_H

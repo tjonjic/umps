@@ -103,7 +103,7 @@ QFont Application::getBoldFont()
 
 void Application::setCurrentConfig(const QString& path, MachineConfig* newConfig)
 {
-    dbgSession->Halt();
+    dbgSession->halt();
 
     config.reset(newConfig);
 
