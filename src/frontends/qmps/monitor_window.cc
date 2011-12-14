@@ -77,6 +77,8 @@ using boost::assign::list_of;
 static const int kDefaultWidth = 640;
 static const int kDefaultHeight = 480;
 
+static const unsigned int kCodePtMicro = 0x00b5U;
+
 const char* const MonitorWindow::simSpeedMnemonics[DebugSession::kNumSpeedLevels] = {
     "Slowest",
     "Slow",
@@ -245,6 +247,7 @@ void MonitorWindow::createActions()
     }
 
     aboutAction = new QAction("&About", this);
+    connect(aboutAction, SIGNAL(triggered()), this, SLOT(showAboutInfo()));
 
     addStopMaskAction("Breakpoints", SC_BREAKPOINT);
     addStopMaskAction("Suspects", SC_SUSPECT);
@@ -677,6 +680,35 @@ void MonitorWindow::showTerminal()
         terminalWindows[devNo]->activateWindow();
         terminalWindows[devNo]->raise();
     }
+}
+
+void MonitorWindow::showAboutInfo()
+{
+    QString name = QString("%1MPS").arg(QChar(kCodePtMicro));
+    QString text = QString(
+        "<h2>&micro;MPS %1</h2>"
+        "<em>An educational computer system emulator</em>"
+        "<h3><a href='http://mps.sf.net/'>http://mps.sf.net/</a></h3>"
+        "Copyright &copy; 1998-2011 &micro;MPS authors"
+        "<hr />"
+        "<h3 style='margin-top: 0;'>Credits</h3>"
+        "<p style='margin: 0 0 0 10px;'>"
+        " Created by: Mauro Morsiani, Tomislav Jonjic"
+        " <br />"
+        " Contributions: Renzo Davoli (network/VDE support)"
+        " <br />"
+        " Documentation: Michael Goldweber, Renzo Davoli"
+        "</p>"
+        "<hr />"
+        "<h3 style='margin-top: 0;'>License</h3>"
+        "<p style='margin: 0 0 0 10px;'>"
+        " &micro;MPS is free software, licensed under"
+        " the <a href='http://www.gnu.org/licenses/old-licenses/gpl-2.0.html'>GNU"
+        " General Public License, version 2</a>."
+        "</p>")
+        .arg(PACKAGE_VERSION);
+
+    QMessageBox::about(this, QString("About %1").arg(name), text);
 }
 
 void MonitorWindow::onMachineStarted()

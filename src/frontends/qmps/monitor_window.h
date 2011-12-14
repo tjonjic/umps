@@ -158,6 +158,8 @@ private Q_SLOTS:
     void onCpuItemActivated(const QModelIndex& index);
     void showTerminal();
 
+    void showAboutInfo();
+
     void onMachineConfigChanged();
 
     void onMachineStarted();
