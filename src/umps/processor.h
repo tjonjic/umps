@@ -124,7 +124,7 @@ public:
     void setTLBLo(unsigned int index, Word value);
 
     // Signals
-    sigc::signal<void> SignalStatusChanged;
+    sigc::signal<void> StatusChanged;
     sigc::signal<void, unsigned int> SignalException;
     sigc::signal<void, unsigned int> SignalTLBChanged;
 

@@ -334,7 +334,7 @@ void DebugSession::step(unsigned int steps)
     // Always step through at least one cycle (might be a bit too
     // pedantic but oh well...)
     bool stopped;
-    machine->Step(&stopped);
+    machine->step(&stopped);
     --stepsLeft;
 
     if (machine->IsHalted()) {
@@ -362,7 +362,7 @@ void DebugSession::runStepIteration()
 
     bool stopped = false;
     unsigned int stepped;
-    machine->Step(steps, &stepped, &stopped);
+    machine->step(steps, &stepped, &stopped);
     stepsLeft -= stepped;
 
     if (machine->IsHalted()) {
@@ -383,12 +383,12 @@ void DebugSession::runContIteration()
     if (idleSteps > 0) {
         // Enter low-power mode!
         timer->stop();
-        const uint32_t ticksPerMsec = 1000 * Appl()->getConfig()->getClockRate();
-        const int interval = std::min(idleSteps, kMaxSkipped) / ticksPerMsec;
+        const qreal ticksPerMsec = 1000.0 * qreal(Appl()->getConfig()->getClockRate());
+        const int interval = qRound(qreal(std::min(idleSteps, kMaxSkipped)) / ticksPerMsec);
         idleTimer->start(interval);
     } else {
         bool stopped;
-        machine->Step(kIterCycles[speed], NULL, &stopped);
+        machine->step(kIterCycles[speed], NULL, &stopped);
         if (machine->IsHalted()) {
             halt();
         } else if (stopped) {
@@ -414,8 +414,8 @@ void DebugSession::skip()
         idleTimer->stop();
         timer->start();
     } else if (idleSteps < kMaxSkipped) {
-        const uint32_t ticksPerMsec = 1000 * Appl()->getConfig()->getClockRate();
-        idleTimer->setInterval(idleSteps / ticksPerMsec);
+        const qreal ticksPerMsec = 1000.0 * qreal(Appl()->getConfig()->getClockRate());
+        idleTimer->setInterval(qRound(qreal(idleSteps) / ticksPerMsec));
     }
 
     Q_EMIT DebugIterationCompleted();

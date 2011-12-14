@@ -49,8 +49,8 @@ public:
             StoppointSet* tracepoints);
     ~Machine();
 
-    void Step(bool* stopped = NULL);
-    void Step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
+    void step(bool* stopped = NULL);
+    void step(unsigned int steps, unsigned int* stepped = NULL, bool* stopped = NULL);
 
     uint32_t idleCycles() const;
     void skip(uint32_t cycles);
@@ -97,7 +97,8 @@ private:
     ProcessorData pd[MachineConfig::MAX_CPUS];
 
     bool halted;
-    bool stopPointsReached;
+    bool stopRequested;
+    bool pauseRequested;
 
     StoppointSet* breakpoints;
     StoppointSet* suspects;

@@ -53,6 +53,9 @@ Machine::Machine(const MachineConfig* config,
         cpu->SignalException.connect(
             sigc::bind(sigc::mem_fun(this, &Machine::onCpuException), cpu)
         );
+        cpu->StatusChanged.connect(
+            sigc::bind(sigc::mem_fun(this, &Machine::onCpuStatusChanged), cpu)
+        );
         pd[i].stopCause = 0;
         cpus.push_back(cpu);
     }
@@ -66,14 +69,14 @@ Machine::~Machine()
         delete p;
 }
 
-void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
+void Machine::step(unsigned int steps, unsigned int* stepped, bool* stopped)
 {
-    stopPointsReached = false;
+    stopRequested = pauseRequested = false;
     foreach (Processor* cpu, cpus)
         pd[cpu->Id()].stopCause = 0;
 
     unsigned int i;
-    for (i = 0; !halted && i < steps && !stopPointsReached; ++i) {
+    for (i = 0; !halted && i < steps && !stopRequested && !pauseRequested; ++i) {
         bus->ClockTick();
         for (CpuVector::iterator it = cpus.begin(); it != cpus.end(); ++it)
             (*it)->Cycle();
@@ -81,12 +84,12 @@ void Machine::Step(unsigned int steps, unsigned int* stepped, bool* stopped)
     if (stepped)
         *stepped = i;
     if (stopped)
-        *stopped = stopPointsReached;
+        *stopped = stopRequested;
 }
 
-void Machine::Step(bool* stopped)
+void Machine::step(bool* stopped)
 {
-    Step(1, NULL, stopped);
+    step(1, NULL, stopped);
 }
 
 uint32_t Machine::idleCycles() const
@@ -128,8 +131,16 @@ void Machine::onCpuException(unsigned int excCode, Processor* cpu)
         ((stopMask & SC_UTLB_KERNEL) && utlbExc && cpu->InKernelMode()))
     {
         pd[cpu->getId()].stopCause |= SC_EXCEPTION;
-        stopPointsReached = true;
+        stopRequested = true;
     }
+}
+
+void Machine::onCpuStatusChanged(const Processor* cpu)
+{
+    // Whenever a cpu goes to sleep, give the client a chance to
+    // detect idle machine states.
+    if (cpu->isIdle())
+        pauseRequested = true;
 }
 
 void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)
@@ -145,7 +156,7 @@ void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)
             if (suspect != NULL) {
                 pd[cpu->getId()].stopCause |= SC_SUSPECT;
                 pd[cpu->getId()].suspectId = suspect->getId();
-                stopPointsReached = true;
+                stopRequested = true;
             }
         }
         break;
@@ -156,7 +167,7 @@ void Machine::HandleBusAccess(Word pAddr, Word access, Processor* cpu)
             if (breakpoint != NULL) {
                 pd[cpu->getId()].stopCause |= SC_BREAKPOINT;
                 pd[cpu->getId()].breakpointId = breakpoint->getId();
-                stopPointsReached = true;
+                stopRequested = true;
             }
         }
         break;
@@ -184,7 +195,7 @@ void Machine::HandleVMAccess(Word asid, Word vaddr, Word access, Processor* cpu)
             if (suspect != NULL) {
                 pd[cpu->Id()].stopCause |= SC_SUSPECT;
                 pd[cpu->Id()].suspectId = suspect->getId();
-                stopPointsReached = true;
+                stopRequested = true;
             }
         }
         break;
@@ -195,7 +206,7 @@ void Machine::HandleVMAccess(Word asid, Word vaddr, Word access, Processor* cpu)
             if (breakpoint != NULL) {
                 pd[cpu->Id()].stopCause |= SC_BREAKPOINT;
                 pd[cpu->Id()].breakpointId = breakpoint->getId();
-                stopPointsReached = true;
+                stopRequested = true;
             }
         }
         break;

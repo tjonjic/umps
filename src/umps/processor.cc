@@ -208,7 +208,7 @@ void Processor::setStatus(ProcessorStatus newStatus)
 {
     if (status != newStatus) {
         status = newStatus;
-        SignalStatusChanged.emit();
+        StatusChanged.emit();
     }
 }
 
