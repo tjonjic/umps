@@ -41,6 +41,7 @@ TerminalWindow::TerminalWindow(unsigned int devNo, QWidget* parent)
       devNo(devNo)
 {
     setWindowTitle(QString("uMPS Terminal %1").arg(devNo));
+    setWindowIcon(QIcon(":/icons/terminal-32.png"));
 
     TerminalDevice* terminal = getTerminal(devNo);
 

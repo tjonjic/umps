@@ -35,5 +35,7 @@
     <file>icons/pc_marker-16.png</file>
     <file>icons/breakpoint_enabled_marker-16.png</file>
     <file>icons/breakpoint_disabled_marker-16.png</file>
+
+    <file>icons/window_default-48.png</file>
   </qresource>
 </RCC>

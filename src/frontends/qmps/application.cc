@@ -35,6 +35,7 @@ Application::Application(int& argc, char** argv)
       config(NULL)
 {
     setApplicationName("uMPS");
+    setWindowIcon(QIcon(":/icons/window_default-48.png"));
 
     dbgSession.reset(new DebugSession);
 
