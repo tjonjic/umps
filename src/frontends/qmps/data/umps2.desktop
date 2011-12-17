@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=uMPS2
+Comment=An educational computer system emulator
+Exec=umps2
+Icon=umps2
+Terminal=false
+Categories=Education;Emulator

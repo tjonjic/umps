@@ -1,5 +1,7 @@
 include $(top_srcdir)/build-aux/autotroll.mk
 
+SUBDIRS = data
+
 bin_PROGRAMS = umps2
 
 umps2_moc_sources = \

@@ -146,6 +146,8 @@ AC_CONFIG_FILES([Makefile
 		 src/support/libumps/Makefile
                  src/frontends/Makefile
                  src/frontends/qmps/Makefile
+                 src/frontends/qmps/data/Makefile
+                 src/frontends/qmps/data/icons/Makefile
                  src/tests/Makefile])
 
 AC_OUTPUT
