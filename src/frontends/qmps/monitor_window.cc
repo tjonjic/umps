@@ -25,8 +25,6 @@
 #include <sigc++/sigc++.h>
 #include <boost/assign.hpp>
 
-#include <QtDebug>
-
 #include <QSignalMapper>
 #include <QWidget>
 #include <QMenu>
