@@ -52,7 +52,7 @@ ProcessorWindow::ProcessorWindow(Word cpuId, QWidget* parent)
 {
     cpu = dbgSession->getMachine()->getProcessor(cpuId);
 
-    setWindowTitle(QString("uMPS: Processor %1").arg(cpuId));
+    setWindowTitle(QString("uMPS Processor %1").arg(cpuId));
     setDockOptions(AnimatedDocks | AllowTabbedDocks);
 
     createToolBar();
