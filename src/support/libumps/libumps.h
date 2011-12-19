@@ -5,6 +5,15 @@
 #ifndef UMPS_LIBUMPS_H
 #define UMPS_LIBUMPS_H
 
+/*
+ * "Forward declaration" hack!!
+ * Many functions in this module accept a pointer to a cpu state
+ * (STATE_PTR) structure. We cannot just forward declare that because
+ * state_t was commonly defined by clients as an anonymous struct
+ * typedef.
+ */
+#define STATE_PTR void*
+
 /* Functions valid in user mode
  */
  
@@ -102,7 +111,7 @@ extern void WAIT(void);
  * security a bit (I thought I said you to use it only in kernel mode...)
  */
  
-extern unsigned int FORK(unsigned int entryhi, unsigned int status, unsigned int pc, state_t * statep);
+extern unsigned int FORK(unsigned int entryhi, unsigned int status, unsigned int pc, STATE_PTR statep);
  
  
 /* This function may be called from kernel or from user mode with CPU 0
@@ -124,7 +133,7 @@ extern unsigned int FORK(unsigned int entryhi, unsigned int status, unsigned int
  * However, trying it does not harm system security a bit.
  */
  
-extern unsigned int STST(state_t * statep);
+extern unsigned int STST(STATE_PTR statep);
 
 
 /* This function may be used to restart an interrupted/blocked process,
@@ -138,7 +147,7 @@ extern unsigned int STST(state_t * statep);
  * needed  (e.g. syscall handling) 
  */
  
-extern unsigned int LDST(state_t * statep);
+extern unsigned int LDST(STATE_PTR statep);
  
 
 /* This function stops the system printing a warning message on terminal 0
@@ -153,7 +162,7 @@ extern void PANIC(void);
 
 extern void HALT(void);
 
-extern void INITCPU(unsigned int cpuid, state_t *start_state, state_t *state_areas);
+extern void INITCPU(unsigned int cpuid, STATE_PTR start_state, STATE_PTR state_areas);
 
 extern int CAS(volatile unsigned int *atomic, unsigned int oldval, unsigned int newval);
 
