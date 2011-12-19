@@ -199,6 +199,8 @@ void ProcessorWindow::createDockableWidgets()
     tlbWidget->setFeatures(QDockWidget::DockWidgetClosable |
                            QDockWidget::DockWidgetMovable |
                            QDockWidget::DockWidgetFloatable);
+    connect(tlbWidget, SIGNAL(topLevelChanged(bool)), this, SLOT(updateTLBViewTitle(bool)));
+
     addDockWidget(Qt::BottomDockWidgetArea, tlbWidget);
     tabifyDockWidget(regView, tlbWidget);
 }
@@ -247,4 +249,12 @@ void ProcessorWindow::onMachineReset()
             this, SLOT(updateStatusInfo()));
 
     updateStatusInfo();
+}
+
+void ProcessorWindow::updateTLBViewTitle(bool topLevel)
+{
+    if (topLevel)
+        tlbWidget->setWindowTitle(QString("Processor %1 TLB").arg(cpuId));
+    else
+        tlbWidget->setWindowTitle("TLB");
 }

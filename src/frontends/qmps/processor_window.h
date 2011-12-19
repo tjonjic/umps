@@ -73,6 +73,7 @@ private:
 private Q_SLOTS:
     void onMachineReset();
     void updateStatusInfo();
+    void updateTLBViewTitle(bool topLevel);
 };
 
 #endif // QMPS_PROCESSOR_WINDOW_H

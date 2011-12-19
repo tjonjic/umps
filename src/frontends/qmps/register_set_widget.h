@@ -46,6 +46,7 @@ protected:
     RegisterSetSnapshot* model;
 
 private Q_SLOTS:
+    void updateWindowTitle();
     void setDisplayType(QAction* action);
 
 private:
@@ -55,6 +56,7 @@ private:
                           QToolBar* toolBar);
     int currentDelegate() const;
 
+    const Word cpuId;
     QTreeView* treeView;
     std::vector<QStyledItemDelegate*> delegates;
     const QString delegateKey;

@@ -36,8 +36,11 @@
 RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
     : QDockWidget("Registers", parent),
       model(new RegisterSetSnapshot(cpuId, this)),
+      cpuId(cpuId),
       delegateKey(QString("RegisterSetWidget%1/delegate").arg(cpuId))
 {
+    connect(this, SIGNAL(topLevelChanged(bool)), this, SLOT(updateWindowTitle()));
+
     QWidget* widget = new QWidget;
     QVBoxLayout* layout = new QVBoxLayout(widget);
     layout->setSpacing(0);
@@ -76,6 +79,14 @@ RegisterSetWidget::RegisterSetWidget(Word cpuId, QWidget* parent)
 
     setAllowedAreas(Qt::AllDockWidgetAreas);
     setFeatures(DockWidgetClosable | DockWidgetMovable | DockWidgetFloatable);
+}
+
+void RegisterSetWidget::updateWindowTitle()
+{
+    if (isFloating())
+        setWindowTitle(QString("Processor %1 Registers").arg(cpuId));
+    else
+        setWindowTitle("Registers");
 }
 
 void RegisterSetWidget::setDisplayType(QAction* action)
