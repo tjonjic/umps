@@ -12,10 +12,10 @@
 #define CHAROFFSET      8
 #define STATUSMASK      0xFF
 
-terminal_t *terminal = (terminal_t*) DEV_REG_ADDR(IL_TERMINAL, 0);
+termreg_t *terminal = (termreg_t*) DEV_REG_ADDR(IL_TERMINAL, 0);
 
-static unsigned int tx_status(terminal_t *tp);
-static unsigned int rx_status(terminal_t *tp);
+static unsigned int tx_status(termreg_t *tp);
+static unsigned int rx_status(termreg_t *tp);
 
 int term_putchar(char c)
 {
@@ -61,13 +61,12 @@ int term_getchar(void)
     return terminal->recv_status >> CHAROFFSET;
 }
 
-static unsigned int tx_status(terminal_t *tp)
+static unsigned int tx_status(termreg_t *tp)
 {
     return ((tp->transm_status) & STATUSMASK);
 }
 
-static unsigned int rx_status(terminal_t *tp)
+static unsigned int rx_status(termreg_t *tp)
 {
     return ((tp->recv_status) & STATUSMASK);
 }
-

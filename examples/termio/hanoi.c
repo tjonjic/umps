@@ -1,6 +1,4 @@
-#include "umps/types.h"
-#include "umps/libumps.e"
-
+#include "umps/libumps.h"
 #include "terminal.h"
 
 #define LINE_BUF_SIZE 64
