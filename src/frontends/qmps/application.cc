@@ -41,6 +41,9 @@ Application::Application(int& argc, char** argv)
 
     monitorWindow.reset(new MonitorWindow);
     monitorWindow->show();
+
+    if (argc > 1)
+        LoadConfig(argv[1]);
 }
 
 Application::~Application() {}
