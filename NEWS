@@ -1,3 +1,12 @@
+2.0
+===
+
+* Better integration with desktop environment (menu entry, icons)
+* Improved idle state handling
+* Allow empty data segments in input ELF executables
+* Slightly more efficient timestamp handling
+* Allow user to specify the machine using a command line option
+
 1.9.8
 =====
 
