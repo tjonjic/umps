@@ -115,10 +115,11 @@ void Application::setCurrentConfig(const QString& path, MachineConfig* newConfig
     document = info.fileName();
     dir = info.absolutePath();
     QDir::setCurrent(dir);
+    QString absolutePath = info.absoluteFilePath();
 
     QStringList recentFiles = settings.value("RecentFiles").toStringList();
-    recentFiles.removeAll(path);
-    recentFiles.prepend(path);
+    recentFiles.removeAll(absolutePath);
+    recentFiles.prepend(absolutePath);
     while ((unsigned int) recentFiles.size() > kMaxRecentConfigs)
         recentFiles.removeLast();
     settings.setValue("RecentFiles", recentFiles);
