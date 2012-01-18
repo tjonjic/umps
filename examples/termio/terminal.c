@@ -6,16 +6,17 @@
 #define ST_TRANSMITTED     5
 #define ST_RECEIVED        5
 
+#define CMD_ACK            1
 #define CMD_TRANSMIT       2
 #define CMD_RECV           2
 
-#define CHAROFFSET      8
-#define STATUSMASK      0xFF
+#define CHAR_OFFSET        8
+#define TERM_STATUS_MASK   0xFF
 
-termreg_t *terminal = (termreg_t*) DEV_REG_ADDR(IL_TERMINAL, 0);
+volatile termreg_t *terminal = (termreg_t*) DEV_REG_ADDR(IL_TERMINAL, 0);
 
-static unsigned int tx_status(termreg_t *tp);
-static unsigned int rx_status(termreg_t *tp);
+static unsigned int tx_status(volatile termreg_t *tp);
+static unsigned int rx_status(volatile termreg_t *tp);
 
 int term_putchar(char c)
 {
@@ -25,12 +26,15 @@ int term_putchar(char c)
     if (stat != ST_READY && stat != ST_TRANSMITTED)
         return -1;
 
-    terminal->transm_command = ((c << CHAROFFSET) | CMD_TRANSMIT);
-    stat = tx_status(terminal);
-    while (stat == ST_BUSY)
-        stat = tx_status(terminal);
+    terminal->transm_command = ((c << CHAR_OFFSET) | CMD_TRANSMIT);
+
+    while ((stat = tx_status(terminal)) == ST_BUSY)
+        ;
+
     if (stat != ST_TRANSMITTED)
         return -1;
+
+    terminal->transm_command = CMD_ACK;
 
     return 0;
 }
@@ -48,25 +52,30 @@ int term_getchar(void)
     unsigned int stat;
 
     stat = rx_status(terminal);
-    if (stat != ST_READY && stat != ST_TRANSMITTED)
+    if (stat != ST_READY && stat != ST_RECEIVED)
         return -1;
 
     terminal->recv_command = CMD_RECV;
-    stat = rx_status(terminal);
-    while (stat == ST_BUSY)
-        stat = rx_status(terminal);
+
+    while ((stat = rx_status(terminal)) == ST_BUSY)
+        ;
+
     if (stat != ST_RECEIVED)
         return -1;
 
-    return terminal->recv_status >> CHAROFFSET;
+    stat = terminal->recv_status;
+
+    terminal->recv_command = CMD_ACK;
+
+    return stat >> CHAR_OFFSET;
 }
 
-static unsigned int tx_status(termreg_t *tp)
+static unsigned int tx_status(volatile termreg_t *tp)
 {
-    return ((tp->transm_status) & STATUSMASK);
+    return ((tp->transm_status) & TERM_STATUS_MASK);
 }
 
-static unsigned int rx_status(termreg_t *tp)
+static unsigned int rx_status(volatile termreg_t *tp)
 {
-    return ((tp->recv_status) & STATUSMASK);
+    return ((tp->recv_status) & TERM_STATUS_MASK);
 }

@@ -1,4 +1,5 @@
 #include "umps/libumps.h"
+#include "umps/arch.h"
 #include "terminal.h"
 
 #define LINE_BUF_SIZE 64
@@ -41,6 +42,13 @@ static unsigned int broken_strtou(const char *str)
     return retval;
 }
 
+static void halt(void)
+{
+    WAIT();
+    *((volatile unsigned int *) MCTL_POWER) = 0x0FF;
+    while (1) ;
+}
+
 int main(int argc, char *argv[])
 {
     unsigned int n;
@@ -54,6 +62,7 @@ int main(int argc, char *argv[])
     n = broken_strtou(buf);
     hanoi(n, 'L', 'R', 'M');
 
-    HALT();
+    halt();
+
     return 0;
 }
