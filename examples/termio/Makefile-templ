@@ -1,30 +1,46 @@
-TOOLCHAIN_DIR = /usr/local/bin
-TOOLCHAIN_PRG_PREFIX = mipsel-linux-
+# Cross toolchain variables
+# If these are not in your path, you can make them absolute.
+XT_PRG_PREFIX = mipsel-elf-
+CC = $(XT_PRG_PREFIX)gcc
+LD = $(XT_PRG_PREFIX)ld
 
-CC = $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PRG_PREFIX)gcc
-LD = $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PRG_PREFIX)ld
+# uMPS2-related paths
 
-UMPS_DIR_PREFIX = /usr/local
-UMPS_DATA_DIR = $(UMPS_DIR_PREFIX)/share/umps2
-UMPS_LIB_DIR = $(UMPS_DIR_PREFIX)/lib/umps2
-UMPS_INCLUDE_DIR = $(UMPS_DIR_PREFIX)/include/umps2
+# Simplistic search for the umps2 install. prefix. If you have umps2
+# installed on some weird location, set UMPS2_DIR_PREFIX by hand.
+ifneq ($(wildcard /usr/bin/umps2),)
+    UMPS2_DIR_PREFIX = /usr
+else
+    UMPS2_DIR_PREFIX = /usr/local
+endif
 
-CFLAGS = -I$(UMPS_INCLUDE_DIR) -O0 -Wall
-LDFLAGS = -T $(UMPS_DATA_DIR)/elf32ltsmip.h.umpscore.x
+UMPS2_DATA_DIR = $(UMPS2_DIR_PREFIX)/share/umps2
+UMPS2_INCLUDE_DIR = $(UMPS2_DIR_PREFIX)/include/umps2
 
-kernel_objects :=			\
-	terminal.o			\
-	hanoi.o				\
-	$(UMPS_LIB_DIR)/crtso.o		\
-	$(UMPS_LIB_DIR)/libumps.o
+# Compiler options
+CFLAGS_LANG = -ffreestanding -ansi
+CFLAGS_MIPS = -mips1 -mabi=32 -mno-gpopt -G 0 -mno-abicalls -fno-pic
+CFLAGS = $(CFLAGS_LANG) $(CFLAGS_MIPS) -I$(UMPS2_INCLUDE_DIR) -Wall -O0
+
+# Linker options
+LDFLAGS = -G 0 -nostdlib -T $(UMPS2_DATA_DIR)/umpscore.ldscript
+
+# Add the location of crt*.S to the search path
+VPATH = $(UMPS2_DATA_DIR)
+
+.PHONY : all clean
 
 all : kernel.core.umps
 
 kernel.core.umps : kernel
 	umps2-elf2umps -k $<
 
-kernel : $(kernel_objects)
-	$(LD) -o $@ $(kernel_objects) $(LDFLAGS)
+kernel : hanoi.o terminal.o crtso.o libumps.o
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 clean :
 	-rm -f *.o kernel kernel.*.umps
+
+# Pattern rule for assembly modules
+%.o : %.S
+	$(CC) $(CFLAGS) -c -o $@ $<
