@@ -136,11 +136,11 @@ umps2_DEPENDENCIES = \
 	$(top_builddir)/src/umps/libumps.a
 
 umps2_LDADD = \
-	$(DL_LIBS)				\
 	$(top_builddir)/src/umps/libumps.a	\
 	$(top_builddir)/src/base/libbase.a	\
 	$(QT_LIBS)				\
-	$(SIGCPP_LIBS)
+	$(SIGCPP_LIBS)				\
+	$(DL_LIBS)
 
 BUILT_SOURCES = $(umps2_moc_sources) qmps.qrc.cc
 
