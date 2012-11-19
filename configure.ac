@@ -1,8 +1,8 @@
 m4_define([umps_major_version], [2])
 m4_define([umps_minor_version], [0])
-m4_define([umps_micro_version], [0])
+m4_define([umps_micro_version], [1])
 
-m4_define([umps_version], [umps_major_version.umps_minor_version])
+m4_define([umps_version], [umps_major_version.umps_minor_version.umps_micro_version])
 
 AC_PREREQ(2.64)
 AC_INIT([umps], [umps_version], [tjonjic@gmail.com])
