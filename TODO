@@ -9,6 +9,4 @@ qmps
 * Figure out why sigc::trackable fails randomly when not inherited
   directly.
 
-* User error handling: boring perhaps, but much needed.
-
 * DND support btw suspect and trace views
