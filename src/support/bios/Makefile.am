@@ -20,7 +20,7 @@ CLEANFILES = $(dist_noinst_DATA)
 clean-local:
 	-for t in $(umps_rom_types) ; do rm -f $$t.eb $$t.el; done
 
-BIOS_CFLAGS = -mips1 -mabi=32 -mno-abicalls -fno-pic -ffreestanding
+BIOS_CFLAGS = -mips1 -mabi=32 -mno-abicalls -fno-pic -ffreestanding -mfp32
 BIOS_CPPFLAGS = -I$(top_srcdir)/src/include
 
 SUFFIXES = .S .eb .el .eb.rom.umps .el.rom.umps
