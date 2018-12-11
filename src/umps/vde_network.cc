@@ -133,8 +133,12 @@ netinterface::netinterface(const char *name, const char *addr, int intnum)
 		for (int i=0;i<6;i++)
 			ethaddr[i]=addr[i];
 	} else {
-		sprintf(ethaddr," %5d",getpid());
+		char tempaddr[7];
+		snprintf(tempaddr,7," %5d",getpid());
+                
 		ethaddr[0]=intnum*2;
+                for (int i=1;i<6;i++)
+			ethaddr[i]=tempaddr[i];
 	}
 
 	mode = PROMISQ | NAMED;
