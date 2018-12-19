@@ -320,6 +320,7 @@ int netblockq::dequeue(char *pcontent, int len)
 		class netblock *oldhead=head;
 		int packlen;
 		head=oldhead->getNext();
+		if (head == NULL) tail = NULL;
 		packlen=oldhead->getLen();
 		if (len < packlen) packlen=len;
 		memcpy(pcontent,oldhead->getContent(),packlen);
